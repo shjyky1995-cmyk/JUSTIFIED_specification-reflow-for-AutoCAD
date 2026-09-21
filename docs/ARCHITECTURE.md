@@ -2,6 +2,8 @@
 状态：用户已确认架构；M0 加载与工具验证结果见 T02 日志。产品语义以 PRD 为准。
 
 ## 技术栈
+- 固定项目名：JUSTIFIED_specification-reflow-for-AutoCAD；解决方案与 .bundle 使用此名。
+- C# 命名空间/程序集前缀：Justified.SpecificationReflow.AutoCAD（连字符不能用于 C# 命名空间）。
 - C#；通用库 netstandard2.0；AutoCAD 2021 插件 net48 / x64。
 - SDK 风格项目；.NET SDK 8.0.425 是构建工具，不是插件运行时。
 - Open XML SDK 解析 DOCX；Newtonsoft.Json 处理 JSON；不使用 Word COM。
@@ -42,4 +44,4 @@ M0 仅提供构建边界及技术诊断，不以占位返回值伪造业务接�
 - ADR-004：最终 DOCX 为正文权威；固定院标决定 CAD 表现；删除旧说明后完整重出。
 - ADR-005：共享协议、依赖方向和技术栈变更需用户确认；不预建 Future 空模块。
 - ADR-006：main 保存已验收任务；宿主验证与图面验收分级记录，阶段标签不能伪造完成。
-
+- ADR-007：2026-09-22 用户指定正式项目名与 GitHub 仓库一致，不再使用临时 DesignNote 产品名；原 PRD 文件名保留以维护来源。

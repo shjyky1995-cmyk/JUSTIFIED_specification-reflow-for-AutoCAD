@@ -1,4 +1,5 @@
-# 工程设计说明智能编制与 CAD 排版系统
+# JUSTIFIED_specification-reflow-for-AutoCAD
+工程设计说明智能编制与 CAD 排版系统。正式项目名与 GitHub 仓库一致，后续保持不变。
 V1 主链路：DOCX → Document Model → 排版引擎 → AutoCAD DBText。
 当前是 M0 基础骨架，不具备正式生成设计说明的能力。
 
@@ -12,4 +13,3 @@ V1 主链路：DOCX → Document Model → 排版引擎 → AutoCAD DBText。
 AutoCAD 2021 / Windows x64；插件 net48，通用类库 netstandard2.0。
 本机和外部电脑均需真实宿主测试；通过编译不代表业务验收。
 院标和三图幅参数见 [标定台账](docs/CALIBRATION.md)，未标定不得发布。
-
