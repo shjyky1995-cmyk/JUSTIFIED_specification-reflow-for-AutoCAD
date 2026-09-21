@@ -50,7 +50,33 @@ public class RealisticNoteTests
         Assert.That(fromFile.Diagnostics.Count(item => item.Code == DocxDiagnosticCodes.IgnoredHeaderFooter), Is.EqualTo(2));
     }
 
+    [Test]
+    public void WpsResaveMatchesTheOriginalNoteWhenStylesAreMappedByName()
+    {
+        var original = ParseFile("示例-结构说明.docx");
+        var resaved = ParseFile("示例-结构说明-1.1.docx");
+        Assert.That(original.Success, Is.True, Dump(original));
+        Assert.That(resaved.Success, Is.True, Dump(resaved));
+        Assert.That(Project(resaved.Document!), Is.EqualTo(Project(original.Document!)));
+        Assert.That(resaved.Document!.Blocks[0].Type, Is.EqualTo(BlockType.Heading1));
+        Assert.That(resaved.Document.Blocks[2].Type, Is.EqualTo(BlockType.Paragraph));
+        Assert.That(resaved.Document.Blocks[2].Numbering!.Label, Is.EqualTo("1."));
+    }
+
     private static DocumentParseResult Parse(byte[] bytes)
+    {
+        return ParseNamed("示例-结构说明.docx", bytes);
+    }
+
+    private static DocumentParseResult ParseFile(string fileName)
+    {
+        var path = Path.Combine(Root(), "测试文件", fileName);
+        return ParseNamed(fileName, File.ReadAllBytes(path));
+    }
+
+    // WPS 这次另存把 styleId 写成 1=Normal、2=heading 1、3=heading 2。
+    // 映射认显示名，不把数字 1 当成一级标题。
+    private static DocumentParseResult ParseNamed(string name, byte[] bytes)
     {
         var parser = new DocxDocumentParser(new DocxParseOptions
         {
@@ -62,11 +88,14 @@ public class RealisticNoteTests
                 {
                     new StyleMapEntry { Match = StyleMapMatch.StyleId, Key = "Heading1", Target = BlockType.Heading1 },
                     new StyleMapEntry { Match = StyleMapMatch.StyleId, Key = "Heading2", Target = BlockType.Heading2 },
-                    new StyleMapEntry { Match = StyleMapMatch.StyleId, Key = "Normal", Target = BlockType.Paragraph }
+                    new StyleMapEntry { Match = StyleMapMatch.StyleId, Key = "Normal", Target = BlockType.Paragraph },
+                    new StyleMapEntry { Match = StyleMapMatch.Name, Key = "heading 1", Target = BlockType.Heading1 },
+                    new StyleMapEntry { Match = StyleMapMatch.Name, Key = "heading 2", Target = BlockType.Heading2 },
+                    new StyleMapEntry { Match = StyleMapMatch.Name, Key = "Normal", Target = BlockType.Paragraph }
                 }
             }
         });
-        return parser.Parse(new DocxBytesSource("示例-结构说明.docx", bytes), new ParseProfile(), CancellationToken.None);
+        return parser.Parse(new DocxBytesSource(name, bytes), new ParseProfile(), CancellationToken.None);
     }
 
     private static string Project(Document document)
