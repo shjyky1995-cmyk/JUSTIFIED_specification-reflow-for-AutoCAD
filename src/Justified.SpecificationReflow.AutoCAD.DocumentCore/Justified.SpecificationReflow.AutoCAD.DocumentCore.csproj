@@ -4,4 +4,15 @@
     <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Contracts/Justified.SpecificationReflow.AutoCAD.Contracts.csproj" />
     <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../schemas/document.schema.json">
+      <LogicalName>Justified.SpecificationReflow.AutoCAD.DocumentCore.Schemas.document.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../schemas/layout-result.schema.json">
+      <LogicalName>Justified.SpecificationReflow.AutoCAD.DocumentCore.Schemas.layout-result.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../schemas/render-request.schema.json">
+      <LogicalName>Justified.SpecificationReflow.AutoCAD.DocumentCore.Schemas.render-request.schema.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>
