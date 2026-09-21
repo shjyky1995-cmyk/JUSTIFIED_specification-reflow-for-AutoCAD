@@ -1,0 +1,83 @@
+{
+  "version": 2,
+  "dependencies": {
+    ".NETFramework,Version=v4.8": {
+      "Microsoft.NETFramework.ReferenceAssemblies": {
+        "type": "Direct",
+        "requested": "[1.0.3, )",
+        "resolved": "1.0.3",
+        "contentHash": "vUc9Npcs14QsyOD01tnv/m8sQUnGTGOw1BCmKcv77LBJY7OxhJ+zJF7UD/sCL3lYNFuqmQEVlkfS4Quif6FyYg==",
+        "dependencies": {
+          "Microsoft.NETFramework.ReferenceAssemblies.net48": "1.0.3"
+        }
+      },
+      "DocumentFormat.OpenXml.Framework": {
+        "type": "Transitive",
+        "resolved": "3.0.2",
+        "contentHash": "ILRCJu2dUJDv27ZCQDftD7AZSuBgKg+ZSUF9dg2dk8qcIED7oM42y/cvZIm0mev80nj2QMzpxthX87+AebzHug=="
+      },
+      "Microsoft.NETFramework.ReferenceAssemblies.net48": {
+        "type": "Transitive",
+        "resolved": "1.0.3",
+        "contentHash": "zMk4D+9zyiEWByyQ7oPImPN/Jhpj166Ky0Nlla4eXlNL8hI/BtSJsgR8Inldd4NNpIAH3oh8yym0W2DrhXdSLQ=="
+      },
+      "justified.specificationreflow.autocad.application": {
+        "type": "Project",
+        "dependencies": {
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )",
+          "Justified.SpecificationReflow.AutoCAD.DocumentCore": "[0.1.0, )"
+        }
+      },
+      "justified.specificationreflow.autocad.autocadadapter": {
+        "type": "Project",
+        "dependencies": {
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+        }
+      },
+      "justified.specificationreflow.autocad.contracts": {
+        "type": "Project"
+      },
+      "justified.specificationreflow.autocad.documentcore": {
+        "type": "Project",
+        "dependencies": {
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )",
+          "Newtonsoft.Json": "[13.0.3, )"
+        }
+      },
+      "justified.specificationreflow.autocad.docxadapter": {
+        "type": "Project",
+        "dependencies": {
+          "DocumentFormat.OpenXml": "[3.0.2, )",
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+        }
+      },
+      "justified.specificationreflow.autocad.layoutengine": {
+        "type": "Project",
+        "dependencies": {
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+        }
+      },
+      "justified.specificationreflow.autocad.standards": {
+        "type": "Project",
+        "dependencies": {
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+        }
+      },
+      "DocumentFormat.OpenXml": {
+        "type": "CentralTransitive",
+        "requested": "[3.0.2, )",
+        "resolved": "3.0.2",
+        "contentHash": "gqjP/BxKWgwAWwPAN+RpKaMOiidPM07F+mAxiiW184/MnkHnkk12Qo7cRB0wuq4kOZUrUzQ9EUO966hUy/wKBw==",
+        "dependencies": {
+          "DocumentFormat.OpenXml.Framework": "3.0.2"
+        }
+      },
+      "Newtonsoft.Json": {
+        "type": "CentralTransitive",
+        "requested": "[13.0.3, )",
+        "resolved": "13.0.3",
+        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+      }
+    }
+  }
+}

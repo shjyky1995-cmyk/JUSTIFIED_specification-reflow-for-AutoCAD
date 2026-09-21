@@ -2,12 +2,13 @@
 默认一次对话推进一个任务。任务范围是修改边界，不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前负责人：无；下一任务：T02。远程仓库待配置，尚未远程备份。
+当前任务：T02 待真实加载验收；工作分支 task/T02-foundation。接续先确认诊断输出，再决定合入 main；然后进入 T03。
+远程：[GitHub 私有仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)，main 文档基线已推送；任务分支按 checkpoint 备份，不创建 M0 完成标签。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
 | T01/M0 | PRD/确认计划 → 规范、任务、日志、Git | 无 | 根文档、docs、Git 配置 | PRD 4/15/16 | 入口可接续、规则≤60行、初始提交 | 完成 |
-| T02/M0 | 本机环境 → 分层骨架、构建测试、最小加载包 | T01 | src、tests、scripts、构建/打包配置、环境日志 | DEP-001～008、OPS-001 基础 | 无 CAD 核心测试、依赖约束、实际加载、版本锁定 | 待开始 |
+| T02/M0 | 本机环境 → 分层骨架、构建测试、最小加载包 | T01 | src、tests、scripts、构建/打包配置、环境日志 | DEP-001～008、OPS-001 基础 | 独立测试与编译通过；真实加载待确认 | 待验收 |
 | T03/M1 | PRD 5/9 → 模型、Active 契约、Schema、JSON | T02 | Contracts、DocumentCore、schemas、相关测试 | DATA-001 / AC-04 | 往返/扩展字段/非法版本与块/有限数值 | 待开始 |
 | T04/M1 | DOCX 样本 → 段落/样式/诊断解析 | T03 | DocxAdapter、脱敏 fixtures、测试 | DOC-001/002 / AC-01～03 | Word/WPS 一致、不支持内容阻断定位 | 待开始 |
 | T05/M1 | numbering/换行样本 → 有限编号与空白语义 | T04 | DocxAdapter、fixtures、测试 | DOC-002 / AC-01～03 | 编号重启、不重复、空段/硬换行审计 | 待开始 |

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>netstandard2.0</TargetFramework></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Contracts/Justified.SpecificationReflow.AutoCAD.Contracts.csproj" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.DocumentCore/Justified.SpecificationReflow.AutoCAD.DocumentCore.csproj" />
+
+  </ItemGroup>
+</Project>

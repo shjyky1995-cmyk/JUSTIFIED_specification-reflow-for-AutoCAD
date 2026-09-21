@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFrameworks>net8.0;net48</TargetFrameworks><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NUnit" /><PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net48'" />
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.Application/Justified.SpecificationReflow.AutoCAD.Application.csproj" />
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.DocxAdapter/Justified.SpecificationReflow.AutoCAD.DocxAdapter.csproj" />
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.LayoutEngine/Justified.SpecificationReflow.AutoCAD.LayoutEngine.csproj" />
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.Standards/Justified.SpecificationReflow.AutoCAD.Standards.csproj" />
+  </ItemGroup>
+</Project>

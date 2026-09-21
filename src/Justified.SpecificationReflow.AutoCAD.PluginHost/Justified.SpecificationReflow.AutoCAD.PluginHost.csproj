@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../build/AutoCAD2021.props" />
+  <ItemGroup>
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Application/Justified.SpecificationReflow.AutoCAD.Application.csproj" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Contracts/Justified.SpecificationReflow.AutoCAD.Contracts.csproj" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.DocumentCore/Justified.SpecificationReflow.AutoCAD.DocumentCore.csproj" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.DocxAdapter/Justified.SpecificationReflow.AutoCAD.DocxAdapter.csproj" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Standards/Justified.SpecificationReflow.AutoCAD.Standards.csproj" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.LayoutEngine/Justified.SpecificationReflow.AutoCAD.LayoutEngine.csproj" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.AutoCadAdapter/Justified.SpecificationReflow.AutoCAD.AutoCadAdapter.csproj" />
+
+  </ItemGroup>
+</Project>

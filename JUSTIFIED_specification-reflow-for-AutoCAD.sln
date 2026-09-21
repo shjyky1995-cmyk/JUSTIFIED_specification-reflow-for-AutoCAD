@@ -1,0 +1,85 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.Application", "src\Justified.SpecificationReflow.AutoCAD.Application\Justified.SpecificationReflow.AutoCAD.Application.csproj", "{AF5B6C85-790A-482A-8C9E-33F3DB70F20F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.AutoCadAdapter", "src\Justified.SpecificationReflow.AutoCAD.AutoCadAdapter\Justified.SpecificationReflow.AutoCAD.AutoCadAdapter.csproj", "{2437E309-5B93-4612-B199-1048FE990CF4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.Contracts", "src\Justified.SpecificationReflow.AutoCAD.Contracts\Justified.SpecificationReflow.AutoCAD.Contracts.csproj", "{8FB6DE55-D2E7-44D2-A3FB-74A021249911}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.DocumentCore", "src\Justified.SpecificationReflow.AutoCAD.DocumentCore\Justified.SpecificationReflow.AutoCAD.DocumentCore.csproj", "{F3B4A24B-9692-4163-85AF-878E23C01DA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.DocxAdapter", "src\Justified.SpecificationReflow.AutoCAD.DocxAdapter\Justified.SpecificationReflow.AutoCAD.DocxAdapter.csproj", "{6C79170F-B0CD-49FC-BDED-44D3FF32FA9F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.LayoutEngine", "src\Justified.SpecificationReflow.AutoCAD.LayoutEngine\Justified.SpecificationReflow.AutoCAD.LayoutEngine.csproj", "{E3EB8A79-1279-445D-81EB-221A5D312EAF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.PluginHost", "src\Justified.SpecificationReflow.AutoCAD.PluginHost\Justified.SpecificationReflow.AutoCAD.PluginHost.csproj", "{3D1138EE-8452-4300-97DE-456970F96AB7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.Standards", "src\Justified.SpecificationReflow.AutoCAD.Standards\Justified.SpecificationReflow.AutoCAD.Standards.csproj", "{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D14EC8B1-0F9B-4C0A-B51B-1D40642B9760}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.Core.Tests", "tests\Justified.SpecificationReflow.AutoCAD.Core.Tests\Justified.SpecificationReflow.AutoCAD.Core.Tests.csproj", "{ADF3A544-B6FD-44C2-9544-55AA81B64102}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AF5B6C85-790A-482A-8C9E-33F3DB70F20F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF5B6C85-790A-482A-8C9E-33F3DB70F20F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF5B6C85-790A-482A-8C9E-33F3DB70F20F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF5B6C85-790A-482A-8C9E-33F3DB70F20F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2437E309-5B93-4612-B199-1048FE990CF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2437E309-5B93-4612-B199-1048FE990CF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2437E309-5B93-4612-B199-1048FE990CF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2437E309-5B93-4612-B199-1048FE990CF4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FB6DE55-D2E7-44D2-A3FB-74A021249911}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FB6DE55-D2E7-44D2-A3FB-74A021249911}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FB6DE55-D2E7-44D2-A3FB-74A021249911}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FB6DE55-D2E7-44D2-A3FB-74A021249911}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3B4A24B-9692-4163-85AF-878E23C01DA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3B4A24B-9692-4163-85AF-878E23C01DA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3B4A24B-9692-4163-85AF-878E23C01DA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3B4A24B-9692-4163-85AF-878E23C01DA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C79170F-B0CD-49FC-BDED-44D3FF32FA9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C79170F-B0CD-49FC-BDED-44D3FF32FA9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C79170F-B0CD-49FC-BDED-44D3FF32FA9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C79170F-B0CD-49FC-BDED-44D3FF32FA9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3EB8A79-1279-445D-81EB-221A5D312EAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3EB8A79-1279-445D-81EB-221A5D312EAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3EB8A79-1279-445D-81EB-221A5D312EAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3EB8A79-1279-445D-81EB-221A5D312EAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D1138EE-8452-4300-97DE-456970F96AB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D1138EE-8452-4300-97DE-456970F96AB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D1138EE-8452-4300-97DE-456970F96AB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D1138EE-8452-4300-97DE-456970F96AB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADF3A544-B6FD-44C2-9544-55AA81B64102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADF3A544-B6FD-44C2-9544-55AA81B64102}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADF3A544-B6FD-44C2-9544-55AA81B64102}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADF3A544-B6FD-44C2-9544-55AA81B64102}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AF5B6C85-790A-482A-8C9E-33F3DB70F20F} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{2437E309-5B93-4612-B199-1048FE990CF4} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{8FB6DE55-D2E7-44D2-A3FB-74A021249911} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{F3B4A24B-9692-4163-85AF-878E23C01DA6} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{6C79170F-B0CD-49FC-BDED-44D3FF32FA9F} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{E3EB8A79-1279-445D-81EB-221A5D312EAF} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{3D1138EE-8452-4300-97DE-456970F96AB7} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{ADF3A544-B6FD-44C2-9544-55AA81B64102} = {D14EC8B1-0F9B-4C0A-B51B-1D40642B9760}
+	EndGlobalSection
+EndGlobal

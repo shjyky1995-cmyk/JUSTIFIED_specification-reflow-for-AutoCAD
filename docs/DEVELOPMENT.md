@@ -6,7 +6,7 @@
 不要提交或清理他人的改动；中断时提交本任务 checkpoint 并保留任务分支。
 并行任务用 git worktree add，集成前重新检查共享契约和相关测试。
 
-## 构建入口（由 T02 实现）
+## 构建入口
 在仓库根目录运行 Windows PowerShell：
 ```powershell
 powershell -NoProfile -File scripts/build.ps1 -Target Core
@@ -16,6 +16,12 @@ powershell -NoProfile -File scripts/build.ps1 -Target Package
 Core 不查找 CAD，运行独立核心测试；All 自动发现 2021，也可传 -AutoCadDir。
 首次开发还原依赖需要网络；构建包包含运行依赖，目标 CAD 电脑不需联网还原 NuGet。
 CAD 引用使用本地安装目录，CopyLocal=false，不分发 Autodesk DLL。
+开发工具须安装 global.json 中的 SDK 8.0.425；net48 测试要求 Windows .NET Framework 4.8。
+锁文件已入库，默认 locked-mode；只有有意变更依赖时用 -UpdateLocks，并审查锁文件差异。
+产物位于 artifacts/packages/<时间戳>/；原始 TRX 与 CAD 输出仅留本地，验收摘要进入日志。
+Core 入口已经验证不依赖 CAD 引用；All/Package 验证 AutoCAD DLL 为 24.0。
+真实加载脚本 scripts/test-cad.ps1 接收 -AutoCadDir 和 -PluginPath，不修改信任设置。
+若控制台拒绝未信任路径，在 AutoCAD 正常 NETLOAD 流程人工验证；切勿将未加载记录为通过。
 禁止降低系统安全策略来加载插件；手工测试在 AutoCAD 正常信任/加载流程完成。
 
 ## Git 提交与回滚

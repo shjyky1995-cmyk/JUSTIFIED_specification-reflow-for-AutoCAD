@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../build/AutoCAD2021.props" />
+  <ItemGroup>
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Contracts/Justified.SpecificationReflow.AutoCAD.Contracts.csproj" />
+
+  </ItemGroup>
+</Project>

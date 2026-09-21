@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+    <Reference Include="AcCoreMgd"><HintPath>$(AutoCadDir)/accoremgd.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="AcDbMgd"><HintPath>$(AutoCadDir)/acdbmgd.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="AcMgd"><HintPath>$(AutoCadDir)/acmgd.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <Target Name="ValidateAutoCadReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(AutoCadDir)/acmgd.dll') Or !Exists('$(AutoCadDir)/accoremgd.dll') Or !Exists('$(AutoCadDir)/acdbmgd.dll')" Text="Provide AutoCadDir pointing to AutoCAD 2021; use scripts/build.ps1 -Target All -AutoCadDir PATH." />
+  </Target>
+</Project>

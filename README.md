@@ -2,6 +2,7 @@
 工程设计说明智能编制与 CAD 排版系统。正式项目名与 GitHub 仓库一致，后续保持不变。
 V1 主链路：DOCX → Document Model → 排版引擎 → AutoCAD DBText。
 当前是 M0 基础骨架，不具备正式生成设计说明的能力。
+当前任务分支 task/T02-foundation：构建和独立测试通过，真实 CAD 加载待验收。
 
 ## 接续入口
 1. 阅读 [AGENTS.md](AGENTS.md)。
