@@ -14,9 +14,15 @@ internal sealed class DocxFixtureBuilder
 
     public List<OpenXmlElement> Body { get; } = new List<OpenXmlElement>();
 
+    public List<OpenXmlElement> SectionChildren { get; } = new List<OpenXmlElement>();
+
     public bool EmitTerminator { get; set; } = true;
 
     public string TerminatorStyleId { get; set; } = "Normal";
+
+    public string? Title { get; set; }
+
+    public string? Creator { get; set; }
 
     public string? HeaderText { get; set; }
 
@@ -44,16 +50,20 @@ internal sealed class DocxFixtureBuilder
                 numbering.Numbering.Save();
             }
 
+            string? headerId = null;
             if (HeaderText != null)
             {
                 var header = main.AddNewPart<HeaderPart>();
+                headerId = main.GetIdOfPart(header);
                 header.Header = new Header(Paragraph(null, TextRun(HeaderText)));
                 header.Header.Save();
             }
 
+            string? footerId = null;
             if (FooterText != null)
             {
                 var footer = main.AddNewPart<FooterPart>();
+                footerId = main.GetIdOfPart(footer);
                 footer.Footer = new Footer(Paragraph(null, TextRun(FooterText)));
                 footer.Footer.Save();
             }
@@ -68,9 +78,18 @@ internal sealed class DocxFixtureBuilder
             var children = new List<OpenXmlElement>(Body);
             if (EmitTerminator)
                 children.Add(Paragraph(TerminatorStyleId));
-            children.Add(new SectionProperties());
+            var section = new SectionProperties();
+            if (headerId != null)
+                section.AppendChild(new HeaderReference { Type = HeaderFooterValues.Default, Id = headerId });
+            if (footerId != null)
+                section.AppendChild(new FooterReference { Type = HeaderFooterValues.Default, Id = footerId });
+            foreach (var child in SectionChildren)
+                section.AppendChild(child.CloneNode(true));
+            children.Add(section);
             main.Document = new Document(new Body(children));
             main.Document.Save();
+            if (Title != null) doc.PackageProperties.Title = Title;
+            if (Creator != null) doc.PackageProperties.Creator = Creator;
         }
 
         return stream.ToArray();
