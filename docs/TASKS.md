@@ -2,14 +2,14 @@
 默认一次对话推进一个任务。任务范围是修改边界，不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前任务：T03 数据协议（进行中，分支 task/T03-contracts）。上一任务 T02 已完成，基线 bf9ad78 / m0-foundation。
+当前任务：T04 DOCX 解析（尚未领取）。T03 数据协议已完成并合入 main；上一任务 T02 基线 bf9ad78 / m0-foundation。
 远程：[GitHub 私有仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)。M0 验收基线标签：m0-foundation；合并、推送结果通过 Git 查看。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
 | T01/M0 | PRD/确认计划 → 规范、任务、日志、Git | 无 | 根文档、docs、Git 配置 | PRD 4/15/16 | 入口可接续、规则≤60行、初始提交 | 完成 |
 | T02/M0 | 本机环境 → 分层骨架、构建测试、最小加载包 | T01 | src、tests、scripts、构建/打包配置、环境日志 | DEP-001～008、OPS-001 基础 | 双运行时各 4/4；编译无警告；用户返回本机 DN_DIAG_OK | 完成 |
-| T03/M1 | PRD 5/9 → 模型、Active 契约、Schema、JSON | T02 | Contracts、DocumentCore、schemas、相关测试 | DATA-001 / AC-04 | 往返/扩展字段/非法版本与块/有限数值 | 进行中 |
+| T03/M1 | PRD 5/9 → 模型、Active 契约、Schema、JSON | T02 | Contracts、DocumentCore、schemas、相关测试 | DATA-001 / AC-04 | 往返/扩展字段/非法版本与块/有限数值 | 完成 |
 | T04/M1 | DOCX 样本 → 段落/样式/诊断解析 | T03 | DocxAdapter、脱敏 fixtures、测试 | DOC-001/002 / AC-01～03 | Word/WPS 一致、不支持内容阻断定位 | 待开始 |
 | T05/M1 | numbering/换行样本 → 有限编号与空白语义 | T04 | DocxAdapter、fixtures、测试 | DOC-002 / AC-01～03 | 编号重启、不重复、空段/硬换行审计 | 待开始 |
 | T06/M2 | CAL-02～07 → 标准校验与测量原型 | T03 | Standards、AutoCadAdapter、标准资产、测试 | STD-001、TEXT-001 / AC-05～06 | 缺标定阻断、真实字形/测量/打印证据 | 待开始 |

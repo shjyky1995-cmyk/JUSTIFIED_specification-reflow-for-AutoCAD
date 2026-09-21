@@ -37,6 +37,8 @@ M0 仅提供构建边界及技术诊断，不以占位返回值伪造业务接�
 新增或修改共享契约，先在本文件追加提案（原因、受影响任务、兼容性、测试），等待用户确认。
 内部修复不需架构审批；不得以此流程阻止普通开发。
 
+T03 已交付：上述契约与 7 个 Active 端口冻结于 Contracts；schemas/ 提供 document、layout-result、render-request 三份 draft-07 Schema，由 DocumentCore 嵌入校验，未知主版本/块类型以 E_SCHEMA_VERSION 拒绝、其余协议违例以 E_SCHEMA_INVALID 拒绝，往返测试覆盖 AC-04。院标与 Layout Template 的 JSON Schema 及发布校验随 T06 标定资产落地（PRD 5.3 示例刻意不是可运行配置）。
+
 ## 已确认决策
 - ADR-001：首版只承诺 AutoCAD 2021，其他版本必须单独验证。
 - ADR-002：分层单仓库，本地生成不依赖网络或服务。
