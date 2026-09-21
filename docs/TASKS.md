@@ -2,7 +2,7 @@
 默认一次对话推进一个任务。任务范围是修改边界，不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前任务：T05 编号与空白审计已完成，本提交以快进合入 main。T04 DOCX 解析已完成并合入 main（6d3b77e）。
+当前任务：T06 标准校验与测量原型（阻塞，分支 task/T06-standards-measure，未合入 main）。T05 编号与空白审计已完成并合入 main（c8e75fd）。
 远程：[GitHub 私有仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)。M0 验收基线标签：m0-foundation；合并、推送结果通过 Git 查看。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |
@@ -12,7 +12,7 @@
 | T03/M1 | PRD 5/9 → 模型、Active 契约、Schema、JSON | T02 | Contracts、DocumentCore、schemas、相关测试 | DATA-001 / AC-04 | 往返/扩展字段/非法版本与块/有限数值 | 完成 |
 | T04/M1 | DOCX 样本 → 段落/样式/诊断解析 | T03 | DocxAdapter、脱敏 fixtures、测试 | DOC-001/002 / AC-01～03 | Word/WPS 一致、不支持内容阻断定位 | 完成 |
 | T05/M1 | numbering/换行样本 → 有限编号与空白语义 | T04 | DocxAdapter、fixtures、测试 | DOC-002 / AC-01～03 | 编号重启、不重复、空段/硬换行审计 | 完成 |
-| T06/M2 | CAL-02～07 → 标准校验与测量原型 | T03 | Standards、AutoCadAdapter、标准资产、测试 | STD-001、TEXT-001 / AC-05～06 | 缺标定阻断、真实字形/测量/打印证据 | 待开始 |
+| T06/M2 | CAL-02～07 → 标准校验与测量原型 | T03 | Standards、AutoCadAdapter、标准资产、测试 | STD-001、TEXT-001 / AC-05～06 | 缺标定阻断、真实字形/测量/打印证据 | 阻塞 |
 | T07/M2 | 文本+真实测量 → token/禁则换行 | T05、T06 | LayoutEngine、测试 | LAYOUT-001 / AC-07 | 中文临界、长 token 警告、非法断点有限退出 | 待开始 |
 | T08/M3 | 行流+模板 → 固定槽、不同栏宽、续页 | T07 | LayoutEngine、测试 | LAYOUT-002 / AC-08～09 | 6/7 行边界、空行、跨栏、无空尾页 | 待开始 |
 | T09/M3 | 布局+Anchor → 真实 DBText 输出 | T08 | AutoCadAdapter、宿主测试 | CAD-001 / AC-10～11 | 两 Anchor、UCS、单位、对象类型、上下标 | 待开始 |

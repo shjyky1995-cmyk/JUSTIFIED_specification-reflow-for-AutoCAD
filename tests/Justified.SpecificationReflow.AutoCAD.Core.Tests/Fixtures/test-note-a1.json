@@ -1,0 +1,20 @@
+{
+  "classification": "test-fixture",
+  "templateId": "test-A1",
+  "version": "test-1",
+  "disciplineCode": "structure",
+  "paperCode": "A1",
+  "status": "calibrated",
+  "orientation": "landscape",
+  "unit": "mm",
+  "standardRef": { "id": "test-note", "version": "test-1" },
+  "anchor": { "kind": "note_top_right", "x": 0, "y": 0 },
+  "pageBounds": { "left": 0, "right": 200, "top": 100, "bottom": 0 },
+  "columns": [
+    { "columnId": "c0", "left": 10, "right": 90, "top": 90, "bottom": 10, "firstBaselineY": 80, "rowCount": 6 },
+    { "columnId": "c1", "left": 100, "right": 190, "top": 90, "bottom": 10, "firstBaselineY": 80, "rowCount": 6 }
+  ],
+  "pageStep": { "x": 210, "y": 0 },
+  "framePolicy": "none",
+  "resolvedRowPitch": 4
+}

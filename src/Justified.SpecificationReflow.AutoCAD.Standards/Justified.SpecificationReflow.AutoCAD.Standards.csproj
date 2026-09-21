@@ -2,6 +2,6 @@
   <PropertyGroup><TargetFramework>netstandard2.0</TargetFramework></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Contracts/Justified.SpecificationReflow.AutoCAD.Contracts.csproj" />
-
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 </Project>

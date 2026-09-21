@@ -80,7 +80,8 @@
       "justified.specificationreflow.autocad.standards": {
         "type": "Project",
         "dependencies": {
-          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )",
+          "Newtonsoft.Json": "[13.0.3, )"
         }
       },
       "DocumentFormat.OpenXml": {
@@ -217,7 +218,8 @@
       "justified.specificationreflow.autocad.standards": {
         "type": "Project",
         "dependencies": {
-          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )",
+          "Newtonsoft.Json": "[13.0.3, )"
         }
       },
       "DocumentFormat.OpenXml": {

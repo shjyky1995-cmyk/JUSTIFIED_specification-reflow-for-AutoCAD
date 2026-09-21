@@ -1,0 +1,27 @@
+{
+  "classification": "test-fixture",
+  "standardId": "test-note",
+  "version": "test-1",
+  "fontProfile": {
+    "fonts": [
+      {
+        "family": "TESTFONT",
+        "fileIdentity": "TESTFONT.shx",
+        "bigFont": "TESTFONT-BIG.shx"
+      }
+    ]
+  },
+  "textHeight": 2.5,
+  "widthFactor": 0.8,
+  "obliqueAngle": 0,
+  "rowPitch": 4,
+  "styles": {
+    "heading1": { "fontRef": "TESTFONT", "indent": 0, "hangingIndent": 0, "beforeSlots": 0, "afterSlots": 0 },
+    "heading2": { "fontRef": "TESTFONT", "indent": 0, "hangingIndent": 0, "beforeSlots": 0, "afterSlots": 0 },
+    "body": { "fontRef": "TESTFONT", "indent": 5, "hangingIndent": 3, "beforeSlots": 0, "afterSlots": 0 }
+  },
+  "layerPolicy": { "layerName": "TEST-NOTE" },
+  "symbolMapVersion": "test-symbols",
+  "lineBreakRuleVersion": "test-breaks",
+  "measurementTolerance": 0.2
+}
