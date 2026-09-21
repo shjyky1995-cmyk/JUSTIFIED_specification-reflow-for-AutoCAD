@@ -265,9 +265,10 @@ public sealed class DocxDocumentParser : IDocumentParser
         public DocumentParseResult Complete()
         {
             if (HasError()) return new DocumentParseResult(null, _diagnostics);
+            // 末段没有正文或硬换行时就是编辑器终止段。样式带自动编号也不让它变成条目。
             if (_blocks.Count > 0
-                && _blocks[_blocks.Count - 1].Type == BlockType.Spacer
-                && _blocks[_blocks.Count - 1].SourceRef.ParagraphIndex == _lastParagraphIndex)
+                && _blocks[_blocks.Count - 1].SourceRef.ParagraphIndex == _lastParagraphIndex
+                && !HasText(_blocks[_blocks.Count - 1]))
             {
                 _blocks.RemoveAt(_blocks.Count - 1);
             }
@@ -548,6 +549,16 @@ public sealed class DocxDocumentParser : IDocumentParser
                         state.Flag("unknown:" + local, At(state.Index) + "含有未支持的内容（" + local + "）。");
                     break;
             }
+        }
+
+        private static bool HasText(Block block)
+        {
+            foreach (var run in block.Runs)
+            {
+                if (run.Text.Length > 0) return true;
+            }
+
+            return false;
         }
 
         private static void ReadBreak(Break lineBreak, ParagraphState state)
