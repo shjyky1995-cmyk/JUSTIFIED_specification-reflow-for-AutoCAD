@@ -57,6 +57,13 @@ try {
         $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'SHA256.json') -Encoding UTF8
         $zip = Join-Path $output 'JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-m0.zip'
         Compress-Archive -LiteralPath $bundle -DestinationPath $zip
+        # Stable, visible handoff location for manual testing; do not change CAD trust settings.
+        $handoff = Join-Path $taskRoot ([string][char]0x6D4B + [char]0x8BD5 + [char]0x6587 + [char]0x4EF6)
+        $program = Join-Path $handoff ([string][char]0x7A0B + [char]0x5E8F)
+        New-Item -ItemType Directory -Path $program -Force | Out-Null
+        Get-ChildItem -LiteralPath $contents -Filter *.dll | Copy-Item -Destination $program -Force
+        Copy-Item -LiteralPath $zip -Destination $handoff -Force
+        Write-Host "Manual test DLL: $(Join-Path $program 'Justified.SpecificationReflow.AutoCAD.PluginHost.dll')"
         Write-Host "M0 diagnostic package: $zip"
     }
 }

@@ -5,6 +5,8 @@ V1 主链路：DOCX → Document Model → 排版引擎 → AutoCAD DBText。
 当前任务分支 task/T02-foundation：构建和独立测试通过，真实 CAD 加载待验收。
 
 ## 接续入口
+手工验证请打开 [测试文件/开始测试.md](测试文件/开始测试.md)，测试 DLL 在旁边的「程序」文件夹。
+
 1. 阅读 [AGENTS.md](AGENTS.md)。
 2. 在 [任务清单](docs/TASKS.md) 找到下一任务及前置条件。
 3. 阅读 [架构](docs/ARCHITECTURE.md)、该任务日志和 [PRD](CAD_DesignNote_PRD_V1.0.md) 对应条款。

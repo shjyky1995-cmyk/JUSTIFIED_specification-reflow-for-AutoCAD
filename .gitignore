@@ -3,6 +3,8 @@
 .vs/
 .idea/
 artifacts/
+/测试文件/程序/
+/测试文件/*.zip
 TestResults/
 *.user
 *.suo
