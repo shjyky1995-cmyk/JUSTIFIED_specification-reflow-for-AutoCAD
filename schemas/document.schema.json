@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "document.schema.json",
+  "title": "Document",
+  "description": "JUSTIFIED 数据协议 Document 契约（PRD 5.2）。schemaVersion 主版本必须为 1；未知主版本或未知块类型必须拒绝；extensions 为命名空间 key 的扩展数据，原样保留，核心规则不依赖其值。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "documentId", "disciplineCode", "source", "blocks", "extensions"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$",
+      "description": "协议版本；支持的主版本内只追加可选字段。"
+    },
+    "documentId": { "type": "string", "minLength": 1 },
+    "disciplineCode": { "type": "string", "minLength": 1 },
+    "source": { "$ref": "#/definitions/source" },
+    "blocks": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/block" },
+      "description": "保留原阅读顺序；无 CAD 坐标。"
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "命名空间 key 的扩展数据；未知扩展字段可保留，值任意。"
+    }
+  },
+  "definitions": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "contentHash"],
+      "properties": {
+        "kind": { "enum": ["docx"] },
+        "name": { "type": "string", "minLength": 1 },
+        "contentHash": { "type": "string", "minLength": 1 },
+        "localPath": { "type": "string", "description": "仅本地诊断可选，不作为身份。" }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "sourceRef", "runs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["heading1", "heading2", "paragraph", "spacer"] },
+        "sourceRef": { "$ref": "#/definitions/sourceRef" },
+        "runs": { "type": "array", "items": { "$ref": "#/definitions/textRun" } },
+        "numbering": { "$ref": "#/definitions/numbering" },
+        "slotCount": { "type": "integer", "minimum": 1 }
+      },
+      "if": {
+        "properties": { "type": { "const": "spacer" } },
+        "required": ["type"]
+      },
+      "then": { "required": ["slotCount"] }
+    },
+    "textRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "semantic"],
+      "properties": {
+        "text": { "type": "string", "description": "字符串原样保留；硬换行为独立 break run（semantic=normal 且 text 恰为换行符）。" },
+        "semantic": { "enum": ["normal", "superscript", "subscript"] }
+      }
+    },
+    "numbering": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "sourceKind", "level"],
+      "properties": {
+        "label": { "type": "string", "description": "已解析可见编号；显示编号与正文分开。" },
+        "sourceKind": { "enum": ["manual", "automatic"] },
+        "level": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paragraphIndex"],
+      "properties": {
+        "paragraphIndex": { "type": "integer", "minimum": 0 },
+        "runIndex": { "type": "integer", "minimum": 0 },
+        "textRange": { "$ref": "#/definitions/textRange" }
+      }
+    },
+    "textRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "length"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 0 },
+        "length": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

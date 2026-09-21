@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "documentId": "sample-doc-001",
+  "disciplineCode": "structure",
+  "source": {
+    "kind": "docx",
+    "name": "示例.docx",
+    "contentHash": "example-only"
+  },
+  "blocks": [
+    {
+      "id": "b1",
+      "type": "heading1",
+      "sourceRef": {
+        "paragraphIndex": 0
+      },
+      "runs": [
+        {
+          "text": "材料要求",
+          "semantic": "normal"
+        }
+      ]
+    }
+  ],
+  "extensions": {},
+  "vendor:extra": 1
+}

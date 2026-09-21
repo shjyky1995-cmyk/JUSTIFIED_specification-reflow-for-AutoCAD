@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0",
+  "documentId": "sample-doc-001",
+  "disciplineCode": "structure",
+  "source": {
+    "kind": "docx",
+    "name": "示例.docx",
+    "contentHash": "example-only"
+  },
+  "blocks": [
+    {
+      "id": "b1",
+      "type": "heading1",
+      "sourceRef": {
+        "paragraphIndex": 0
+      },
+      "runs": [
+        {
+          "text": "材料要求",
+          "semantic": "normal"
+        }
+      ]
+    },
+    {
+      "id": "b2",
+      "type": "paragraph",
+      "sourceRef": {
+        "paragraphIndex": 1,
+        "runIndex": 0,
+        "textRange": {
+          "start": 0,
+          "length": 9
+        }
+      },
+      "numbering": {
+        "label": "1.",
+        "sourceKind": "automatic",
+        "level": 0
+      },
+      "runs": [
+        {
+          "text": "混凝土采用C30。",
+          "semantic": "normal"
+        }
+      ]
+    },
+    {
+      "id": "b3",
+      "type": "paragraph",
+      "sourceRef": {
+        "paragraphIndex": 2
+      },
+      "runs": [
+        {
+          "text": "活荷载标准值为2.0kN/m²。",
+          "semantic": "normal"
+        },
+        {
+          "text": "\n",
+          "semantic": "normal"
+        },
+        {
+          "text": "2",
+          "semantic": "superscript"
+        }
+      ]
+    },
+    {
+      "id": "b4",
+      "type": "spacer",
+      "sourceRef": {
+        "paragraphIndex": 3
+      },
+      "runs": [],
+      "slotCount": 1
+    }
+  ],
+  "extensions": {
+    "vendor:review": {
+      "reviewer": "kim",
+      "round": 2
+    },
+    "acme:flag": true
+  }
+}

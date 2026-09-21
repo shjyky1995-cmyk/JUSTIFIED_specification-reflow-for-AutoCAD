@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "render-request.schema.json",
+  "title": "RenderRequest",
+  "description": "JUSTIFIED 数据协议 RenderRequest 契约（PRD 5.4）。生成前环境与测量时不同则重新校验或重排；unitScale 必须为正。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["layoutResult", "anchorWcs", "unitScale", "targetSpace", "environmentFingerprint"],
+  "properties": {
+    "layoutResult": { "$ref": "layout-result.schema.json#" },
+    "anchorWcs": { "$ref": "layout-result.schema.json#/definitions/point2" },
+    "unitScale": { "type": "number", "exclusiveMinimum": 0 },
+    "targetSpace": { "enum": ["model"] },
+    "environmentFingerprint": { "type": "string", "minLength": 1 }
+  }
+}

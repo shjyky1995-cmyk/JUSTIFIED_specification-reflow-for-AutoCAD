@@ -1,0 +1,180 @@
+{
+  "schemaVersion": "1.0",
+  "documentHash": "0f0e0d0c0b0a09080706050403020100f0e0d0c0b0a09080706050403020100ab",
+  "standardRef": {
+    "id": "institution-note",
+    "version": "pending"
+  },
+  "templateRef": {
+    "id": "structure-A1",
+    "version": "calibration-draft"
+  },
+  "engineVersion": "0.1.0-test",
+  "measurementProfileHash": "test-measurement-profile",
+  "pages": [
+    {
+      "pageIndex": 0,
+      "pageOffset": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "columns": [
+        {
+          "columnIndex": 0,
+          "rows": [
+            {
+              "rowIndex": 0,
+              "baseline": 10.0,
+              "occupancy": "text",
+              "visualLine": {
+                "sourceSlices": [
+                  {
+                    "paragraphIndex": 1,
+                    "runIndex": 0,
+                    "textRange": {
+                      "start": 0,
+                      "length": 9
+                    }
+                  }
+                ],
+                "text": "混凝土采用C30。",
+                "measuredWidth": 31.5,
+                "inkBounds": {
+                  "minX": 0.0,
+                  "minY": 0.0,
+                  "maxX": 31.5,
+                  "maxY": 3.5
+                },
+                "renderRuns": [
+                  {
+                    "text": "混凝土采用C30。",
+                    "relativeOrigin": {
+                      "x": 0.0,
+                      "y": 0.0
+                    },
+                    "baselineOffset": 0.0,
+                    "resolvedStyle": {
+                      "styleId": "body",
+                      "semantic": "normal",
+                      "font": {
+                        "family": "测试仿宋"
+                      },
+                      "textHeight": 3.5,
+                      "widthFactor": 0.9,
+                      "obliqueAngle": 0.0
+                    },
+                    "measuredAdvance": 31.5,
+                    "inkBounds": {
+                      "minX": 0.0,
+                      "minY": 0.0,
+                      "maxX": 31.5,
+                      "maxY": 3.5
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "rowIndex": 1,
+              "baseline": 6.5,
+              "occupancy": "text",
+              "visualLine": {
+                "sourceSlices": [
+                  {
+                    "paragraphIndex": 2
+                  }
+                ],
+                "text": "2.0kN/m²",
+                "measuredWidth": 19.25,
+                "inkBounds": {
+                  "minX": 0.0,
+                  "minY": 0.0,
+                  "maxX": 19.25,
+                  "maxY": 3.5
+                },
+                "renderRuns": [
+                  {
+                    "text": "2.0kN/m²",
+                    "relativeOrigin": {
+                      "x": 0.0,
+                      "y": 0.0
+                    },
+                    "baselineOffset": 0.0,
+                    "resolvedStyle": {
+                      "styleId": "body",
+                      "semantic": "normal",
+                      "font": {
+                        "family": "测试仿宋"
+                      },
+                      "textHeight": 3.5,
+                      "widthFactor": 0.9,
+                      "obliqueAngle": 0.0
+                    },
+                    "measuredAdvance": 17.5,
+                    "inkBounds": {
+                      "minX": 0.0,
+                      "minY": 0.0,
+                      "maxX": 17.5,
+                      "maxY": 3.5
+                    }
+                  },
+                  {
+                    "text": "2",
+                    "relativeOrigin": {
+                      "x": 17.5,
+                      "y": 0.0
+                    },
+                    "baselineOffset": 1.2,
+                    "resolvedStyle": {
+                      "styleId": "body",
+                      "semantic": "superscript",
+                      "font": {
+                        "family": "测试仿宋"
+                      },
+                      "textHeight": 3.5,
+                      "widthFactor": 0.9,
+                      "obliqueAngle": 0.0
+                    },
+                    "measuredAdvance": 1.75,
+                    "inkBounds": {
+                      "minX": 0.0,
+                      "minY": 1.2,
+                      "maxX": 1.75,
+                      "maxY": 3.5
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "rowIndex": 2,
+              "baseline": 3.0,
+              "occupancy": "spacer"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "W_TOKEN_SPLIT",
+      "severity": "warning",
+      "stage": "layout",
+      "message": "测试警告：超长 token 被迫拆分。",
+      "sourceRef": {
+        "paragraphIndex": 2
+      },
+      "details": {
+        "jsonPath": "$.blocks[2].runs[0]"
+      }
+    }
+  ],
+  "statistics": {
+    "pageCount": 1,
+    "rowCount": 3,
+    "objectCount": 3,
+    "warningCount": 1,
+    "elapsed": "00:00:00.2500000"
+  }
+}
