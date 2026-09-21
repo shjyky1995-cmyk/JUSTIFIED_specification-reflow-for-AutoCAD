@@ -11,6 +11,7 @@ public static class ProtocolSerializerSettings
     public static JsonSerializerSettings Default { get; } = new JsonSerializerSettings
     {
         NullValueHandling = NullValueHandling.Ignore,
+        FloatFormatHandling = FloatFormatHandling.Symbol,
         ContractResolver = new DefaultContractResolver
         {
             NamingStrategy = new CamelCaseNamingStrategy { ProcessDictionaryKeys = false }

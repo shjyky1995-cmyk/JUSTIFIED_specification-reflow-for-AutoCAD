@@ -23,7 +23,7 @@ public readonly struct SchemaViolation
 
 // draft-07 子集校验器：type/enum/const/properties/required/additionalProperties/items/
 // minimum/maximum/exclusiveMinimum/exclusiveMaximum/minLength/maxLength/pattern/minItems/
-// if/then/else/not/$ref（本地与跨文件）。未知关键字忽略，保证前向兼容。
+// if/then/else/not/$ref（本地与跨文件，$ref 基准文档随引用切换）。未知关键字忽略，保证前向兼容。
 public sealed class JsonSchemaValidator
 {
     private readonly JObject _root;
@@ -38,7 +38,7 @@ public sealed class JsonSchemaValidator
     public IReadOnlyList<SchemaViolation> Validate(JToken instance)
     {
         var errors = new List<SchemaViolation>();
-        ValidateAgainst(instance, _root, "$", errors);
+        ValidateAgainst(instance, _root, _root, "$", errors);
         return errors;
     }
 
@@ -56,19 +56,23 @@ public sealed class JsonSchemaValidator
         {
             var value = token.Value<double>();
             if (double.IsNaN(value) || double.IsInfinity(value))
-                violations.Add(new SchemaViolation(token.Path, "非法数值 NaN/Infinity：协议禁止非有限数。"));
+            {
+                var path = token.Path.Length == 0 ? "$" : "$." + token.Path;
+                violations.Add(new SchemaViolation(path, "非法数值 NaN/Infinity：协议禁止非有限数。"));
+            }
         }
         foreach (var child in token.Children())
             CollectNonFinite(child, violations);
     }
 
-    private void ValidateAgainst(JToken token, JToken schemaToken, string path, List<SchemaViolation> errors)
+    private void ValidateAgainst(JToken token, JToken schemaToken, JObject baseRoot, string path, List<SchemaViolation> errors)
     {
         if (schemaToken is not JObject schema) return;
 
         if (schema["$ref"] is JValue reference && reference.Value<string>() is { Length: > 0 } target)
         {
-            ValidateAgainst(token, ResolveRef(target), path, errors);
+            var resolved = ResolveRef(target, baseRoot);
+            ValidateAgainst(token, resolved.Schema, resolved.Base, path, errors);
             return;
         }
 
@@ -112,17 +116,17 @@ public sealed class JsonSchemaValidator
                 ValidateString(token, schema, path, errors);
                 break;
             case JTokenType.Array:
-                ValidateArray(token, schema, path, errors);
+                ValidateArray(token, schema, baseRoot, path, errors);
                 break;
             case JTokenType.Object:
-                ValidateObject(token, schema, path, errors);
+                ValidateObject(token, schema, baseRoot, path, errors);
                 break;
         }
 
         if (schema["not"] is JObject notSchema)
         {
             var branch = new List<SchemaViolation>();
-            ValidateAgainst(token, notSchema, path, branch);
+            ValidateAgainst(token, notSchema, baseRoot, path, branch);
             if (branch.Count == 0)
                 errors.Add(new SchemaViolation(path, "值命中 not 禁止的模式。"));
         }
@@ -130,10 +134,10 @@ public sealed class JsonSchemaValidator
         if (schema["if"] is JObject ifSchema)
         {
             var condition = new List<SchemaViolation>();
-            ValidateAgainst(token, ifSchema, path, condition);
+            ValidateAgainst(token, ifSchema, baseRoot, path, condition);
             var branch = condition.Count == 0 ? schema["then"] : schema["else"];
             if (branch != null)
-                ValidateAgainst(token, branch, path, errors);
+                ValidateAgainst(token, branch, baseRoot, path, errors);
         }
     }
 
@@ -232,7 +236,7 @@ public sealed class JsonSchemaValidator
             errors.Add(new SchemaViolation(path, "字符串不匹配模式 " + pattern.Value<string>() + "。"));
     }
 
-    private void ValidateArray(JToken token, JObject schema, string path, List<SchemaViolation> errors)
+    private void ValidateArray(JToken token, JObject schema, JObject baseRoot, string path, List<SchemaViolation> errors)
     {
         var array = (JArray)token;
         if (schema["minItems"] is JValue minItems && array.Count < minItems.Value<int>())
@@ -240,11 +244,11 @@ public sealed class JsonSchemaValidator
         if (schema["items"] is JToken items)
         {
             for (var index = 0; index < array.Count; index++)
-                ValidateAgainst(array[index], items, path + "[" + index.ToString(CultureInfo.InvariantCulture) + "]", errors);
+                ValidateAgainst(array[index], items, baseRoot, path + "[" + index.ToString(CultureInfo.InvariantCulture) + "]", errors);
         }
     }
 
-    private void ValidateObject(JToken token, JObject schema, string path, List<SchemaViolation> errors)
+    private void ValidateObject(JToken token, JObject schema, JObject baseRoot, string path, List<SchemaViolation> errors)
     {
         var obj = (JObject)token;
         var properties = schema["properties"] as JObject;
@@ -263,7 +267,7 @@ public sealed class JsonSchemaValidator
             {
                 var child = obj[property.Key];
                 if (child != null)
-                    ValidateAgainst(child, property.Value!, path + "." + property.Key, errors);
+                    ValidateAgainst(child, property.Value!, baseRoot, path + "." + property.Key, errors);
             }
         }
         if (schema["additionalProperties"] is JValue additional && !additional.Value<bool>())
@@ -276,13 +280,14 @@ public sealed class JsonSchemaValidator
         }
     }
 
-    private JToken ResolveRef(string reference)
+    private (JToken Schema, JObject Base) ResolveRef(string reference, JObject baseRoot)
     {
         var separator = reference.IndexOf('#');
         var file = separator < 0 ? reference : reference.Substring(0, separator);
         var pointer = separator < 0 ? string.Empty : reference.Substring(separator + 1);
-        var node = (JToken)(file.Length == 0 ? _root : _refResolver(file));
-        if (pointer.Length == 0) return node;
+        var root = file.Length == 0 ? baseRoot : _refResolver(file);
+        var node = (JToken)root;
+        if (pointer.Length == 0) return (node, root);
         foreach (var raw in pointer.TrimStart('/').Split('/'))
         {
             var segment = raw.Replace("~1", "/").Replace("~0", "~");
@@ -290,6 +295,6 @@ public sealed class JsonSchemaValidator
                 throw new InvalidOperationException("无法解析 Schema $ref：" + reference);
             node = current[segment]!;
         }
-        return node;
+        return (node, root);
     }
 }

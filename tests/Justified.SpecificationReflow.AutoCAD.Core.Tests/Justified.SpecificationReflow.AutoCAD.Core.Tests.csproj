@@ -9,4 +9,7 @@
     <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.LayoutEngine/Justified.SpecificationReflow.AutoCAD.LayoutEngine.csproj" />
     <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.Standards/Justified.SpecificationReflow.AutoCAD.Standards.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Fixtures/*.json" />
+  </ItemGroup>
 </Project>

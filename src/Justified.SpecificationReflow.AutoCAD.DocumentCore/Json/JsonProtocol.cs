@@ -101,7 +101,8 @@ public sealed class JsonProtocol
     private static string Save<T>(T value, JsonSchemaValidator validator)
         where T : class
     {
-        var token = JToken.FromObject(value, CreateSerializer());
+        // 走完整序列化管线（TimeSpan 等需要转换器路径），再解析回 JToken 做禁止项与 Schema 校验。
+        var token = JToken.Parse(JsonConvert.SerializeObject(value, ProtocolSerializerSettings.Default));
         foreach (var violation in JsonSchemaValidator.FindNonFiniteNumbers(token))
         {
             throw new InvalidOperationException("序列化禁止 NaN/Infinity：" + violation);
