@@ -1,10 +1,10 @@
 # 开发与交接指南
 
 ## 接续任务
-先读 AGENTS.md、TASKS.md、ARCHITECTURE.md 及对应日志；检查 git status。
-从已检查的 main 创建 task/<编号>-<简称> 分支，更新领取状态。
-不要提交或清理他人的改动；中断时提交本任务 checkpoint 并保留任务分支。
-并行任务用 git worktree add，集成前重新检查共享契约和相关测试。
+固定开发、验收和短指令语义见 [WORKFLOW](WORKFLOW.md)；当前唯一下一任务见 [NEXT_AGENT](NEXT_AGENT.md)。
+先检查Git状态，再按AGENTS规定读取入口；领取一个小任务，开发→检查→记录→提交→固定模板交付。用户回复“继续下一步”时按接续状态直接执行，无需重新规划。
+默认从已验收main开task分支；当前T07依赖T06的先行开发按NEXT_AGENT记录的已提交基线建立分支，不把未验收祖先直接合入main。
+不清理他人改动；中断保存checkpoint并更新接续。并行仅在明确授权且使用独立worktree时进行。
 
 ## 构建入口
 在仓库根目录运行 Windows PowerShell：
