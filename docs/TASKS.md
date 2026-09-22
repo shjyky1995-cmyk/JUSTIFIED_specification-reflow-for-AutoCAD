@@ -2,7 +2,7 @@
 默认按大阶段连续推进：排版引擎（T07+T08）→落图闭环（T09+T10）→完善验收（T06剩余项+T11+T12）。T编号用于内部追踪，不要求用户逐个小步确认。固定交付/验收按 [WORKFLOW](WORKFLOW.md)，唯一下一步读 [NEXT_AGENT](NEXT_AGENT.md)。任务范围不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前任务：阶段2 Word→CAD 闭环重试，T09 与 T10 均为待验收（分支 task/T09-dbtext，继承未验收 T06/T07/T08，未合入 main）。用户已授权 Agent 代测；新 AutoCAD 实例已准备好，当前被未签名 DLL 的安全提示阻塞，需用户亲自点“加载一次”，之后由 Agent 继续 DN_NOTE。见 [交接](NEXT_AGENT.md)。
+当前任务：阶段2 Word→CAD 闭环重试，T09 与 T10 均为待验收（分支 task/T09-dbtext，继承未验收 T06/T07/T08，未合入 main）。Agent 已完成真实宿主重试：生成、重复生成、单次撤销、UCS/比例、上下标阻断和取消检查通过；继续实现一次设置与单次点选，并衔接阶段3。见 [交接](NEXT_AGENT.md)。
 远程：[GitHub 私有仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)。M0 验收基线标签：m0-foundation；合并、推送结果通过 Git 查看。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |
