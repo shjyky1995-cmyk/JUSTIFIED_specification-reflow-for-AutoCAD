@@ -1,0 +1,19 @@
+{
+  "classification": "draft",
+  "standardId": "jsr-note",
+  "version": "1.0.0",
+  "fontProfile": { "fonts": [{ "family": "TSSD", "fileIdentity": "tssdeng.shx", "bigFont": "tssdchn.shx" }] },
+  "textHeight": 4.5,
+  "widthFactor": 0.75,
+  "obliqueAngle": 0,
+  "rowPitch": 7.2,
+  "styles": {
+    "heading1": { "fontRef": "TSSD", "indent": 0, "hangingIndent": 0, "beforeSlots": 0, "afterSlots": 0 },
+    "heading2": { "fontRef": "TSSD", "indent": 0, "hangingIndent": 0, "beforeSlots": 0, "afterSlots": 0 },
+    "body": { "fontRef": "TSSD", "indent": 0, "hangingIndent": 0, "beforeSlots": 0, "afterSlots": 0 }
+  },
+  "layerPolicy": { "layerName": "JSR_NOTE_TEXT" },
+  "symbolMapVersion": "pending",
+  "lineBreakRuleVersion": "pending",
+  "measurementTolerance": null
+}

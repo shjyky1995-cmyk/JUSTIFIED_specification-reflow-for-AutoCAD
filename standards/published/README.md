@@ -1,5 +1,6 @@
-# 正式院标与模板
+# 正式项目标准与模板
 
-这里只放已经标定、classification 为 production 的院标和模板。
-当前 CAL-02～CAL-07 仍是 pending，目录里没有可发布的 json。
-测试夹具放在测试工程中，并标明 test-fixture，不能复制到这里。
+这里只放完成发布校验、classification 为 production 的标准包和模板。
+文字格式已按用户授权制定，见 [项目格式 V1](../../docs/TEXT_FORMAT_V1.md)；不再等待完整外部院标。
+当前尚缺模板几何、特殊字符、上下标及实际打印等验证，目录没有可发布的 JSON。规则已定不等于验证通过。
+测试夹具放在测试工程中并标明 test-fixture，不能复制到这里当生产配置。
