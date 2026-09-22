@@ -42,3 +42,5 @@ T06 标定可与独立解析任务准备资料，但默认不启动并行 Agent�
 2026-09-22 操作要求变更：设计人员正式流程改为设一次标准与单位，之后一键点选生成。PRD 3.3 已改。现有 DN_NOTE 多步提问只保留为开发核对，尚未收成正式命令。
 
 2026-09-22 正式入口接续：PRD3.3 的一键两步已落地——DN_NOTE_SET 把 production 包、图幅、单位比例和说明文档写进当前图（JSR_NOTE_SETTINGS 字典），DN_NOTE 日常只点一次位置；原多步命令更名 DN_NOTE_DEV 留作开发核对，正式命令不接受草案包。生成限额与本地运行报告已实现（T11 起步）。核心测试双框架 131/131、插件编译 0 警告。宿主图面证据未取得（Core Console 拒绝未签名插件，需 GUI 点一次“加载一次”），脚本与本机生产测试包在 artifacts/cad-retry-note3/。T10/T11 仍待验收，不合 main。
+
+2026-09-22 正式命令宿主验证：T10 的 DN_NOTE_SET+DN_NOTE 在真实 AutoCAD 2021 通过（computer-use 驱动独立实例，代点一次“加载一次”）。修复 DrawingSettingsStore 首次写入 eKeyNotFound（216478a）。证据：6 个 DBText 属性正确、一次 U 零残留、平移(100,50)与 UCS 转换正确、报告 JSON 3 份、拒绝路径（无设置/草案包/A2/上下标）与 DEV 回归（含比例2）全部按预期，均在 artifacts/cad-retry-note3/。T10 待用户确认；T11 进行中（限额与报告已实现，性能/离线包未做）；不合 main。

@@ -1,23 +1,23 @@
 # 当前接续状态（所有 Agent 共用）
 
-更新：2026-09-22 16:00。PRD3.3 正式一键两步已实现并通过核心检查，宿主图面证据未取得。分支task/T09-dbtext，继承未验收T06/T07/T08，不合main、不打标签、不推送。
+更新：2026-09-22 17:50。PRD3.3 正式一键两步已通过真实宿主验证（含一个 bug 修复），进入阶段3剩余项。分支task/T09-dbtext，继承未验收T06/T07/T08，不合main、不打标签、不推送。
 
 ## 已有证据
 
-- 核心测试net8.0/net48各131/131，0警告、0错误；插件编译0警告。新增14个测试：设置Base64分块往返与损坏拒绝、Problems自检、MaxBlocks/Characters/Pages/Texts四个限额触发点、限额内正常生成、无限额兼容旧行为、运行报告字段（耗时/页数/对象数/包围盒/告警）、模板枚举与取消。
-- Core Console（accoreconsole）拒绝加载未签名插件（SECURELOAD，无GUI无法点“加载一次”），宿主验证必须走GUI实例。
-- 本机生产测试包与脚本已备：artifacts/cad-retry-note3/published/（classification=production，从drafts派生，仅本机不入库）、note3-main.scr（设置→生成→U撤销→平移生成→UCS原点(100,200)+Z旋转90°比例2）、note3-nosetting.scr（无设置拒绝、草案目录拒绝、A2无模板拒绝、DN_NOTE_DEV回归）、plugin/（新构建DLL，SHA256前8位8d07e572，提交1c2e536）。DN_NOTE 在点选前完成设置、文档、生产包id/version与字体检查。
+- 修复：DrawingSettingsStore 首次写入抛 eKeyNotFound（DBDictionary.GetAt 键不存在时抛异常），改为 Contains 预检。提交 216478a，插件 DLL SHA256 前 8 位 cbf99922。
+- 核心测试 net8.0/net48 各 131/131，0 警告、0 错误；插件编译 0 警告。
+- 真实宿主（computer-use 驱动独立 acad.exe /b 实例，未签名的 PluginHost.dll 代点一次“加载一次”，未改 SECURELOAD、未碰用户实例）：DN_NOTE_SET_OK 写入图内设置；DN_NOTE 一键生成 6 个 DBText（TEXT/AcDbText、字高4.5、宽度0.75、旋转0、图层 JSR_NOTE_TEXT、版本化样式、行距7.2、首行(-710,-6.2)）；一次 U 撤销零残留；第二次锚点(100,50)6 个实体全平移(+100,+50)只追加；UCS 原点(100,200)+Z旋转90°输入(10,20)→WCS(80,210)坐标正确；运行报告 3 份 JSON（耗时约790ms）。
+- 拒绝路径全部按预期：无设置图 DN_NOTE_SET_REQUIRED 零新增；草案目录/A2 无模板被正式命令拒绝；DN_NOTE_DEV 上下标样本 E_TEMPLATE_INVALID 零新增；DN_NOTE_DEV 回归正常（比例2 字高9、坐标×2）。证据在 artifacts/cad-retry-note3/（日志为宿主 GBK）。
+- 未覆盖：Escape 点选取消（脚本无法表达，逻辑与 T10 旧命令同路径）；打印/字形未验收；正式命令比例来自设置（PRD3.3），比例2 由 DEV 复验。
 
 ## 当前工作
 
-用户在独立AutoCAD 2021实例NETLOAD artifacts/cad-retry-note3/plugin/Justified.SpecificationReflow.AutoCAD.PluginHost.dll，安全提示亲自点“加载一次”；SCRIPT运行note3-main.scr与note3-nosetting.scr。Agent据日志、实体快照（first/second/undo/ucs-scale-entities.txt）、报告JSON核对：正式DN_NOTE生成6个DBText、一次U恢复、平移(100,50)正确、UCS比例2坐标正确、无设置与草案包被拒、DN_NOTE_DEV仍可用。核对通过则修复发现的问题或转入阶段3剩余（T06打印/上下标、T11性能与离线包、T12外机验收）。
+T10 宿主证据已取得，待用户确认后登记。下一动作进入阶段3剩余：T06 完整真实字符/上下标与打印验收、T11 冷/热性能与离线包、T12 三图幅业务样本与外机验收。本机 production 测试包（artifacts/cad-retry-note3/published）不是发布资产；standards/published 仍为空，正式发布前需真实标定资产。
 
 ## 用户待办及恢复
 
-1. 开新独立AutoCAD 2021（空白Drawing1），NETLOAD上述DLL，安全提示点“加载一次”。Agent不得改安全设置、不得搬移DLL绕过。
-2. 命令行SCRIPT选note3-main.scr，再SCRIPT note3-nosetting.scr。FILEDIA已在脚本内置0。
-3. 完成后回复结果；日志在artifacts/cad-retry-note3/（*.log为宿主日志）。
+当前无需用户操作。若需继续宿主核对：新开独立实例，NETLOAD artifacts/cad-retry-note3/plugin/Justified.SpecificationReflow.AutoCAD.PluginHost.dll（SHA256 前 8 位 cbf99922），安全提示点“加载一次”，SCRIPT 运行 artifacts/cad-retry-note3/note3-main.scr 与 note3-nosetting.scr（脚本内已含 NETLOAD，注意 AutoCAD 脚本遇未知命令会中止、NETLOAD 命令行模式循环提示）。
 
 ## 未完成
 
-T06完整真实字符/上下标与打印；T09/T10完整正式流程验收（即本次宿主核对）；T11性能/冷热/离线包；T12三图幅业务样本、外机、打印和专业核验。草案pending/null/uncalibrated保持；本机production测试包不是发布资产，standards/published仍为空。不得把本次小样本通过视作正式发布通过。
+T06完整真实字符/上下标与打印；T10 用户确认；T11性能/离线包/部署文档；T12三图幅业务样本、外机、打印和专业核验。草案pending/null/uncalibrated保持。不得把小样本通过视作正式发布通过。
