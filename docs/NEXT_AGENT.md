@@ -6,8 +6,8 @@
 
 - 阶段2 代码检查完成，T09、T10 待验收。T06、T07、T08 仍待验收，未合入 main。
 - 分支 task/T09-dbtext。提交用 `git log --grep="(T09)"` 和 `git log --grep="(T10)"`。
-- 可加载目录：artifacts/dn-note。旧的 PluginHost/bin 当时被正在运行的 AutoCAD 锁住，不要 NETLOAD 那份旧 DLL。
-- 用户待办：按「测试文件/开始测试.md」退出 AutoCAD 后重新打开，NETLOAD 新 DLL，对「示例-单行说明.docx」执行 DN_NOTE。不要用「新块.dwg」，也不要改 SECURELOAD。
+- 可加载目录：artifacts/dn-note-2。artifacts/dn-note 是第一次失败的程序，不要再加载。
+- 用户待办：完全退出 AutoCAD 后重新打开，NETLOAD artifacts/dn-note-2 里的 PluginHost.dll，用同一份「示例-单行说明.docx」再执行 DN_NOTE。不要改 SECURELOAD。
 
 ## 怎样算这次人工检查通过
 

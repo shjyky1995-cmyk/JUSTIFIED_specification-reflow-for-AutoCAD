@@ -40,24 +40,21 @@ public sealed class DbTextWriter
                     var styleId = EnsureStyle(database, transaction, text, styles, out var styleError);
                     if (styleError != null) return Report(false, 0, 0, styleError);
 
+                    // 左对齐、基线对齐只用 Position。设置 AlignmentPoint 或 AdjustAlignment 会在 2021 上抛 eInvalidInput。
                     var entity = new DBText();
                     entity.SetDatabaseDefaults(database);
-                    entity.LayerId = layerId;
                     entity.TextStyleId = styleId;
-                    entity.TextString = text.Text;
+                    entity.LayerId = layerId;
                     entity.Height = text.Height;
                     entity.WidthFactor = text.WidthFactor;
                     entity.Oblique = text.ObliqueDegrees * Math.PI / 180.0;
                     entity.Rotation = 0;
-                    entity.Color = Color.FromColorIndex(ColorMethod.ByLayer, 256);
-                    var point = new Point3d(text.Position.X, text.Position.Y, elevation);
+                    entity.Position = new Point3d(text.Position.X, text.Position.Y, elevation);
                     entity.HorizontalMode = TextHorizontalMode.TextLeft;
                     entity.VerticalMode = TextVerticalMode.TextBase;
-                    entity.Position = point;
-                    entity.AlignmentPoint = point;
+                    entity.TextString = text.Text;
                     space.AppendEntity(entity);
                     transaction.AddNewlyCreatedDBObject(entity, true);
-                    entity.AdjustAlignment(database);
                     pages.Add(text.PageIndex);
                     written++;
                 }
@@ -68,7 +65,7 @@ public sealed class DbTextWriter
             }
             catch (System.Exception error)
             {
-                return Report(false, 0, 0, Problem(DiagnosticCodes.ERenderFailed, "写入单行文字失败：" + error.GetType().Name + "。本次没有提交。"));
+                return Report(false, 0, 0, Problem(DiagnosticCodes.ERenderFailed, "写入单行文字失败：" + Describe(error) + "。本次没有提交。"));
             }
         }
     }
@@ -157,8 +154,8 @@ public sealed class DbTextWriter
         var created = new TextStyleTableRecord
         {
             Name = text.StyleName,
-            FileName = fontPath,
-            BigFontFileName = bigPath,
+            FileName = text.FontFile,
+            BigFontFileName = string.IsNullOrWhiteSpace(text.BigFont) ? string.Empty : text.BigFont,
             TextSize = 0,
             XScale = 1,
             ObliquingAngle = 0
@@ -183,6 +180,13 @@ public sealed class DbTextWriter
         {
             return false;
         }
+    }
+
+    private static string Describe(System.Exception error)
+    {
+        var acad = error as Autodesk.AutoCAD.Runtime.Exception;
+        if (acad != null) return acad.ErrorStatus + " " + acad.Message;
+        return error.GetType().Name + ": " + error.Message;
     }
 
     private static bool SameFont(string existing, string expected)
