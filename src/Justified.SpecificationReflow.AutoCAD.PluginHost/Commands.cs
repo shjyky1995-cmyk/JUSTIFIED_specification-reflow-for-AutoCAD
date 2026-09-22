@@ -39,7 +39,7 @@ public class Commands
                     throw new InvalidOperationException("Dependency version mismatch: " + assembly.FullName);
                 editor.WriteMessage("\nDN_DEP " + assembly.GetName().Name + " " + assembly.GetName().Version);
             }
-            editor.WriteMessage("\nDN_DIAG_OK: M0 dependency load only; production generation unavailable.\n");
+            editor.WriteMessage("\nDN_DIAG_OK: 依赖已加载。生成命令是 DN_NOTE。草案不是已发布院标。\n");
         }
         catch (System.Exception error)
         {
