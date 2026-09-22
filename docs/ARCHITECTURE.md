@@ -55,3 +55,5 @@ T10/T11 已交付（ADR-010 落地）：Contracts 增加 `NoteSettings`（工程
 - ADR-009：2026-09-22 用户明确由项目制定完整院标，支持多套机构/个人标准独立配置与修改。沿用 IStandardProvider/ILayoutTemplateProvider，以独立ID、版本和standardRef隔离；一次生成显式选择匹配组合。当前套采用A1/A2三栏、A3两栏，字体大小不随图幅变化，配置规则见 PAPER_TEMPLATES_V1.md。本次不改变共享协议、依赖方向或技术栈。
 
 - ADR-010：2026-09-22 用户要求设计人员的正式操作接近一键。ADR-009 里的「显式选择」改为工程或当前图设定一次并记住，日常生成不再重问。仍禁止按文件名或旧图样式偷偷换标准，未知单位不猜。不新增模板编辑器，不改变共享协议、依赖方向或技术栈。当前多步命令只留作开发核对。
+
+T06 已交付（2026-09-22 范围调整后）：Contracts 增加 `ScriptCalibration`（上下标标定 Problems 校验与 Apply：缩放字高+基线偏移，项目制定 0.7/0.35/0.7/0.2）与 `FontGlyphCoverage`（按字体身份的实测缺失字形清单，命中即 E_FONT_MISSING 阻断，不落问号）；LayoutEngine 按 run 语义把视觉行拆成多个 RenderRun（普通/上标/下标各一个 DBText 段），段宽按缩放字高实测、基线偏移按标定，整行宽度按正文字高保守测量；NotePlacement 落 BaselineOffset 坐标；DraftSessionLoader 内存补齐上下标字段，PackageValidator 发布时要求齐全。不改变依赖方向或技术栈；缺失字形清单属实测证据，随字体资产版本重新标定。
