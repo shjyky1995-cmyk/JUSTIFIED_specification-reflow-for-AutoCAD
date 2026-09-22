@@ -39,6 +39,8 @@ M0 仅提供构建边界及技术诊断，不以占位返回值伪造业务接�
 
 T03 已交付：上述契约与 7 个 Active 端口冻结于 Contracts；schemas/ 提供 document、layout-result、render-request 三份 draft-07 Schema，由 DocumentCore 嵌入校验，未知主版本/块类型以 E_SCHEMA_VERSION 拒绝、其余协议违例以 E_SCHEMA_INVALID 拒绝，往返测试覆盖 AC-04。院标与 Layout Template 的 JSON Schema 及发布校验随 T06 标定资产落地（PRD 5.3 示例刻意不是可运行配置）。
 
+T10/T11 已交付（ADR-010 落地）：Contracts 增加 `NoteSettings`（工程设置快照：包根目录、标准与模板 id/version、图幅、单位比例、说明文档、可选报告目录）与 `GenerationLimits`（单次生成资源上限）；AutoCadAdapter 增加 `DrawingSettingsStore`，把设置的 Base64 分块 JSON 存进当前图 JSR_NOTE_SETTINGS 命名字典，跟随图纸走；Application 的 `NoteGenerationService` 增加限额检查点（E_RESOURCE_LIMIT，不截断）与 `NoteRunReportBuilder` 本地运行报告；Standards 的 `DirectoryPackageCatalog` 增加 `ListTemplates` 摘要枚举，`NoteSettingsCodec` 负责编解码。正式入口为 `DN_NOTE_SET`（设一次，只接受 classification=production 的包）+ `DN_NOTE`（日常点一次位置）；原多步命令更名 `DN_NOTE_DEV` 留作开发核对，仍走草案内存补齐。不改变依赖方向或技术栈；限额与报告不写入共享 Schema。
+
 ## 已确认决策
 - ADR-001：首版只承诺 AutoCAD 2021，其他版本必须单独验证。
 - ADR-002：分层单仓库，本地生成不依赖网络或服务。

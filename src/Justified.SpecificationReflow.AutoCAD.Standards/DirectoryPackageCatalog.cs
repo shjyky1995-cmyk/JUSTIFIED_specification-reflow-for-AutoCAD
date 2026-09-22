@@ -53,6 +53,51 @@ public sealed class DirectoryPackageCatalog : IStandardProvider, ILayoutTemplate
         return new TemplateLoadResult(HasError(diagnostics) ? null : template, diagnostics);
     }
 
+    // 扫 templates/<id>/<version>.json，做宽摘要。设置命令据此挑选，选中后仍要走 Load 的发布校验。
+    public TemplateListResult ListTemplates(CancellationToken cancellationToken)
+    {
+        var result = new TemplateListResult();
+        var root = Path.Combine(_root, "templates");
+        if (cancellationToken.IsCancellationRequested)
+        {
+            result.Diagnostics.Add(Cancelled("读取模板列表已取消。"));
+            return result;
+        }
+
+        if (!Directory.Exists(root))
+        {
+            result.Diagnostics.Add(Error("找不到模板目录 " + root + "。", "templates"));
+            return result;
+        }
+
+        foreach (var path in Directory.GetFiles(root, "*.json", SearchOption.AllDirectories))
+        {
+            try
+            {
+                var parsed = JToken.Parse(File.ReadAllText(path));
+                if (parsed is not JObject token) continue;
+                result.Templates.Add(new TemplateSummary
+                {
+                    TemplateId = token["templateId"]?.Type == JTokenType.String ? token.Value<string>("templateId") ?? string.Empty : string.Empty,
+                    Version = token["version"]?.Type == JTokenType.String ? token.Value<string>("version") ?? string.Empty : string.Empty,
+                    PaperCode = token["paperCode"]?.Type == JTokenType.String ? token.Value<string>("paperCode") ?? string.Empty : string.Empty,
+                    DisciplineCode = token["disciplineCode"]?.Type == JTokenType.String ? token.Value<string>("disciplineCode") ?? string.Empty : string.Empty,
+                    Classification = token["classification"]?.Type == JTokenType.String ? token.Value<string>("classification") ?? string.Empty : string.Empty,
+                    Calibrated = token["status"]?.Type == JTokenType.String
+                        && string.Equals(token.Value<string>("status"), "calibrated", StringComparison.OrdinalIgnoreCase),
+                    FilePath = path
+                });
+            }
+            catch (Exception error) when (error is IOException || error is JsonException)
+            {
+                result.Diagnostics.Add(Invalid(path, error.Message));
+            }
+        }
+
+        result.Templates.Sort((left, right) => string.CompareOrdinal(left.FilePath, right.FilePath));
+        return result;
+    }
+
     private InstitutionStandard? ReadStandard(string path, List<Diagnostic> diagnostics)
     {
         if (!TryReadObject(path, diagnostics, out var token)) return null;

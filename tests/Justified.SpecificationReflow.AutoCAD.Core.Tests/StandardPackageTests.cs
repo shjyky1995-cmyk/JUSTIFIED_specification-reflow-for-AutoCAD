@@ -170,6 +170,32 @@ public class StandardPackageTests
         Assert.That(validator.ValidateTemplate(a1, standard).Any(item => item.Details!["path"] == "columns"), Is.True);
     }
 
+    [Test]
+    public void ListTemplatesSummarizesEveryPackageAndFailsWithoutDirectory()
+    {
+        using var stage = new PackageStage();
+        var catalog = new DirectoryPackageCatalog(stage.Root, allowTestFixtures: false);
+        var list = catalog.ListTemplates(CancellationToken.None);
+        Assert.That(list.Diagnostics, Is.Empty);
+        var only = list.Templates.Single();
+        Assert.That(only.TemplateId, Is.EqualTo("test-A1"));
+        Assert.That(only.Version, Is.EqualTo("test-1"));
+        Assert.That(only.PaperCode, Is.EqualTo("A1"));
+        Assert.That(only.DisciplineCode, Is.EqualTo("structure"));
+        Assert.That(only.Classification, Is.EqualTo("test-fixture"));
+        Assert.That(only.Calibrated, Is.True);
+        Assert.That(only.FilePath, Is.EqualTo(stage.TemplatePath));
+
+        var missingRoot = Path.Combine(Path.GetTempPath(), "jsr-missing-" + Guid.NewGuid().ToString("N"));
+        var empty = new DirectoryPackageCatalog(missingRoot, allowTestFixtures: false).ListTemplates(CancellationToken.None);
+        Assert.That(empty.Templates, Is.Empty);
+        Assert.That(empty.Diagnostics.Single().Severity, Is.EqualTo(Severity.Error));
+
+        var cancelled = catalog.ListTemplates(new CancellationToken(true));
+        Assert.That(cancelled.Templates, Is.Empty);
+        Assert.That(cancelled.Diagnostics.Single().Code, Is.EqualTo(DiagnosticCodes.Cancelled));
+    }
+
     private static LayoutTemplate CopyPaper(LayoutTemplate source, PaperCode paper, ColumnGeometry[] columns)
     {
         return new LayoutTemplate
