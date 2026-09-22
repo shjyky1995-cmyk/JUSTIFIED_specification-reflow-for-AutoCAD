@@ -8,8 +8,8 @@ CAL 完成需记录样本身份/hash、值、单位、验证证据、复核人�
 | CAL-01 | CAD/位数/OS/空间/单位 | 本机 AutoCAD 2021 24.0.47.0、Windows x64；2026-09-22 手工 NETLOAD 与 DN_DIAG 通过；空间单位和外机验收待补 | pending |
 | CAL-02 | 字体/大字体/字高/宽度/倾角/图层 | 字体身份已读取；项目规则已定：tssdeng+tssdchn、4.5 mm、0.75、0°、JSR_NOTE_TEXT；输出/打印待验 | 规则已定，验证 pending |
 | CAL-03 | 标题正文编号缩进/行距 | 项目规则已定：统一字高、7.2 mm 行距、首行/续行起点 0、编号内联两个半角空格、标题无额外槽 | 规则已定，验证 pending |
-| CAL-04 | A1/A2/A3 栏与边界 | A1 三栏测试规则已制定，见 A1_TEST_TEMPLATE_V1.md；A2/A3 后续制定 | A1 规则已定，验证 pending |
-| CAL-05 | 多页方向/间距/图框 | A1 测试采用向右861 mm、framePolicy=none，属于项目决策 | 规则已定，验证 pending |
+| CAL-04 | A1/A2/A3 栏与边界 | 三图幅规则已制定：A1/A2三栏、A3两栏，见 PAPER_TEMPLATES_V1.md | 规则已定，验证 pending |
+| CAL-05 | 多页方向/间距/图框 | A1/A2/A3向右步长861/614/440 mm，framePolicy=none，属于项目决策 | 规则已定，验证 pending |
 | CAL-06 | Word/WPS 样式与编号 | 两编辑器同义脱敏 DOCX 待提供 | pending |
 | CAL-07 | 字符/上下标/公差 | 字符清单、20～50 句、图面打印核验待补 | pending |
 | CAL-08 | 性能/硬件/取消 | 基准样本、硬件信息和最终门槛待补 | pending |

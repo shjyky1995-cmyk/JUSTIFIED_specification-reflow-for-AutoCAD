@@ -135,7 +135,7 @@ heading3/table/image 等不在 V1 支持集，预留 discriminated block 扩展�
 
 ### 5.3 Institution Standard 与 Layout Template
 
-2026-09-22 用户授权补充：本项目不要求复刻完整院标；沿用已确认的字体组合，其余文字格式由项目制定。[项目说明文字格式 V1.0](docs/TEXT_FORMAT_V1.md) 为字体、统一字高、行距和缩进的实施依据。本节 Institution Standard 保留既有名称与契约，含义为项目固定标准；已制定参数与尚未完成的宿主/打印验证须分开记录。此补充不扩大 V1 功能范围。
+2026-09-22 用户授权补充：本项目不要求复刻完整院标；沿用已确认的字体组合，其余文字格式由项目制定。[项目说明文字格式 V1.0](docs/TEXT_FORMAT_V1.md) 为字体、统一字高、行距和缩进的实施依据。项目主动制定完整标准，允许多套机构/个人标准以独立 ID 和版本并存、选择、修改；格式与图幅模板是独立配置入口。当前套 A1/A2 三栏、A3 两栏，字高不随图幅变化，详见 [三图幅模板](docs/PAPER_TEMPLATES_V1.md)。本节 Institution Standard 保留既有名称与契约，含义为项目固定标准；已制定参数与尚未完成的宿主/打印验证须分开记录。此补充不扩大 V1 功能范围。
 
 
 院标最低字段：standardId、version、fontProfile、textHeight、widthFactor、obliqueAngle、rowPitch、styles、layerPolicy、symbolMapVersion、lineBreakRuleVersion、measurementTolerance。fontProfile 记录字体种类、文件身份及必要大字体；styles 定义 heading1/heading2/body 的字体引用、缩进和编号悬挂缩进。三者字高必须相同，标题 beforeSlots/afterSlots 必须为 0。

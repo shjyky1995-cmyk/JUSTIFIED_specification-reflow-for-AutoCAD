@@ -49,3 +49,5 @@ T03 已交付：上述契约与 7 个 Active 端口冻结于 Contracts；schemas
 - ADR-007：2026-09-22 用户指定正式项目名与 GitHub 仓库一致，不再使用临时 DesignNote 产品名；原 PRD 文件名保留以维护来源。
 
 - ADR-008：2026-09-22 用户授权自行统一文字格式，不再等待完整院标；以 [项目格式 V1](TEXT_FORMAT_V1.md) 为实施依据。保留 InstitutionStandard 契约和既有分层，仅更新参数来源与业务规则；宿主/打印验收仍独立完成。
+
+- ADR-009：2026-09-22 用户明确由项目制定完整院标，支持多套机构/个人标准独立配置与修改。沿用 IStandardProvider/ILayoutTemplateProvider，以独立ID、版本和standardRef隔离；一次生成显式选择匹配组合。当前套采用A1/A2三栏、A3两栏，字体大小不随图幅变化，配置规则见 PAPER_TEMPLATES_V1.md。本次不改变共享协议、依赖方向或技术栈。
