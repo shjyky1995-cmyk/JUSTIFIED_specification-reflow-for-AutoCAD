@@ -1,27 +1,49 @@
 # 当前接续状态（所有 Agent 共用）
 
-更新：2026-09-22。阶段2 已交付。用户要在空白图里执行 DN_NOTE，并把命令行全文发回。不要合入 main。
+更新：2026-09-22。阶段2 还差一次图面重试。不要开始阶段3，不要合入 main。
+
+## 现在做哪一步
+
+用户已在空白图跑过一次 `DN_NOTE`。排版和坐标正确，写入 DBText 失败并已回滚。修复在 `a46c5b2`，新程序在 `artifacts/dn-note-2`。下一动作只是让用户退出 AutoCAD、加载这个新目录、用同一份样本再跑一次，并把命令行全文发回。
+
+本对话如果还开着，就在本对话收这次结果。新开对话时，只读本文件、`docs/TASKS.md`、`docs/devlog/T10.md` 末尾，不要重做 T07–T10，也不要根据聊天记忆改坐标公式。
 
 ## 当前状态
 
-- 阶段2 代码检查完成，T09、T10 待验收。T06、T07、T08 仍待验收，未合入 main。
-- 分支 task/T09-dbtext。提交用 `git log --grep="(T09)"` 和 `git log --grep="(T10)"`。
-- 可加载目录：artifacts/dn-note-2。artifacts/dn-note 是第一次失败的程序，不要再加载。
-- 用户待办：完全退出 AutoCAD 后重新打开，NETLOAD artifacts/dn-note-2 里的 PluginHost.dll，用同一份「示例-单行说明.docx」再执行 DN_NOTE。不要改 SECURELOAD。
+- 分支 `task/T09-dbtext`，工作区应干净。最新提交 `a46c5b2` `fix(T10): 左对齐文字不再设置对齐点`。其上是 `0c41799`、`e11101c`。
+- T09、T10 待验收。T06、T07、T08 仍待验收。整条分支继承未验收的 T06，禁止合入 main，禁止打阶段标签，禁止推送。
+- 可加载目录只认 `artifacts/dn-note-2/Justified.SpecificationReflow.AutoCAD.PluginHost.dll`。`artifacts/dn-note` 是会写入失败的旧构建。`src/.../PluginHost/bin/Release/net48` 曾被正在运行的 AutoCAD 锁住，里面也可能是旧文件。
+- 核心测试在修复前为 net8.0 与 net48 各 117/117。这次修复只改了写入方式，没有再跑测试。宿主图面仍未通过。
 
-## 怎样算这次人工检查通过
+## 已经证实的第一次运行
 
-- 出现 DN_NOTE_OK，DN_NOTE_ENTITIES 的 after 比 before 多出 objects 的数量。
-- 单位比例 1 时，DN_NOTE_FIRST 的字高是 4.5，宽度系数是 0.75；锚点在世界原点时第一行 x 约为 -710、y 约为 -6.2。
-- 特性里是单行文字。再生成一次不删除旧字。一次 U 只撤销最新一次。
-- 若失败，把从 DN_NOTE 到结束的命令行原文发回。DN_NOTE_DRAFT 本身不是失败。
+空白图，单位比例 1，图幅 A1，样本 `测试文件/示例-单行说明.docx`，标准目录 `standards/drafts`。UCS 与 WCS 相同：`28.706599762571557,12.977053983885803,0`。
 
-## 下一阶段
+- `DN_NOTE_SUMMARY pages=1 objects=6 warnings=0`
+- `DN_NOTE_PAGE_STEP x=861 y=0 scale=1`
+- `DN_NOTE_FIRST x=-681.29340023742839 y=6.7770539838858026 h=4.5 widthFactor=0.75 text=设计说明`
+- 这与锚点加 A1 首栏左 `-710`、首基线 `-6.2` 一致。
+- `DN_NOTE_DRAFT` 四行是预期提示，不是失败。草案文件没有被修改。
+- 随后 `E_RENDER_FAILED Exception`，`before=0 after=0`。原因是左对齐 DBText 设置了 AlignmentPoint 并调用 AdjustAlignment，AutoCAD 2021 抛错。测量命令能成功，是因为它只用 Position。`a46c5b2` 已去掉这两步，样式改为写入 `tssdeng.shx` / `tssdchn.shx` 文件名，并把 AutoCAD ErrorStatus 打进失败信息。
 
-用户回复「继续下一步」或贴出命令行后，进入阶段3：补 T06 剩余的真实字形/上下标/打印，以及 T11、T12。上下标在标定前继续阻断，不能改成普通数字。
+## 用户待办
 
-## 保留
+完全退出 AutoCAD 后重新打开一张空白图。不要打开 `新块.dwg`，不要改 SECURELOAD。
 
-- 草案文件仍是 pending / uncalibrated。DN_NOTE 只在内存里补齐以便演示。
-- 示例-结构说明.docx 含上下标，DN_NOTE 会整篇拒绝且不写图。
-- PDF 未生成。页数上限 10000 仍只是失控保护。正式发布验证未做。
+1. `NETLOAD`：`G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\dn-note-2\Justified.SpecificationReflow.AutoCAD.PluginHost.dll`
+2. `DN_NOTE`：选 `测试文件/示例-单行说明.docx`；标准目录填上面的 drafts；图幅 `A1`；单位比例 `1`；在图上点一下。
+3. 成功标准：`DN_NOTE_OK objects=6`，并且 after 比 before 多 6。特性里是单行文字。再跑一次不删除旧字；一次 `U` 只撤销最新一次。
+4. 把从 `DN_NOTE` 到结束的命令行全文发回。若仍失败，新的 `DN_NOTE_FAILED` 里会有具体错误码，按那个修，不要重写排版引擎。
+
+不要用 `示例-结构说明.docx`。它含上下标，命令会整篇拒绝且不写图。上下标在标定前继续阻断，不能改成普通数字。
+
+## 通过之后
+
+把这次命令行记入 `docs/devlog/T10.md`，状态仍是待验收，直到用户确认图面和一次撤销。然后才把下一阶段写成阶段3：T06 剩余的真实字形、上下标和打印，以及 T11、T12。用户说「继续下一步」且这次重试已记录为通过时，才进入阶段3。
+
+## 不要重做
+
+- 不改 `standards/drafts` 里的 pending、null 公差和 uncalibrated。
+- 不把 4.5、0.75、7.2、三栏两栏写死进引擎。
+- 不实现 MText，不追踪旧图增量。
+- PDF 未生成。页数上限 10000 只是失控保护。正式发布验证未做。
