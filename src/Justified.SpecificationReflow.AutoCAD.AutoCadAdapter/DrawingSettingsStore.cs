@@ -47,20 +47,21 @@ public sealed class DrawingSettingsStore
             try
             {
                 var dictionary = (DBDictionary)transaction.GetObject(database.NamedObjectsDictionaryId, OpenMode.ForRead);
-                var record = dictionary.GetAt(DictionaryName) switch
+                Xrecord record;
+                if (dictionary.Contains(DictionaryName))
                 {
-                    ObjectId id when !id.IsNull => (Xrecord)transaction.GetObject(id, OpenMode.ForWrite),
-                    _ => null
-                } ?? new Xrecord();
-                var data = new ResultBuffer();
-                foreach (var chunk in chunks) data.Add(new TypedValue((int)DxfCode.Text, chunk));
-                if (record.ObjectId.IsNull)
+                    record = (Xrecord)transaction.GetObject(dictionary.GetAt(DictionaryName), OpenMode.ForWrite);
+                }
+                else
                 {
+                    record = new Xrecord();
                     dictionary.UpgradeOpen();
                     dictionary.SetAt(DictionaryName, record);
                     transaction.AddNewlyCreatedDBObject(record, true);
                 }
 
+                var data = new ResultBuffer();
+                foreach (var chunk in chunks) data.Add(new TypedValue((int)DxfCode.Text, chunk));
                 record.Data = data;
                 data.Dispose();
                 transaction.Commit();
@@ -81,9 +82,9 @@ public sealed class DrawingSettingsStore
             try
             {
                 var dictionary = (DBDictionary)transaction.GetObject(database.NamedObjectsDictionaryId, OpenMode.ForRead);
-                var id = dictionary.GetAt(DictionaryName);
-                if (!id.IsNull)
+                if (dictionary.Contains(DictionaryName))
                 {
+                    var id = dictionary.GetAt(DictionaryName);
                     dictionary.UpgradeOpen();
                     dictionary.Remove(DictionaryName);
                     var record = transaction.GetObject(id, OpenMode.ForWrite);
@@ -104,6 +105,7 @@ public sealed class DrawingSettingsStore
     {
         record = new Xrecord();
         var dictionary = (DBDictionary)transaction.GetObject(database.NamedObjectsDictionaryId, OpenMode.ForRead);
+        if (!dictionary.Contains(DictionaryName)) return false;
         var id = dictionary.GetAt(DictionaryName);
         if (id.IsNull) return false;
         if (transaction.GetObject(id, OpenMode.ForRead) is not Xrecord found) return false;
