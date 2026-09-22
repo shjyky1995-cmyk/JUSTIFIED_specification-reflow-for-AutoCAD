@@ -6,7 +6,7 @@
 
 - 核心测试net8.0/net48各131/131，0警告、0错误；插件编译0警告。新增14个测试：设置Base64分块往返与损坏拒绝、Problems自检、MaxBlocks/Characters/Pages/Texts四个限额触发点、限额内正常生成、无限额兼容旧行为、运行报告字段（耗时/页数/对象数/包围盒/告警）、模板枚举与取消。
 - Core Console（accoreconsole）拒绝加载未签名插件（SECURELOAD，无GUI无法点“加载一次”），宿主验证必须走GUI实例。
-- 本机生产测试包与脚本已备：artifacts/cad-retry-note3/published/（classification=production，从drafts派生，仅本机不入库）、note3-main.scr（设置→生成→U撤销→平移生成→UCS原点(100,200)+Z旋转90°比例2）、note3-nosetting.scr（无设置拒绝、草案目录拒绝、A2无模板拒绝、DN_NOTE_DEV回归）、plugin/（新构建DLL，SHA256前8位0581531a）。
+- 本机生产测试包与脚本已备：artifacts/cad-retry-note3/published/（classification=production，从drafts派生，仅本机不入库）、note3-main.scr（设置→生成→U撤销→平移生成→UCS原点(100,200)+Z旋转90°比例2）、note3-nosetting.scr（无设置拒绝、草案目录拒绝、A2无模板拒绝、DN_NOTE_DEV回归）、plugin/（新构建DLL，SHA256前8位8d07e572，提交1c2e536）。DN_NOTE 在点选前完成设置、文档、生产包id/version与字体检查。
 
 ## 当前工作
 
