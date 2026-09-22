@@ -1,22 +1,23 @@
 # 当前接续状态（所有 Agent 共用）
 
-更新：2026-09-22 15:15。阶段2最小宿主重试通过，接续正式操作入口及阶段3完善。分支task/T09-dbtext，继承未验收T06/T07/T08，不合main、不打标签、不推送。
+更新：2026-09-22 16:00。PRD3.3 正式一键两步已实现并通过核心检查，宿主图面证据未取得。分支task/T09-dbtext，继承未验收T06/T07/T08，不合main、不打标签、不推送。
 
 ## 已有证据
 
-- a46c5b2构建在真实AutoCAD 2021成功写出6个DBText；重复生成6→12，一次U恢复原6个且所有属性不变；两Anchor平移(100,50)正确。
-- 非默认UCS原点(100,200)、旋转90°，输入点(10,20)→WCS(80,210)，比例2坐标及字高通过。
-- 未标定上下标阻断零新增；点选时Escape零新增。命令日志、实体快照、checks.json、测试DWG在artifacts/cad-retry，详情见devlog/T10.md末尾。
-- 核心测试net8.0/net48各117/117，0警告、0错误。不能以核心检查替代新代码宿主检查。
+- 核心测试net8.0/net48各131/131，0警告、0错误；插件编译0警告。新增14个测试：设置Base64分块往返与损坏拒绝、Problems自检、MaxBlocks/Characters/Pages/Texts四个限额触发点、限额内正常生成、无限额兼容旧行为、运行报告字段（耗时/页数/对象数/包围盒/告警）、模板枚举与取消。
+- Core Console（accoreconsole）拒绝加载未签名插件（SECURELOAD，无GUI无法点“加载一次”），宿主验证必须走GUI实例。
+- 本机生产测试包与脚本已备：artifacts/cad-retry-note3/published/（classification=production，从drafts派生，仅本机不入库）、note3-main.scr（设置→生成→U撤销→平移生成→UCS原点(100,200)+Z旋转90°比例2）、note3-nosetting.scr（无设置拒绝、草案目录拒绝、A2无模板拒绝、DN_NOTE_DEV回归）、plugin/（新构建DLL，SHA256前8位0581531a）。
 
 ## 当前工作
 
-用户要求Agent代测、按结果继续开发；不要再让用户抄日志或重复做整套测试。下一动作落实PRD3.3：图内持久化一次设置，日常DN_NOTE只点位置；显式区分正式已验证包与开发草案模式，正式加载不得绕过production校验。旧多步流程留作开发命令。再补T11本地运行报告和必要资源保护。模块内部实现可自主进行，保持现有共享协议与依赖。
+用户在独立AutoCAD 2021实例NETLOAD artifacts/cad-retry-note3/plugin/Justified.SpecificationReflow.AutoCAD.PluginHost.dll，安全提示亲自点“加载一次”；SCRIPT运行note3-main.scr与note3-nosetting.scr。Agent据日志、实体快照（first/second/undo/ucs-scale-entities.txt）、报告JSON核对：正式DN_NOTE生成6个DBText、一次U恢复、平移(100,50)正确、UCS比例2坐标正确、无设置与草案包被拒、DN_NOTE_DEV仍可用。核对通过则修复发现的问题或转入阶段3剩余（T06打印/上下标、T11性能与离线包、T12外机验收）。
 
 ## 用户待办及恢复
 
-当前无需用户操作。新实例已保存artifacts/cad-retry/T10-host-evidence.dwg；旧Drawing1实例保留。新编译插件需要新进程加载，若出现未签名安全提示由用户亲自点“加载一次”，Agent不得改变安全设置或绕过提示。
+1. 开新独立AutoCAD 2021（空白Drawing1），NETLOAD上述DLL，安全提示点“加载一次”。Agent不得改安全设置、不得搬移DLL绕过。
+2. 命令行SCRIPT选note3-main.scr，再SCRIPT note3-nosetting.scr。FILEDIA已在脚本内置0。
+3. 完成后回复结果；日志在artifacts/cad-retry-note3/（*.log为宿主日志）。
 
 ## 未完成
 
-T06完整真实字符/上下标与打印；T09/T10完整正式流程验收；T11报告/性能/限额/离线部署；T12三图幅完整业务样本、外机、打印和专业核验。不得把本次小样本通过视作正式发布通过。草案pending/null/uncalibrated保持，不把测试值写为生产标定。
+T06完整真实字符/上下标与打印；T09/T10完整正式流程验收（即本次宿主核对）；T11性能/冷热/离线包；T12三图幅业务样本、外机、打印和专业核验。草案pending/null/uncalibrated保持；本机production测试包不是发布资产，standards/published仍为空。不得把本次小样本通过视作正式发布通过。
