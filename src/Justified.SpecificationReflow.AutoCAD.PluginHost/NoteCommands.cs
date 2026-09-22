@@ -228,16 +228,7 @@ public class NoteCommands
                 return;
             }
 
-            var point = editor.GetPoint(new PromptPointOptions("\n点选说明区右上角"));
-            if (point.Status != PromptStatus.OK)
-            {
-                editor.WriteMessage("\nDN_NOTE_CANCELLED\n");
-                return;
-            }
-
-            var wcs = point.Value.TransformBy(editor.CurrentUserCoordinateSystem);
-            editor.WriteMessage("\nDN_NOTE_ANCHOR_WCS " + Format(wcs.X) + "," + Format(wcs.Y) + "," + Format(wcs.Z));
-
+            // 先做完全部会在点选前失败的检查，再请设计人员点位置。
             var loaded = LoadProductionPackage(settings.StandardRoot, settings.TemplateId, settings.TemplateVersion);
             if (loaded.Standard == null || loaded.Template == null)
             {
@@ -260,10 +251,6 @@ public class NoteCommands
                 return;
             }
 
-            editor.WriteMessage("\nDN_NOTE_STANDARD " + standard.StandardId + " " + standard.Version);
-            editor.WriteMessage("\nDN_NOTE_TEMPLATE " + template.TemplateId + " " + template.Version);
-            editor.WriteMessage("\nDN_NOTE_SCALE " + Format(settings.UnitScale));
-
             var fontProblems = new PackageValidator().ValidateFonts(standard, identity => FindFont(database, identity) != null);
             if (fontProblems.Any(item => item.Severity == Severity.Error))
             {
@@ -272,6 +259,19 @@ public class NoteCommands
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
+
+            var point = editor.GetPoint(new PromptPointOptions("\n点选说明区右上角"));
+            if (point.Status != PromptStatus.OK)
+            {
+                editor.WriteMessage("\nDN_NOTE_CANCELLED\n");
+                return;
+            }
+
+            var wcs = point.Value.TransformBy(editor.CurrentUserCoordinateSystem);
+            editor.WriteMessage("\nDN_NOTE_ANCHOR_WCS " + Format(wcs.X) + "," + Format(wcs.Y) + "," + Format(wcs.Z));
+            editor.WriteMessage("\nDN_NOTE_STANDARD " + standard.StandardId + " " + standard.Version);
+            editor.WriteMessage("\nDN_NOTE_TEMPLATE " + template.TemplateId + " " + template.Version);
+            editor.WriteMessage("\nDN_NOTE_SCALE " + Format(settings.UnitScale));
 
             NoteGenerationResult generated;
             using (document.LockDocument())
