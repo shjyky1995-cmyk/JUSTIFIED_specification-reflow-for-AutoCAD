@@ -12,7 +12,7 @@
 | T03/M1 | PRD 5/9 → 模型、Active 契约、Schema、JSON | T02 | Contracts、DocumentCore、schemas、相关测试 | DATA-001 / AC-04 | 往返/扩展字段/非法版本与块/有限数值 | 完成 |
 | T04/M1 | DOCX 样本 → 段落/样式/诊断解析 | T03 | DocxAdapter、脱敏 fixtures、测试 | DOC-001/002 / AC-01～03 | Word/WPS 一致、不支持内容阻断定位 | 完成 |
 | T05/M1 | numbering/换行样本 → 有限编号与空白语义 | T04 | DocxAdapter、fixtures、测试 | DOC-002 / AC-01～03 | 编号重启、不重复、空段/硬换行审计 | 完成 |
-| T06/M2 | CAL-02～07 → 标准校验与测量原型 | T03 | Standards、AutoCadAdapter、标准资产、测试 | STD-001、TEXT-001 / AC-05～06 | 缺标定阻断、真实字形/测量/打印证据 | 待验收 |
+| T06/M2 | CAL-02～07 → 标准校验与测量原型 | T03 | Standards、AutoCadAdapter、标准资产、测试 | STD-001、TEXT-001 / AC-05～06 | 缺标定阻断、真实字形/测量证据（打印核验移至 T12，符号映射以 passthrough 发布） | 待验收 |
 | T07/M2 | 文本+真实测量 → token/禁则换行 | T05、T06 | LayoutEngine、测试 | LAYOUT-001 / AC-07 | 中文临界、长 token 警告、非法断点有限退出 | 待验收 |
 | T08/M3 | 行流+模板 → 固定槽、不同栏宽、续页 | T07 | LayoutEngine、测试 | LAYOUT-002 / AC-08～09 | 6/7 行边界、空行、跨栏、无空尾页 | 待验收 |
 | T09/M3 | 布局+Anchor → 真实 DBText 输出 | T08 | AutoCadAdapter、宿主测试 | CAD-001 / AC-10～11 | 两 Anchor、UCS、单位、对象类型、上下标 | 待验收 |
@@ -44,3 +44,5 @@ T06 标定可与独立解析任务准备资料，但默认不启动并行 Agent�
 2026-09-22 正式入口接续：PRD3.3 的一键两步已落地——DN_NOTE_SET 把 production 包、图幅、单位比例和说明文档写进当前图（JSR_NOTE_SETTINGS 字典），DN_NOTE 日常只点一次位置；原多步命令更名 DN_NOTE_DEV 留作开发核对，正式命令不接受草案包。生成限额与本地运行报告已实现（T11 起步）。核心测试双框架 131/131、插件编译 0 警告。宿主图面证据未取得（Core Console 拒绝未签名插件，需 GUI 点一次“加载一次”），脚本与本机生产测试包在 artifacts/cad-retry-note3/。T10/T11 仍待验收，不合 main。
 
 2026-09-22 正式命令宿主验证：T10 的 DN_NOTE_SET+DN_NOTE 在真实 AutoCAD 2021 通过（computer-use 驱动独立实例，代点一次“加载一次”）。修复 DrawingSettingsStore 首次写入 eKeyNotFound（216478a）。证据：6 个 DBText 属性正确、一次 U 零残留、平移(100,50)与 UCS 转换正确、报告 JSON 3 份、拒绝路径（无设置/草案包/A2/上下标）与 DEV 回归（含比例2）全部按预期，均在 artifacts/cad-retry-note3/。T10 待用户确认；T11 进行中（限额与报告已实现，性能/离线包未做）；不合 main。
+
+2026-09-22 范围调整（用户确认）：删除独立打印标定关卡（并入 T12 一次真实打印确认）与完整符号映射表构建（以 passthrough-1.0.0 为发布值，字符清单核对为准）。保留上下标标定与验收作为 T06 最后一项：项目制定缩放 0.7、上标抬升 0.35、下标下沉 0.2（相对字高，TEXT_FORMAT_V1.md），实现“有标定生成、缺标定阻断”。当前任务：实现上下标并宿主验证。
