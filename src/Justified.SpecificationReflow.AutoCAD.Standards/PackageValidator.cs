@@ -45,6 +45,8 @@ public sealed class PackageValidator
             diagnostics.Add(Error(DiagnosticCodes.ETemplateInvalid, "测量公差必须是不小于 0 的有限数值。", "measurementTolerance"));
         RequireText(diagnostics, standard.SymbolMapVersion, "symbolMapVersion", "符号映射版本不能为空。");
         RequireText(diagnostics, standard.LineBreakRuleVersion, "lineBreakRuleVersion", "换行规则版本不能为空。");
+        foreach (var problem in ScriptCalibration.Problems(standard))
+            diagnostics.Add(Error(DiagnosticCodes.ETemplateInvalid, "上下标标定不完整：" + problem, "superscript/subscript"));
         if (standard.LayerPolicy == null || string.IsNullOrWhiteSpace(standard.LayerPolicy.LayerName))
             diagnostics.Add(Error(DiagnosticCodes.ETemplateInvalid, "图层策略缺少图层名。", "layerPolicy.layerName"));
 

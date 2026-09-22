@@ -30,7 +30,8 @@ internal static class LayoutSamples
         double hanging = 0,
         double tolerance = 0,
         string? lineBreakVersion = null,
-        string symbolMapVersion = "identity-1")
+        string symbolMapVersion = "identity-1",
+        bool calibrateScripts = true)
     {
         var style = new StyleDefinition
         {
@@ -40,7 +41,7 @@ internal static class LayoutSamples
             BeforeSlots = 0,
             AfterSlots = 0
         };
-        return new InstitutionStandard
+        var standard = new InstitutionStandard
         {
             StandardId = "test-note",
             Version = "1.0.0",
@@ -66,6 +67,15 @@ internal static class LayoutSamples
             LineBreakRuleVersion = lineBreakVersion ?? LayoutEngineInfo.LineBreakRuleVersion,
             MeasurementTolerance = tolerance
         };
+        if (calibrateScripts)
+        {
+            standard.SuperscriptScale = ScriptCalibration.SuperscriptScale;
+            standard.SuperscriptRise = ScriptCalibration.SuperscriptRise;
+            standard.SubscriptScale = ScriptCalibration.SubscriptScale;
+            standard.SubscriptDrop = ScriptCalibration.SubscriptDrop;
+        }
+
+        return standard;
     }
 
     public static LayoutTemplate Columns(params double[] widths)

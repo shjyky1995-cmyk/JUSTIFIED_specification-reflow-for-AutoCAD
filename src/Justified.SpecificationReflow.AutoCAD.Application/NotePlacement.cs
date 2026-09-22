@@ -107,10 +107,10 @@ public static class NotePlacement
                     foreach (var run in row.VisualLine.RenderRuns)
                     {
                         if (run == null || run.Text == null || run.Text.Length == 0) continue;
-                        if (run.ResolvedStyle == null || run.ResolvedStyle.Semantic != RunSemantic.Normal)
+                        if (run.ResolvedStyle == null)
                         {
                             result.Texts.Clear();
-                            result.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "上下标缩放尚未标定，不能落图，也不会改成普通文字。"));
+                            result.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "文字 run 没有解析出的样式。"));
                             return result;
                         }
 

@@ -97,6 +97,27 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
                 return Finish(documentHash, standard, template, profileHash, new List<LayoutPage>(), diagnostics, watch);
             }
 
+            if (!ScriptCalibration.IsComplete(standard) && HasScriptRun(block))
+            {
+                diagnostics.Add(Problem(
+                    DiagnosticCodes.ETemplateInvalid,
+                    "上下标缩放尚未标定，不能排版，也不会把上下标改成普通文字。请补齐院标的上下标标定或改用不含上下标的说明。",
+                    DiagnosticStage.Standard,
+                    block.SourceRef));
+                return Finish(documentHash, standard, template, profileHash, new List<LayoutPage>(), diagnostics, watch);
+            }
+
+            var missingGlyph = FirstMissingGlyph(block, style);
+            if (missingGlyph != null)
+            {
+                diagnostics.Add(Problem(
+                    DiagnosticCodes.EFontMissing,
+                    "字符 " + Describe(missingGlyph.Value) + " 在当前字体中没有字形。请改写该字符；不会用问号或方框代替。",
+                    DiagnosticStage.Standard,
+                    block.SourceRef));
+                return Finish(documentHash, standard, template, profileHash, new List<LayoutPage>(), diagnostics, watch);
+            }
+
             if (!LineComposer.TryCreate(block, out var cursor, out var createError))
             {
                 diagnostics.Add(createError!);
@@ -442,6 +463,38 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
         return true;
     }
 
+    private static bool HasScriptRun(Block block)
+    {
+        if (block?.Runs == null) return false;
+        foreach (var run in block.Runs)
+        {
+            if (run != null && run.Semantic != RunSemantic.Normal) return true;
+        }
+
+        return false;
+    }
+
+    private static char? FirstMissingGlyph(Block block, ResolvedStyle style)
+    {
+        if (block?.Runs == null) return null;
+        var font = style.Font;
+        foreach (var run in block.Runs)
+        {
+            if (run?.Text == null) continue;
+            var missing = FontGlyphCoverage.FirstMissingGlyph(font?.FileIdentity, font?.BigFont, run.Text);
+            if (missing != null) return missing;
+        }
+
+        return null;
+    }
+
+    private static string Describe(char character)
+    {
+        var code = ((int)character).ToString("X4", CultureInfo.InvariantCulture);
+        var printable = character >= 0x20 && character <= 0x7E ? character.ToString() : "U+" + code;
+        return "「" + printable + "」（U+" + code + "）";
+    }
+
     private static bool TryFont(InstitutionStandard standard, string? family, out FontEntry font)
     {
         font = new FontEntry();
@@ -549,7 +602,11 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
         builder.Append(standard.ObliqueAngle.ToString("R", CultureInfo.InvariantCulture)).Append('|');
         builder.Append(standard.RowPitch.ToString("R", CultureInfo.InvariantCulture)).Append('|');
         builder.Append(standard.LineBreakRuleVersion).Append('|').Append(standard.SymbolMapVersion).Append('|');
-        builder.Append(standard.MeasurementTolerance.ToString("R", CultureInfo.InvariantCulture));
+        builder.Append(standard.MeasurementTolerance.ToString("R", CultureInfo.InvariantCulture)).Append('|');
+        builder.Append((standard.SuperscriptScale ?? -1).ToString("R", CultureInfo.InvariantCulture)).Append('|');
+        builder.Append((standard.SuperscriptRise ?? -1).ToString("R", CultureInfo.InvariantCulture)).Append('|');
+        builder.Append((standard.SubscriptScale ?? -1).ToString("R", CultureInfo.InvariantCulture)).Append('|');
+        builder.Append((standard.SubscriptDrop ?? -1).ToString("R", CultureInfo.InvariantCulture));
         if (standard.FontProfile?.Fonts != null)
         {
             foreach (var font in standard.FontProfile.Fonts)

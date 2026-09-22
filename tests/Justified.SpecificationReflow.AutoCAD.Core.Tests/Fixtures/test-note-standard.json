@@ -16,12 +16,36 @@
   "obliqueAngle": 0,
   "rowPitch": 4,
   "styles": {
-    "heading1": { "fontRef": "TESTFONT", "indent": 0, "hangingIndent": 0, "beforeSlots": 0, "afterSlots": 0 },
-    "heading2": { "fontRef": "TESTFONT", "indent": 0, "hangingIndent": 0, "beforeSlots": 0, "afterSlots": 0 },
-    "body": { "fontRef": "TESTFONT", "indent": 5, "hangingIndent": 3, "beforeSlots": 0, "afterSlots": 0 }
+    "heading1": {
+      "fontRef": "TESTFONT",
+      "indent": 0,
+      "hangingIndent": 0,
+      "beforeSlots": 0,
+      "afterSlots": 0
+    },
+    "heading2": {
+      "fontRef": "TESTFONT",
+      "indent": 0,
+      "hangingIndent": 0,
+      "beforeSlots": 0,
+      "afterSlots": 0
+    },
+    "body": {
+      "fontRef": "TESTFONT",
+      "indent": 5,
+      "hangingIndent": 3,
+      "beforeSlots": 0,
+      "afterSlots": 0
+    }
   },
-  "layerPolicy": { "layerName": "TEST-NOTE" },
+  "layerPolicy": {
+    "layerName": "TEST-NOTE"
+  },
   "symbolMapVersion": "test-symbols",
   "lineBreakRuleVersion": "test-breaks",
-  "measurementTolerance": 0.2
+  "measurementTolerance": 0.2,
+  "superscriptScale": 0.7,
+  "superscriptRise": 0.35,
+  "subscriptScale": 0.7,
+  "subscriptDrop": 0.2
 }

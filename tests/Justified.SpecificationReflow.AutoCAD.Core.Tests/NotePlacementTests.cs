@@ -71,7 +71,7 @@ public class NotePlacementTests
     }
 
     [Test]
-    public void SpacersSuperscriptsAndLayoutErrorsProduceNoText()
+    public void SpacersAndLayoutErrorsStayEmptyWhileScriptsScale()
     {
         var template = LayoutSamples.Columns(new[] { 10d }, 4, 7.2, 90);
         var standard = LayoutSamples.Standard();
@@ -85,12 +85,23 @@ public class NotePlacementTests
         Assert.That(placed.Success, Is.True, Dump(placed.Diagnostics));
         Assert.That(placed.Texts.Select(item => item.Text), Is.EqualTo(new[] { "甲", "乙" }));
 
-        var superscript = Copy(layout);
-        superscript.Pages[0].Columns[0].Rows[0].VisualLine.RenderRuns[0].ResolvedStyle.Semantic = RunSemantic.Superscript;
-        var blocked = NotePlacement.Create(superscript, template, standard, Transform(0, 0, 1), CancellationToken.None);
-        Assert.That(blocked.Success, Is.False);
-        Assert.That(blocked.Texts, Is.Empty);
-        Assert.That(blocked.Diagnostics.Any(item => item.Message.Contains("上下标")), Is.True);
+        var superscript = LayoutSamples.Engine().Layout(
+            LayoutSamples.DocumentOf(LayoutSamples.Runs(0, BlockType.Paragraph, null,
+                LayoutSamples.Run("强度"), LayoutSamples.Run("2", RunSemantic.Superscript))),
+            standard,
+            LayoutSamples.Columns(40),
+            new FakeMeasure { Cjk = 4, Unit = 2 },
+            CancellationToken.None);
+        LayoutSamples.Ok(superscript);
+        var scaled = Place(superscript, LayoutSamples.Columns(40), standard, 0, 0, 1);
+        Assert.That(scaled.Success, Is.True, Dump(scaled.Diagnostics));
+        Assert.That(scaled.Texts.Select(item => item.Text), Is.EqualTo(new[] { "强度", "2" }));
+        Assert.That(scaled.Texts[0].Height, Is.EqualTo(4.5).Within(1e-9));
+        Assert.That(scaled.Texts[1].Height, Is.EqualTo(4.5 * ScriptCalibration.SuperscriptScale).Within(1e-9));
+        Assert.That(scaled.Texts[0].Position.Y, Is.EqualTo(90).Within(1e-6));
+        Assert.That(scaled.Texts[1].Position.Y, Is.EqualTo(90 + 4.5 * ScriptCalibration.SuperscriptRise).Within(1e-6));
+        Assert.That(scaled.Texts[1].Position.X, Is.GreaterThan(scaled.Texts[0].Position.X));
+        Assert.That(scaled.Texts.Select(item => item.StyleName).Distinct(), Is.EqualTo(new[] { "test-note-1.0.0-body" }));
 
         var tooWide = LayoutSamples.Engine().Layout(
             LayoutSamples.DocumentOf(LayoutSamples.Text(0, "甲")),
@@ -234,11 +245,6 @@ public class NotePlacementTests
         for (var index = 0; index < count; index++)
             document.Blocks.Add(LayoutSamples.Text(index, text));
         return document;
-    }
-
-    private static LayoutResult Copy(LayoutResult layout)
-    {
-        return layout;
     }
 
     private static string Dump(System.Collections.Generic.IEnumerable<Diagnostic> diagnostics)

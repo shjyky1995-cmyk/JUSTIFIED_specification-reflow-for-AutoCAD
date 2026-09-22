@@ -93,15 +93,6 @@ internal sealed class LineComposer
                 return false;
             }
 
-            if (run.Semantic != RunSemantic.Normal)
-            {
-                error = Problem(
-                    DiagnosticCodes.ETemplateInvalid,
-                    "上下标缩放尚未标定，不能排版，也不会把上下标改成普通文字。",
-                    Source(paragraph, index, null));
-                return false;
-            }
-
             if (run.Text == "\n")
             {
                 cursor.Atoms.Add(new Atom
@@ -140,7 +131,7 @@ internal sealed class LineComposer
                     RunIndex = index,
                     TextStart = token.Start,
                     TextLength = token.Text.Length,
-                    Semantic = RunSemantic.Normal
+                    Semantic = run.Semantic
                 });
             }
         }
@@ -258,37 +249,86 @@ internal sealed class LineComposer
         if (terminatingBreak != null)
             AddSource(slices, terminatingBreak);
 
+        // 普通、上标、下标各成一个 DBText 段。段宽按各自缩放后的字高实测，
+        // 整行宽度仍按正文字高测量（保守），行高检查用含上下标伸出的并集。
+        var renderRuns = new List<RenderRun>();
+        var ink = new Bounds2
+        {
+            MinX = indent + measured.Ink.MinX,
+            MinY = measured.Ink.MinY,
+            MaxX = indent + measured.Ink.MaxX,
+            MaxY = measured.Ink.MaxY
+        };
+        var originX = indent;
+        var index2 = start;
+        while (index2 < best)
+        {
+            if (cursor.Atoms[index2].HardBreak)
+            {
+                index2++;
+                continue;
+            }
+
+            var semantic = cursor.Atoms[index2].Semantic;
+            var segmentStart = index2;
+            while (index2 < best && !cursor.Atoms[index2].HardBreak && cursor.Atoms[index2].Semantic == semantic)
+                index2++;
+            var segment = DisplayString(cursor.Atoms, segmentStart, index2);
+            if (segment.Length == 0) continue;
+
+            var resolved = ScriptCalibration.Apply(style, semantic);
+            var segmentMeasured = _measure.Measure(segment, resolved.Style, cancellationToken);
+            if (segmentMeasured.Error != null) return new Decision { Error = segmentMeasured.Error };
+            renderRuns.Add(new RenderRun
+            {
+                Text = segment,
+                RelativeOrigin = new Point2 { X = originX, Y = 0 },
+                BaselineOffset = resolved.BaselineOffset,
+                ResolvedStyle = resolved.Style,
+                MeasuredAdvance = segmentMeasured.Advance,
+                InkBounds = new Bounds2
+                {
+                    MinX = originX + segmentMeasured.Ink.MinX,
+                    MinY = resolved.BaselineOffset + segmentMeasured.Ink.MinY,
+                    MaxX = originX + segmentMeasured.Ink.MaxX,
+                    MaxY = resolved.BaselineOffset + segmentMeasured.Ink.MaxY
+                }
+            });
+            ink = Union(ink, new Bounds2
+            {
+                MinX = originX + segmentMeasured.Ink.MinX,
+                MinY = resolved.BaselineOffset + segmentMeasured.Ink.MinY,
+                MaxX = originX + segmentMeasured.Ink.MaxX,
+                MaxY = resolved.BaselineOffset + segmentMeasured.Ink.MaxY
+            });
+            originX += segmentMeasured.Advance;
+        }
+
         var decision = new Decision
         {
             Line = new VisualLine
             {
                 Text = display,
                 MeasuredWidth = measured.Advance,
-                InkBounds = new Bounds2
-                {
-                    MinX = indent + measured.Ink.MinX,
-                    MinY = measured.Ink.MinY,
-                    MaxX = indent + measured.Ink.MaxX,
-                    MaxY = measured.Ink.MaxY
-                },
+                InkBounds = ink,
                 SourceSlices = slices,
-                RenderRuns = new List<RenderRun>
-                {
-                    new RenderRun
-                    {
-                        Text = display,
-                        RelativeOrigin = new Point2 { X = indent, Y = 0 },
-                        BaselineOffset = 0,
-                        ResolvedStyle = CopyStyle(style),
-                        MeasuredAdvance = measured.Advance,
-                        InkBounds = measured.Ink
-                    }
-                }
+                RenderRuns = renderRuns
             }
         };
         decision.Warnings.AddRange(measured.Warnings);
         AddSplitWarnings(decision, cursor.Atoms, start, best);
         return decision;
+    }
+
+    private static Bounds2 Union(Bounds2 left, Bounds2 right)
+    {
+        return new Bounds2
+        {
+            MinX = Math.Min(left.MinX, right.MinX),
+            MinY = Math.Min(left.MinY, right.MinY),
+            MaxX = Math.Max(left.MaxX, right.MaxX),
+            MaxY = Math.Max(left.MaxY, right.MaxY)
+        };
     }
 
     private static void AddSplitWarnings(Decision decision, List<Atom> atoms, int start, int best)
@@ -458,24 +498,6 @@ internal sealed class LineComposer
             RunIndex = atom.RunIndex,
             TextRange = new TextRange { Start = atom.TextStart, Length = atom.TextLength }
         });
-    }
-
-    private static ResolvedStyle CopyStyle(ResolvedStyle style)
-    {
-        return new ResolvedStyle
-        {
-            StyleId = style.StyleId,
-            Semantic = style.Semantic,
-            Font = new FontEntry
-            {
-                Family = style.Font.Family,
-                BigFont = style.Font.BigFont,
-                FileIdentity = style.Font.FileIdentity
-            },
-            TextHeight = style.TextHeight,
-            WidthFactor = style.WidthFactor,
-            ObliqueAngle = style.ObliqueAngle
-        };
     }
 
     private static Diagnostic NoLegal(Cursor cursor, int start, double available)

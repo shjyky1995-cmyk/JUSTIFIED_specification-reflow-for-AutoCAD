@@ -241,14 +241,67 @@ public class LineBreakTests
     }
 
     [Test]
-    public void SuperscriptIsNotFlattened()
+    public void SuperscriptStaysBlockedWithoutCalibration()
     {
         var document = LayoutSamples.DocumentOf(LayoutSamples.Runs(0, BlockType.Paragraph, null,
             LayoutSamples.Run("强度"), LayoutSamples.Run("2", RunSemantic.Superscript)));
-        var result = Lay(document, 20);
+        var result = LayoutSamples.Engine().Layout(document, LayoutSamples.Standard(calibrateScripts: false), LayoutSamples.Columns(20), new FakeMeasure(), CancellationToken.None);
         Assert.That(result.Pages, Is.Empty);
         Assert.That(result.Diagnostics.Single().Code, Is.EqualTo(DiagnosticCodes.ETemplateInvalid));
         Assert.That(result.Diagnostics.Single().Message, Does.Contain("上下标"));
+    }
+
+    [Test]
+    public void SuperscriptGeneratesScaledRunWithBaselineOffset()
+    {
+        var standard = LayoutSamples.Standard();
+        var document = LayoutSamples.DocumentOf(LayoutSamples.Runs(0, BlockType.Paragraph, null,
+            LayoutSamples.Run("强度"), LayoutSamples.Run("2", RunSemantic.Superscript)));
+        var result = LayoutSamples.Engine().Layout(document, standard, LayoutSamples.Columns(40), new FakeMeasure { Cjk = 4, Unit = 2 }, CancellationToken.None);
+        LayoutSamples.Ok(result);
+        var line = LayoutSamples.Rows(result).Single(row => row.Occupancy == Occupancy.Text).VisualLine!;
+        Assert.That(line.Text, Is.EqualTo("强度2"));
+        Assert.That(line.RenderRuns, Has.Count.EqualTo(2));
+
+        var body = line.RenderRuns[0];
+        Assert.That(body.Text, Is.EqualTo("强度"));
+        Assert.That(body.ResolvedStyle.Semantic, Is.EqualTo(RunSemantic.Normal));
+        Assert.That(body.ResolvedStyle.TextHeight, Is.EqualTo(4.5).Within(1e-9));
+        Assert.That(body.BaselineOffset, Is.EqualTo(0));
+        Assert.That(body.RelativeOrigin.X, Is.EqualTo(0));
+
+        var script = line.RenderRuns[1];
+        Assert.That(script.Text, Is.EqualTo("2"));
+        Assert.That(script.ResolvedStyle.Semantic, Is.EqualTo(RunSemantic.Superscript));
+        Assert.That(script.ResolvedStyle.TextHeight, Is.EqualTo(4.5 * ScriptCalibration.SuperscriptScale).Within(1e-9));
+        Assert.That(script.BaselineOffset, Is.EqualTo(4.5 * ScriptCalibration.SuperscriptRise).Within(1e-9));
+        Assert.That(script.RelativeOrigin.X, Is.EqualTo(body.MeasuredAdvance).Within(1e-9));
+        Assert.That(script.RelativeOrigin.X, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void SubscriptDropsBelowTheBaseline()
+    {
+        var standard = LayoutSamples.Standard();
+        var document = LayoutSamples.DocumentOf(LayoutSamples.Runs(0, BlockType.Paragraph, null,
+            LayoutSamples.Run("x"), LayoutSamples.Run("1", RunSemantic.Subscript)));
+        var result = LayoutSamples.Engine().Layout(document, standard, LayoutSamples.Columns(40), new FakeMeasure { Cjk = 4, Unit = 2 }, CancellationToken.None);
+        LayoutSamples.Ok(result);
+        var line = LayoutSamples.Rows(result).Single(row => row.Occupancy == Occupancy.Text).VisualLine!;
+        Assert.That(line.RenderRuns, Has.Count.EqualTo(2));
+        var script = line.RenderRuns[1];
+        Assert.That(script.ResolvedStyle.Semantic, Is.EqualTo(RunSemantic.Subscript));
+        Assert.That(script.ResolvedStyle.TextHeight, Is.EqualTo(4.5 * ScriptCalibration.SubscriptScale).Within(1e-9));
+        Assert.That(script.BaselineOffset, Is.EqualTo(-4.5 * ScriptCalibration.SubscriptDrop).Within(1e-9));
+    }
+
+    [Test]
+    public void PlainTextWithoutScriptsIgnoresMissingCalibration()
+    {
+        var standard = LayoutSamples.Standard(calibrateScripts: false);
+        var result = LayoutSamples.Engine().Layout(Sample("甲乙"), standard, LayoutSamples.Columns(20), new FakeMeasure(), CancellationToken.None);
+        LayoutSamples.Ok(result);
+        Assert.That(LayoutSamples.Lines(result), Is.EqualTo(new[] { "甲乙" }));
     }
 
     [Test]

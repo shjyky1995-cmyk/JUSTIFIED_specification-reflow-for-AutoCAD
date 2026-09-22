@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Diagnostics;
@@ -130,6 +131,19 @@ public sealed class DraftSessionLoader
             token["measurementTolerance"] = 0;
             session.Diagnostics.Add(Notice("测量公差仍是空的。本次按 0 使用，不把越界当成合格。", "measurementTolerance"));
         }
+
+        FillScript(token, session, "superscriptScale", ScriptCalibration.SuperscriptScale, "上标缩放");
+        FillScript(token, session, "superscriptRise", ScriptCalibration.SuperscriptRise, "上标抬升");
+        FillScript(token, session, "subscriptScale", ScriptCalibration.SubscriptScale, "下标缩放");
+        FillScript(token, session, "subscriptDrop", ScriptCalibration.SubscriptDrop, "下标下沉");
+    }
+
+    private static void FillScript(JObject token, DraftSession session, string field, double value, string label)
+    {
+        var current = token[field];
+        if (current != null && current.Type != JTokenType.Null) return;
+        token[field] = value;
+        session.Diagnostics.Add(Notice(label + "尚未标定。本次按项目制定值 " + value.ToString("G17", CultureInfo.InvariantCulture) + " 使用，没有改草案文件。", field));
     }
 
     private static bool TryRead(string path, DraftSession session, out JObject? token)

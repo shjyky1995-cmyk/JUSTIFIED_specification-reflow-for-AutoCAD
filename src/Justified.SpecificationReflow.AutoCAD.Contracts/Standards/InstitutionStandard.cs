@@ -18,6 +18,15 @@ public sealed class InstitutionStandard
 
     public double RowPitch { get; set; }
 
+    // 上下标标定（相对字高的比例）。缺值即未标定，排版与落图都必须阻断，不扁平化。
+    public double? SuperscriptScale { get; set; }
+
+    public double? SuperscriptRise { get; set; }
+
+    public double? SubscriptScale { get; set; }
+
+    public double? SubscriptDrop { get; set; }
+
     public Dictionary<string, StyleDefinition> Styles { get; set; } = new Dictionary<string, StyleDefinition>();
 
     public LayerPolicy LayerPolicy { get; set; } = new LayerPolicy();
