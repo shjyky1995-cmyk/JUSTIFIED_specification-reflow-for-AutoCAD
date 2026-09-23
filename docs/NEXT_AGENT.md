@@ -24,3 +24,7 @@ MVP 功能闭环已完成：Word→解析→换行→分栏续页→DBText（含
 ## 未完成
 
 CAL-06 Word/WPS 同义核对（轻量，可并入 T12）；T11 冷/热性能、断网离线包、部署文档；T12 三图幅业务样本、外机、一次打印确认、专业核验。standards/published 仍为空——本机 production 测试包不是发布资产。不得把小样本通过视作正式发布通过。
+
+## 2026-09-23 推送状态
+
+用户决定：不合 main，task/T09-dbtext 以分支形式推送 GitHub 私有仓库作阶段备份。本地提交就绪（main 之上 32 个提交，含 T06～T10 与阶段2验收登记）。推送未完成：本机到 github.com 不通（直连 Connection reset/超时；Clash 7890 代理对 api.github.com 通但对 github.com 主站不通，疑似规则分流）；未修改用户代理配置。恢复动作：网络/代理恢复后执行 `git push -u origin task/T09-dbtext`（仍不通则先切 Clash 节点或换可访问 GitHub 的环境）；凭据已由 gh CLI helper 配置。main 仍停在 T05（c8e75fd），阶段3从 main 开新分支。
