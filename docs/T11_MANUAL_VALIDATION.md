@@ -7,10 +7,10 @@
 1. 保存自己的工作，退出已加载旧插件的AutoCAD，再打开AutoCAD 2021，新建一张**空白图**。不要在业务图执行本轮脚本。
 2. 输入 `SCRIPT` 回车，在文件选择框选择：
 
-   `G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\t11-manual\20260923-211640-163\01-auto.scr`
+   `G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\t11-manual\20260923-223055-503\01-auto.scr`
 
    如果出现本项目插件的“未签名”提示，请自行选择“加载一次”。不用修改安全设置。脚本自动生成、撤销、暂时移走测试文档副本以检查错误报告，再还原副本。期间可能看见预期的 `E_DOCX_READ`，这是验证项。
-3. 等命令行出现 `T11_AUTO_FINISHED`。输入 `DN_NOTE` 回车，在图中点一次位置；**点完后立即按住 Esc 约一秒**，再松开。预期出现 `CANCELLED`，图中没有新增文字。若生成已完成，直接告诉我“没来得及取消”，不要连续重跑；我会调整样本或步骤。
+3. 等命令行出现 `T11_AUTO_FINISHED`。输入 `DN_NOTE` 回车，在图中点一次位置；**点完立即按住 Esc 约一秒**，再松开。预期出现 `CANCELLED`，图中没有新增文字。上次样本约 1 秒完成，按键若晚于提交会正常生成；此时关闭测试图且不保存，告诉我“没来得及取消”，不要在同一图连续重跑。
 4. 等返回命令行后，再输入 `SCRIPT`，选择同一目录的 `02-collect.scr`。出现 `T11_COLLECT_FINISHED` 后，回复我“已完成”，附上看到的异常文字即可；不必逐张截图，也不必手工查报告。
 
 如果第2步没有出现结束标记或中途停止，先不要做第3步。执行同目录的 `99-restore.scr` 恢复文件对话框和测试副本，然后把停在哪个提示告诉我。此脚本不删除图中对象。若SCRIPT只显示命令行路径提示，可粘贴上述完整脚本路径并加英文双引号。
@@ -19,7 +19,7 @@
 
 直接读取本机报告，核对正常生成对象数与撤销后的数量、文档丢失错误报告、处理中取消的阶段耗时及零残留。不会把“点选前取消”当作“处理中取消”，也不会把尚未执行的脚本标成通过。
 
-报告目录：上述目录下 reports-normal、reports-cancel；对象计数为 before/generated/undo/missing/after-cancel.txt。自动检查入口为 `scripts/check-manual-validation.ps1 -RunDirectory <本轮目录>`，由Agent运行。
+报告目录：上述目录下 reports-normal、reports-cancel；对象计数为 before/generated/undo/missing/after-cancel.txt。自动检查入口为 `scripts/check-manual-validation.ps1 -RunDirectory <本轮目录>`，由Agent运行。旧目录 `20260923-211640-163` 保留失败证据，不复用。
 
 脚本生成器 `scripts/prepare-manual-validation.ps1` 每次创建唯一目录，复制本机测试标准和样本，记录候选DLL及输入hash。取消样本为190段190000字，低于现有段落/字符上限；未标定取消时延，不承诺用此样本完成性能签收。若取消发生太晚，保留失败报告供诊断。
 

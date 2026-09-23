@@ -15,6 +15,7 @@ Copy-Item -LiteralPath $standard -Destination (Join-Path $run 'test-package') -R
 Copy-Item -LiteralPath $sample -Destination (Join-Path $run 'normal.docx')
 Copy-Item -LiteralPath $sample -Destination (Join-Path $run 'cancel.docx')
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
 $archive = [IO.Compression.ZipFile]::Open((Join-Path $run 'cancel.docx'), [IO.Compression.ZipArchiveMode]::Update)
 try {
     $archive.GetEntry('word/document.xml').Delete()
