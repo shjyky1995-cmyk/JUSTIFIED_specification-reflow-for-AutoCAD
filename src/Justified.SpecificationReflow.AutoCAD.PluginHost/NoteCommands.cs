@@ -235,6 +235,9 @@ public class NoteCommands
 
             if (!File.Exists(settings.DocumentPath))
             {
+                reportStandard = new InstitutionStandard { StandardId = settings.StandardId, Version = settings.StandardVersion };
+                reportTemplate = new LayoutTemplate { TemplateId = settings.TemplateId, Version = settings.TemplateVersion };
+                generated.Diagnostics.Add(Problem(DiagnosticCodes.EDocxRead, "说明文档不存在：" + settings.DocumentPath));
                 editor.WriteMessage("\nDN_NOTE_FAILED " + DiagnosticCodes.EDocxRead + " 说明文档不存在：" + settings.DocumentPath + "。请重新 DN_NOTE_SET。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
@@ -244,6 +247,9 @@ public class NoteCommands
             var loaded = LoadProductionPackage(settings.StandardRoot, settings.TemplateId, settings.TemplateVersion);
             if (loaded.Standard == null || loaded.Template == null)
             {
+                reportStandard = new InstitutionStandard { StandardId = settings.StandardId, Version = settings.StandardVersion };
+                reportTemplate = new LayoutTemplate { TemplateId = settings.TemplateId, Version = settings.TemplateVersion };
+                generated.Diagnostics.AddRange(loaded.Diagnostics);
                 foreach (var diagnostic in loaded.Diagnostics.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
                 editor.WriteMessage("\nDN_NOTE_FAILED 设置引用的标准包已变化。请重新执行 DN_NOTE_SET。\n");
@@ -260,6 +266,7 @@ public class NoteCommands
                 || !string.Equals(template.TemplateId, settings.TemplateId, StringComparison.Ordinal)
                 || !string.Equals(template.Version, settings.TemplateVersion, StringComparison.Ordinal))
             {
+                generated.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "标准包与记住的设置不是同一次发布。"));
                 editor.WriteMessage("\nDN_NOTE_FAILED 标准包与记住的设置不是同一次发布。请重新执行 DN_NOTE_SET。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
@@ -268,6 +275,7 @@ public class NoteCommands
             var fontProblems = new PackageValidator().ValidateFonts(standard, identity => FindFont(database, identity) != null);
             if (fontProblems.Any(item => item.Severity == Severity.Error))
             {
+                generated.Diagnostics.AddRange(fontProblems);
                 foreach (var diagnostic in fontProblems.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
@@ -291,6 +299,8 @@ public class NoteCommands
             editor.WriteMessage("\nDN_NOTE_TEMPLATE " + template.TemplateId + " " + template.Version);
             editor.WriteMessage("\nDN_NOTE_SCALE " + Format(settings.UnitScale));
 
+            editor.WriteMessage("\n正在读取和排版说明；按住 Esc 可取消。\n");
+            using var cancellation = new HostGenerationCancellation();
             using (document.LockDocument())
             {
                 var service = new NoteGenerationService(
@@ -300,7 +310,7 @@ public class NoteCommands
                         DisciplineCode = string.IsNullOrWhiteSpace(template.DisciplineCode) ? "structure" : template.DisciplineCode,
                         StyleMap = Map()
                     }),
-                    new SpecificationLayoutEngine(),
+                    new SpecificationLayoutEngine(GenerationLimits.Default.MaxPages),
                     new HostTextMeasureService(database));
                 generated = service.Generate(
                     new DocxFileSource(settings.DocumentPath),
@@ -312,7 +322,7 @@ public class NoteCommands
                         UnitScale = settings.UnitScale,
                         TargetSpace = TargetSpace.Model
                     },
-                    System.Threading.CancellationToken.None,
+                    cancellation.Token,
                     GenerationLimits.Default);
             }
 
@@ -320,6 +330,8 @@ public class NoteCommands
                 editor.WriteMessage("\nDN_NOTE_WARN " + diagnostic.Code + " " + diagnostic.Message);
             if (!generated.Success)
             {
+                if (generated.Diagnostics.Any(item => item.Code == DiagnosticCodes.Cancelled))
+                    editor.WriteMessage("\nDN_NOTE_CANCELLED\n");
                 foreach (var diagnostic in generated.Diagnostics.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
@@ -357,9 +369,10 @@ public class NoteCommands
             }
 
             RenderReport report;
+            editor.WriteMessage("\n正在写入文字；提交前可取消，提交时正在完成。\n");
             renderTimer.Start();
             using (document.LockDocument())
-                report = new DbTextWriter().Write(database, generated.Texts, wcs.Z, System.Threading.CancellationToken.None);
+                report = new DbTextWriter().Write(database, generated.Texts, wcs.Z, cancellation.Token);
             renderTimer.Stop();
             rendered = new RenderReportResult
             {

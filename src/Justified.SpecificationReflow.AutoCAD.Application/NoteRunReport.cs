@@ -118,9 +118,11 @@ public static class NoteRunReportBuilder
 
         foreach (var diagnostic in rendered.Diagnostics)
         {
-            if (diagnostic == null || diagnostic.Severity != Severity.Error) continue;
-            report.Errors.Add(diagnostic.Code + " " + diagnostic.Message);
+            if (diagnostic == null) continue;
+            if (diagnostic.Severity == Severity.Error) report.Errors.Add(diagnostic.Code + " " + diagnostic.Message);
+            else if (diagnostic.Severity == Severity.Warning) report.Warnings.Add(diagnostic.Code + " " + diagnostic.Message);
         }
+        report.Success = report.Success && report.Errors.Count == 0;
 
         var minX = double.PositiveInfinity;
         var minY = double.PositiveInfinity;

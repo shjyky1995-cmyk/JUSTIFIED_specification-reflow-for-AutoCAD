@@ -64,7 +64,7 @@ public class NoteRunReportTests
         var finished = started.AddMilliseconds(1200);
         var report = NoteRunReportBuilder.Create(@"G:\draw\Drawing1.dwg", settings, standard, template, generated, rendered, started, finished);
 
-        Assert.That(report.Success, Is.True);
+        Assert.That(report.Success, Is.False, "诊断有 error 时不能报告成功，即使调用方成功标志不一致");
         Assert.That(report.Committed, Is.True);
         Assert.That(report.ElapsedMilliseconds, Is.EqualTo(1200));
         Assert.That(report.InputHash, Is.EqualTo("sha256:sample"));

@@ -59,7 +59,7 @@ public sealed class DocxDocumentParser : IDocumentParser
             byte[] bytes;
             using (var input = source.OpenRead())
                 bytes = ReadAll(input, _options.MaxSourceBytes, cancellationToken);
-            CheckZip(bytes, _options.MaxUncompressedBytes);
+            CheckZip(bytes, _options.MaxUncompressedBytes, cancellationToken);
             return ParsePackage(source, bytes, Sha256(bytes), cancellationToken);
         }
         catch (OperationCanceledException)
@@ -121,7 +121,7 @@ public sealed class DocxDocumentParser : IDocumentParser
         return buffer.ToArray();
     }
 
-    private static void CheckZip(byte[] bytes, long? maxUncompressed)
+    private static void CheckZip(byte[] bytes, long? maxUncompressed, System.Threading.CancellationToken cancellationToken)
     {
         try
         {
@@ -129,6 +129,7 @@ public sealed class DocxDocumentParser : IDocumentParser
             long total = 0;
             foreach (var entry in zip.Entries)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (entry.Length < 0) continue;
                 total += entry.Length;
                 if (maxUncompressed is long limit && total > limit)

@@ -53,6 +53,42 @@ public class ReproducibleGenerationTests
         Assert.That(result.ParseMilliseconds, Is.GreaterThanOrEqualTo(0));
     }
 
+    [Test]
+    public void CancellationDuringReadReturnsNoTextAndDisposesSource()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var source = new CancellingSource(cancellation);
+        var result = Service("structure").Generate(source, LayoutSamples.Standard(), LayoutSamples.Columns(100),
+            new RenderTransform { UnitScale = 1, TargetSpace = TargetSpace.Model }, cancellation.Token);
+        Assert.That(source.Stream.Reads, Is.EqualTo(1));
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Diagnostics.Any(x => x.Code == "CANCELLED"), Is.True);
+        Assert.That(result.Texts, Is.Empty);
+        Assert.That(source.Stream.CanRead, Is.False);
+    }
+
+    private sealed class CancellingSource : IDocumentSource
+    {
+        public CancellingSource(CancellationTokenSource cancellation) { Stream = new CancellingStream(cancellation); }
+        public CancellingStream Stream { get; }
+        public SourceInfo Info { get; } = new SourceInfo { Name = "cancel.docx" };
+        public Stream OpenRead() => Stream;
+    }
+
+    private sealed class CancellingStream : MemoryStream
+    {
+        private readonly CancellationTokenSource _cancellation;
+        public int Reads { get; private set; }
+        public CancellingStream(CancellationTokenSource cancellation) : base(new byte[100000]) { _cancellation = cancellation; }
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            Reads++;
+            var read = base.Read(buffer, offset, count);
+            _cancellation.Cancel();
+            return read;
+        }
+    }
+
     private static NoteGenerationResult Generate(byte[] bytes, string discipline)
     {
         var template = LayoutSamples.Columns(new[] { 100d, 100d, 100d }, 71, 7.2, 0);
