@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Diagnostics;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Standards;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Templates;
@@ -9,6 +10,22 @@ namespace Justified.SpecificationReflow.AutoCAD.Application;
 // 一次生成的本地运行报告。宿主按设置把它写成 JSON 文件，供 T11 性能和 T12 验收核对。
 public sealed class NoteRunReport
 {
+    public string InputHash { get; set; } = string.Empty;
+    public string EngineVersion { get; set; } = string.Empty;
+    public string LineBreakRuleVersion { get; set; } = string.Empty;
+    public string SymbolMapVersion { get; set; } = string.Empty;
+    public int Lines { get; set; }
+    public double ReadMilliseconds { get; set; }
+    public double ParseMilliseconds { get; set; }
+    public double LayoutMilliseconds { get; set; }
+    public double PlacementMilliseconds { get; set; }
+    public double PreparationMilliseconds { get; set; }
+    public double UserWaitMilliseconds { get; set; }
+    public double RenderMilliseconds { get; set; }
+    public double EngineMilliseconds => ReadMilliseconds + ParseMilliseconds + LayoutMilliseconds + PlacementMilliseconds + RenderMilliseconds;
+    // 指本进程首次执行生成命令，不冒称 AutoCAD 启动/插件加载耗时。
+    public bool FirstRunInProcess { get; set; }
+
     public string StartedUtc { get; set; } = string.Empty;
 
     public string FinishedUtc { get; set; } = string.Empty;
@@ -66,6 +83,15 @@ public static class NoteRunReportBuilder
 
         var report = new NoteRunReport
         {
+            InputHash = generated.Document?.Source.ContentHash ?? string.Empty,
+            EngineVersion = generated.Layout?.EngineVersion ?? string.Empty,
+            LineBreakRuleVersion = standard.LineBreakRuleVersion,
+            SymbolMapVersion = standard.SymbolMapVersion,
+            Lines = generated.Layout?.Pages.Sum(page => page.Columns.Sum(column => column.Rows.Count(row => row.VisualLine != null))) ?? 0,
+            ReadMilliseconds = generated.ReadMilliseconds,
+            ParseMilliseconds = generated.ParseMilliseconds,
+            LayoutMilliseconds = generated.LayoutMilliseconds,
+            PlacementMilliseconds = generated.PlacementMilliseconds,
             StartedUtc = startedUtc.UtcDateTime.ToString("O"),
             FinishedUtc = finishedUtc.UtcDateTime.ToString("O"),
             ElapsedMilliseconds = (long)(finishedUtc - startedUtc).TotalMilliseconds,

@@ -35,6 +35,11 @@ public class NoteRunReportTests
         var generated = new NoteGenerationResult
         {
             Success = true,
+            Document = new Contracts.Documents.Document { Source = new Contracts.Documents.SourceInfo { ContentHash = "sha256:sample" } },
+            ReadMilliseconds = 4,
+            ParseMilliseconds = 6,
+            LayoutMilliseconds = 20,
+            PlacementMilliseconds = 2,
             Texts =
             {
                 new PlacedText { Text = "第一行", Position = new Point2 { X = -710, Y = -6.2 }, Height = 9, WidthFactor = 0.75, PageIndex = 0 },
@@ -62,6 +67,10 @@ public class NoteRunReportTests
         Assert.That(report.Success, Is.True);
         Assert.That(report.Committed, Is.True);
         Assert.That(report.ElapsedMilliseconds, Is.EqualTo(1200));
+        Assert.That(report.InputHash, Is.EqualTo("sha256:sample"));
+        report.UserWaitMilliseconds = 900;
+        report.RenderMilliseconds = 8;
+        Assert.That(report.EngineMilliseconds, Is.EqualTo(40), "等待用户不能计入引擎耗时");
         Assert.That(report.DrawingPath, Is.EqualTo(@"G:\draw\Drawing1.dwg"));
         Assert.That(report.DocumentPath, Is.EqualTo(@"G:\notes\说明.docx"));
         Assert.That(report.StandardId, Is.EqualTo("jsr-note"));

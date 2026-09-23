@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Diagnostics;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Documents;
@@ -13,6 +14,11 @@ namespace Justified.SpecificationReflow.AutoCAD.Application;
 
 public sealed class NoteGenerationResult
 {
+    public double ReadMilliseconds { get; set; }
+    public double ParseMilliseconds { get; set; }
+    public double LayoutMilliseconds { get; set; }
+    public double PlacementMilliseconds { get; set; }
+
     public bool Success { get; set; }
 
     public Document? Document { get; set; }
@@ -53,10 +59,15 @@ public sealed class NoteGenerationService
             return result;
         }
 
-        var parsed = _parser.Parse(source, new ParseProfile
+        var measuredSource = new MeasuredDocumentSource(source);
+        var timer = Stopwatch.StartNew();
+        var parsed = _parser.Parse(measuredSource, new ParseProfile
         {
             Standard = new StandardRef { Id = standard.StandardId, Version = standard.Version }
         }, cancellationToken);
+        timer.Stop();
+        result.ReadMilliseconds = measuredSource.ReadMilliseconds;
+        result.ParseMilliseconds = Math.Max(0, timer.Elapsed.TotalMilliseconds - result.ReadMilliseconds);
         Add(result.Diagnostics, parsed.Diagnostics);
         if (!parsed.Success || parsed.Document == null) return result;
         result.Document = parsed.Document;
@@ -66,9 +77,13 @@ public sealed class NoteGenerationService
             return result;
         }
 
+        timer.Restart();
         var layout = _engine.Layout(parsed.Document, standard, template, _measure, cancellationToken);
+        result.LayoutMilliseconds = timer.Elapsed.TotalMilliseconds;
         result.Layout = layout;
+        timer.Restart();
         var placed = NotePlacement.Create(layout, template, standard, transform, cancellationToken);
+        result.PlacementMilliseconds = timer.Elapsed.TotalMilliseconds;
         Add(result.Diagnostics, placed.Diagnostics);
         if (!placed.Success || HasError(result.Diagnostics)) return result;
         if (ExceedsLayout(layout, placed, limits, out var layoutMessage))

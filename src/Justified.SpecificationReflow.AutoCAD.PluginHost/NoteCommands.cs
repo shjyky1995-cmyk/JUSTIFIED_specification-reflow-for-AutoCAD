@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -30,6 +31,7 @@ namespace Justified.SpecificationReflow.AutoCAD.PluginHost;
 // DN_NOTE 日常只点一次位置。只接受 classification=production 的已发布标准包，草案包只能走 DN_NOTE_DEV。
 public class NoteCommands
 {
+    private static int _generationAttempts;
     [CommandMethod("DN_NOTE_SET", CommandFlags.Modal)]
     public void SetSettings()
     {
@@ -210,10 +212,20 @@ public class NoteCommands
         var database = document.Database;
         var before = Count(database);
         var started = DateTimeOffset.UtcNow;
+        var total = Stopwatch.StartNew();
+        var firstRun = System.Threading.Interlocked.Increment(ref _generationAttempts) == 1;
+        var wait = new Stopwatch();
+        var renderTimer = new Stopwatch();
+        double preparation = 0;
+        NoteSettings? settings = null;
+        InstitutionStandard? reportStandard = null;
+        LayoutTemplate? reportTemplate = null;
+        var generated = new NoteGenerationResult();
+        var rendered = new RenderReportResult();
         try
         {
             var chunks = new DrawingSettingsStore().Load(database);
-            var settings = chunks == null ? null : NoteSettingsCodec.Decode(chunks);
+            settings = chunks == null ? null : NoteSettingsCodec.Decode(chunks);
             if (settings == null)
             {
                 editor.WriteMessage("\nDN_NOTE_SET_REQUIRED 本图还没有工程设置。请先执行 DN_NOTE_SET 记住标准、图幅、单位比例和说明文档。\n");
@@ -241,6 +253,8 @@ public class NoteCommands
 
             var standard = loaded.Standard;
             var template = loaded.Template;
+            reportStandard = standard;
+            reportTemplate = template;
             if (!string.Equals(standard.StandardId, settings.StandardId, StringComparison.Ordinal)
                 || !string.Equals(standard.Version, settings.StandardVersion, StringComparison.Ordinal)
                 || !string.Equals(template.TemplateId, settings.TemplateId, StringComparison.Ordinal)
@@ -260,9 +274,13 @@ public class NoteCommands
                 return;
             }
 
+            preparation = total.Elapsed.TotalMilliseconds;
+            wait.Start();
             var point = editor.GetPoint(new PromptPointOptions("\n点选说明区右上角"));
+            wait.Stop();
             if (point.Status != PromptStatus.OK)
             {
+                generated.Diagnostics.Add(Problem(DiagnosticCodes.Cancelled, "点选位置时取消。"));
                 editor.WriteMessage("\nDN_NOTE_CANCELLED\n");
                 return;
             }
@@ -273,7 +291,6 @@ public class NoteCommands
             editor.WriteMessage("\nDN_NOTE_TEMPLATE " + template.TemplateId + " " + template.Version);
             editor.WriteMessage("\nDN_NOTE_SCALE " + Format(settings.UnitScale));
 
-            NoteGenerationResult generated;
             using (document.LockDocument())
             {
                 var service = new NoteGenerationService(
@@ -316,9 +333,13 @@ public class NoteCommands
                 confirm.Keywords.Add("否");
                 confirm.Keywords.Default = "否";
                 confirm.AllowNone = true;
+                wait.Start();
                 var answer = editor.GetKeywords(confirm);
+                wait.Stop();
                 if (answer.Status != PromptStatus.OK || answer.StringResult != "是")
                 {
+                    generated.Success = false;
+                    generated.Diagnostics.Add(Problem(DiagnosticCodes.Cancelled, "未确认警告，取消写入。"));
                     editor.WriteMessage("\nDN_NOTE_CANCELLED\n");
                     return;
                 }
@@ -336,8 +357,18 @@ public class NoteCommands
             }
 
             RenderReport report;
+            renderTimer.Start();
             using (document.LockDocument())
                 report = new DbTextWriter().Write(database, generated.Texts, wcs.Z, System.Threading.CancellationToken.None);
+            renderTimer.Stop();
+            rendered = new RenderReportResult
+            {
+                Success = report.Success,
+                Committed = report.Success && report.ObjectCount > 0,
+                Pages = report.PageCount,
+                Objects = report.ObjectCount,
+                Diagnostics = report.Diagnostics
+            };
             var after = Count(database);
             if (!report.Success)
             {
@@ -347,33 +378,32 @@ public class NoteCommands
                 return;
             }
 
-            var finished = DateTimeOffset.UtcNow;
-            var runReport = NoteRunReportBuilder.Create(
-                document.Name,
-                settings,
-                standard,
-                template,
-                generated,
-                new RenderReportResult
-                {
-                    Success = report.Success,
-                    Committed = report.Success && report.ObjectCount > 0,
-                    Pages = report.PageCount,
-                    Objects = report.ObjectCount,
-                    Diagnostics = report.Diagnostics
-                },
-                started,
-                finished);
-            WriteRunReport(editor, settings, runReport);
-
             editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + after);
             editor.WriteMessage("\nDN_NOTE_OK objects=" + report.ObjectCount);
             editor.WriteMessage("\nDN_NOTE_UNDO 一次 U 撤销本次提交。已有同名样式不会被修改，旧文字也不会被删除。\n");
         }
         catch (System.Exception error)
         {
+            generated.Diagnostics.Add(Problem(DiagnosticCodes.ERenderFailed, error.GetType().Name + " " + error.Message));
             editor.WriteMessage("\nDN_NOTE_FAILED " + error.GetType().Name + " " + error.Message);
             editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+        }
+        finally
+        {
+            wait.Stop();
+            renderTimer.Stop();
+            total.Stop();
+            if (settings != null && reportStandard != null && reportTemplate != null)
+            {
+                var runReport = NoteRunReportBuilder.Create(document.Name, settings, reportStandard, reportTemplate,
+                    generated, rendered, started, DateTimeOffset.UtcNow);
+                runReport.ElapsedMilliseconds = (long)total.Elapsed.TotalMilliseconds;
+                runReport.PreparationMilliseconds = preparation;
+                runReport.UserWaitMilliseconds = wait.Elapsed.TotalMilliseconds;
+                runReport.RenderMilliseconds = renderTimer.Elapsed.TotalMilliseconds;
+                runReport.FirstRunInProcess = firstRun;
+                WriteRunReport(editor, settings, runReport);
+            }
         }
     }
 
@@ -383,7 +413,7 @@ public class NoteCommands
         try
         {
             Directory.CreateDirectory(settings.ReportDirectory);
-            var name = "dn-note-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture) + ".json";
+            var name = "dn-note-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N") + ".json";
             var path = Path.Combine(settings.ReportDirectory, name);
             File.WriteAllText(path, JsonConvert.SerializeObject(report, Formatting.Indented));
             editor.WriteMessage("\nDN_NOTE_REPORT " + path + "\n");
