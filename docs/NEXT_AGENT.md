@@ -23,6 +23,6 @@
 
 - T11：新版处理中取消/时延、冷启动加载、限额标定、断网实测；预检中的文档缺失已实测，其他预检路径待复核。合成样本热运行已测，不等于真实业务性能签收。
 - T12：三图幅真实业务样本、正式标准发布、外机安装、一次打印、专业复核，CAL-06 Word/WPS同义证据。
-- 上轮备份至dd924fc；本轮人工验证报告为本机证据，相关文档和脚本待提交/推送。main不变。
+- 本轮记录与重试工具提交 fc67712，已推送 origin/task/T11-offline-delivery；人工验证原始报告仍为本机证据，main不变。
 - main不合并、不打标签；字体/SDK/业务文件/artifacts不入库。
 - 夹具 tests/Justified.SpecificationReflow.AutoCAD.Core.Tests/Fixtures/test-note-standard.json 另有末行换行差异，保留且不暂存。
