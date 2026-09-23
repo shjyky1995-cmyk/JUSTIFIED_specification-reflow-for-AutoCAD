@@ -1,30 +1,28 @@
 # 当前接续状态（所有 Agent 共用）
 
-更新：2026-09-23。阶段3 T11 进行中，T12 待开始。用户要求代验证并继续开发；main 保持 T05，不合并、不打新标签。任务分支 task/T11-offline-delivery 从 main 建立，再 fast-forward 接入已登记验收的 T06～T10（cc219b7）。
+更新：2026-09-23。阶段3 T11进行中，T12待开始；分支 task/T11-offline-delivery。main 保持T05，用户决定不合并、不打新标签。
+
+## 协作方式
+
+用户本轮要求先说明开发流程及后续计划，暂不启动宿主操作。今后默认用户方便时操作AutoCAD；Agent准备简短步骤、样本及自动报告，继续不依赖人工的开发。用户明确说不方便并要求代操作时再使用Computer Use，避免反复截图消耗额度。
 
 ## 已完成和证据
 
-- 阶段2：Word→DBText 正式一键两步、撤销、UCS、上下标与字符核验，原始本机证据 artifacts/cad-retry-note3，说明见 T06/T10 日志。阶段代码已备份 GitHub 私有分支 task/T09-dbtext。
-- 本轮基线复核双框架各 140/140、插件零警告；增加运行报告与确定性测试后各 142/142、插件零警告。T11 提交 f7a1576：输入 hash、规则版本、视觉行数、读取/解析/排版/坐标放置/落图/用户等待独立计时；标准加载后的失败及取消报告。
-- 一万字符及 structure/electrical/water 核心重复生成几何一致；模拟测量不代替宿主性能验收。
-- 离线候选包含运行依赖、Schema、安装回滚说明、构建元数据与完整性校验；解压/篡改拦截和 PowerShell 5.1 校验通过。productionReady=false；正式标准仍未发布，未将本机生产测试包充作发布资产。
-- 性能汇总脚本 scripts/summarize-performance.ps1 已验证 P95、等待扣除、混合输入拒绝。宿主合成样本和21次脚本在 artifacts/t11-host。
+- T06～T10已登记闭环验收，GitHub私有 task/T09-dbtext 已备份。Word解析、换行、分栏续页、DBText、撤销、UCS、上下标与字符证据见各任务日志。
+- T11报告、候选包、完整性校验和性能汇总已实现。旧版宿主21次万字生成成功，20次热运行点选后P95=373ms；两页重复生成快照一致、撤销和超限/损坏文件零残留。详见 docs/T11_HOST_VALIDATION.md。
+- 8f0225b补齐处理中Esc取消、预检失败报告和提前页数限制；核心双框架各143/143、插件零警告，新代码尚未完成宿主验证。
+- 最新候选包 artifacts/packages/20260923-210741-496/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-8f0225b.zip，22文件完整性校验通过；可加载DLL在 测试文件/程序/Justified.SpecificationReflow.AutoCAD.PluginHost.dll。仍是候选包，不是正式发布。
 
-## 用户待办与唯一恢复动作
+## 中断与下一步
 
-AutoCAD 已停在 NETLOAD 的“安全性—未签名的可执行文件”弹窗，目标为 artifacts/packages/20260923-175057-362/JUSTIFIED_specification-reflow-for-AutoCAD.bundle/Contents/Windows/Justified.SpecificationReflow.AutoCAD.PluginHost.dll。
+用户已处理旧版“加载一次”，旧版宿主验证已完成，不再要求重做旧步骤。尝试检查新版验证窗口时Computer Use报告用户按实体Esc停止；未启动新版实例，不能假定当前窗口或弹窗状态。
 
-请用户亲自点“加载一次”。computer-use SKILL 引用的 guidance.md 明确禁止 Agent 操作安全许可请求；不改安全设置或搬移 DLL 绕过。处理后 Agent 观察脚本执行，核对 artifacts/t11-host/reports 与命令日志，失败先修，再继续 T11 真实性能、资源/取消及离线验证。不要把无报告当测试通过。
-
-脚本在新建空白 Drawing1 执行，不动业务图；每次生成后 U，末尾恢复 FILEDIA/LOGFILEMODE/LOGFILEPATH。如取消了脚本，应先恢复这些变量（t11fd/t11lm/t11lp 保存原值）再重跑。原始样本未修改。
+唯一恢复动作：先准备新版取消与失败报告的人工验证步骤及样本，再请用户方便时在独立空白图加载新版运行；Agent读取生成的报告判断结果。现有已加载旧版的CAD不能直接替换程序集，需要新进程。不要把旧版成绩算作新版通过。
 
 ## 未完成与边界
 
-- T11：真实冷/暖性能、启动加载计时、取消时延、限额标定及断网实测，完整失败路径报告仍需宿主复核。
-- T12：三图幅真实业务样本、正式标准发布、外机安装、一次打印、专业复核，CAL-06 Word/WPS 同义证据整理。
-- 不合 main，阶段验收后再按用户决定顺序集成；只备份任务分支。字体/SDK/本机业务及 artifacts 不入库。
-- 另有测试夹具 test-note-standard.json 末行换行差异，未纳入本任务提交，不覆盖它。
-
-## 本轮提交与包
-
-f7a1576、e03d01d 已推送 origin/task/T11-offline-delivery，远端 SHA 已核对。最新包为 artifacts/packages/20260923-175653-822/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-e03d01d.zip；包内校验脚本在 Windows PowerShell 5.1 下验证22文件通过。当前弹窗/benchmark.scr 仍引用17:50同功能代码包，保持该现场等待用户加载。本记录另行提交并推送同分支。
+- T11：新版处理中取消/时延和预检报告宿主复核；冷启动加载、限额标定、断网实测。合成样本热运行已测，不等于真实业务性能签收。
+- T12：三图幅真实业务样本、正式标准发布、外机安装、一次打印、专业复核，CAL-06 Word/WPS同义证据。
+- 最新功能提交8f0225b已本地保存，尚未推送；之前已备份至ce5c61e。本轮仅说明流程并保存用户偏好，后续继续时推送任务分支并核对远端。
+- main不合并、不打标签；字体/SDK/业务文件/artifacts不入库。
+- 夹具 tests/Justified.SpecificationReflow.AutoCAD.Core.Tests/Fixtures/test-note-standard.json 另有末行换行差异，保留且不暂存。
