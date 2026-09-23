@@ -5,6 +5,9 @@
 artifacts/
 /测试文件/程序/
 /测试文件/*.zip
+/测试文件/*_wps验证.docx
+/说明文件/
+/下载.png
 TestResults/
 *.user
 *.suo

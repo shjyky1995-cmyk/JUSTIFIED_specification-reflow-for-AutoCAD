@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net8.0": {
+      "DocumentFormat.OpenXml.Framework": {
+        "type": "Transitive",
+        "resolved": "3.0.2",
+        "contentHash": "ILRCJu2dUJDv27ZCQDftD7AZSuBgKg+ZSUF9dg2dk8qcIED7oM42y/cvZIm0mev80nj2QMzpxthX87+AebzHug==",
+        "dependencies": {
+          "System.IO.Packaging": "8.0.0"
+        }
+      },
+      "System.IO.Packaging": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "8g1V4YRpdGAxFcK8v9OjuMdIOJSpF30Zb1JGicwVZhly3I994WFyBdV6mQEo8d3T+URQe55/M0U0eIH0Hts1bg=="
+      },
+      "justified.specificationreflow.autocad.contracts": {
+        "type": "Project"
+      },
+      "justified.specificationreflow.autocad.docxadapter": {
+        "type": "Project",
+        "dependencies": {
+          "DocumentFormat.OpenXml": "[3.0.2, )",
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+        }
+      },
+      "justified.specificationreflow.autocad.standards": {
+        "type": "Project",
+        "dependencies": {
+          "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )",
+          "Newtonsoft.Json": "[13.0.3, )"
+        }
+      },
+      "DocumentFormat.OpenXml": {
+        "type": "CentralTransitive",
+        "requested": "[3.0.2, )",
+        "resolved": "3.0.2",
+        "contentHash": "gqjP/BxKWgwAWwPAN+RpKaMOiidPM07F+mAxiiW184/MnkHnkk12Qo7cRB0wuq4kOZUrUzQ9EUO966hUy/wKBw==",
+        "dependencies": {
+          "DocumentFormat.OpenXml.Framework": "3.0.2"
+        }
+      },
+      "Newtonsoft.Json": {
+        "type": "CentralTransitive",
+        "requested": "[13.0.3, )",
+        "resolved": "13.0.3",
+        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+      }
+    }
+  }
+}

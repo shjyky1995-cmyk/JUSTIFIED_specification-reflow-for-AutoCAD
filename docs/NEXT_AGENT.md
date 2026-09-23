@@ -1,25 +1,24 @@
 # 当前接续状态（所有 Agent 共用）
 
-更新：2026-09-23。MVP 完成并合入 main（T01～T11），推送 GitHub 私有仓库。分支 task/T11-offline-delivery 已并入 main。剩余 T12 为正式发布前验收，从 main 开新分支。
+更新：2026-09-24。阶段3 T12 进行中；从已合入 T01～T11 的 main（2bb89ed）建立 `task/T12-acceptance`。mvp-1.0 是候选闭环标签，不是正式发布。T12 的三图幅业务、外机、打印、断网、取消时延和专业签收仍待真实证据。
 
-## MVP 范围（已交付）
+## 已完成与证据
 
-- 正式两步：DN_NOTE_SET 设一次（production 标准包、图幅、单位比例、DOCX、报告目录，随图保存）+ DN_NOTE 日常点一次位置；无警告不追问；取消/失败零新增；一次 U 撤销。
-- 排版：中文禁则换行、固定行槽、三图幅分栏、自动续页、上下标（项目标定 0.7/0.35/0.7/0.2）、工程字符透传、缺字形阻断（①-⑳ 等实测缺失）。
-- 限额：块/字符/页/对象上限，超出 E_RESOURCE_LIMIT 拒绝不截断。
-- 运行报告：本地 JSON（InputHash、分阶段耗时、页/对象数、告警、包围盒、Committed）。
-- 候选包：build.ps1 -Target Package → bundle 22 文件 PACKAGE_VERIFY_OK；离线构建（--locked-mode）；INSTALL.md 部署说明。
+- 正式入口 `DN_NOTE_SET` 设一次标准/图幅/单位/DOCX，`DN_NOTE` 点一次位置；T11 已完成候选包、限额、报告、撤销与处理中取消宿主检查。证据见 T06/T10/T11 日志。
+- T12 已取得 WPS 工程说明 A1 宿主证据：2 页、219 个 DBText、字形与续页核对；CAL-06 Word/WPS 输入语义完成，见 `docs/devlog/T12.md`。独立复核修正了旧日志的字符数：同 SHA 的原始 w:t 为 9080 个 UTF-16 单元，实体显示文本为 9076；仅 4 个自然换行边界可折叠空格，源映射保留。旧“8863 完全一致”不再作为证据。
+- 本轮用项目真实 DocxAdapter 扫描用户 13 份原始说明：4 份无表格可解析，9 份含表格按 V1 拒绝。原件不改、不入库；本机报告在 `artifacts/t12-paper/20260924-074811-649/source-inventory.json`。
+- 本机三图幅测试包与同一份无表格 WPS 样本已准备：`artifacts/t12-paper/20260924-074811-649`。样本 SHA256 `3D6402EC462A5649341718B3A5597C39BDF6F519D8D4FD92EF0D250EEFA10E98`；标准及 A1/A2/A3 模板均通过正式加载校验，外层清单标 local-test-only/releaseAccepted=false。`standards/published` 仍为空，不能把测试包当发布资产。步骤在 `docs/T12_ACCEPTANCE.md`。
 
-## 证据索引
+## 用户待办与唯一恢复动作
 
-- T06/T10 日志：正式命令闭环、撤销、UCS、上下标 18/29 对象、字符清单截图、拒绝路径、DEV 回归。
-- T11 日志：新版取消四组证据（T11_MANUAL_CHECK_OK，目录 artifacts/t11-manual/20260923-223055-503）；旧版 20 次热运行 P95=373ms；两页确定性。
-- 核心测试双框架 143/143，插件编译 0 警告（每次构建）。
+用户方便时按 `docs/T12_ACCEPTANCE.md` 在 AutoCAD 2021 三张独立空白图分别执行正式 `DN_NOTE_SET` + `DN_NOTE`，检查至少两页、A1/A2 三栏及 A3 两栏，保留每种图幅一张截图。Agent 随后运行 `scripts/check-t12-paper-validation.ps1 -RunDirectory 'G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\t12-paper\20260924-074811-649'` 读取报告，登记通过或修复失败项。宿主/桌面默认由用户操作；仅用户明确不方便并要求代操作时才用 Computer Use。
 
-## 未完成（T12，正式发布前验收）
+## 仍待完成
 
-Word/WPS 同义核对（CAL-06，需用户提供两份同义样本）；三图幅业务样本本机+外机；一次真实打印确认；取消时延 P95 标定（CAL-08）；断网运行实测；结构专业核验。standards/published 仍为空——本机 production 测试包（artifacts 下）不是发布资产。
+- 本机三图幅真实宿主报告与图面复核；本地测试包不得提前放入 `standards/published`。
+- 外机安装和字体身份、断网运行、一次真实打印、CAL-08 取消时延 P95 与真实业务性能、CAL-09 源文件/解压/页数/对象上限标定、结构专业签收与成效原始记录。缺证据保持 pending。
+- 当前工作区原有 `tests/.../Fixtures/test-note-standard.json` 末行换行差异保留，不暂存。业务源文件、WPS 副本和截图为用户资料，已补忽略规则；仅提交脱敏工具与记录。
 
-## 分支与远程
+## 分支与交付
 
-main 现含 T01～T11（合自 task/T11-offline-delivery）；任务分支保留。恢复动作：从 main 开 task/T12-acceptance 继续。
+本轮 T12 工具及记录先在 `task/T12-acceptance` 检查、提交并推送私有远程；正式签收前不合 main、不打正式发布标签。下一阶段/恢复动作只有上述三图幅本机验证，完成后继续外机、断网、打印和专业签收。

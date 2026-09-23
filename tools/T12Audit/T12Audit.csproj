@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.Contracts/Justified.SpecificationReflow.AutoCAD.Contracts.csproj" />
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.DocxAdapter/Justified.SpecificationReflow.AutoCAD.DocxAdapter.csproj" />
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.Standards/Justified.SpecificationReflow.AutoCAD.Standards.csproj" />
+  </ItemGroup>
+</Project>
