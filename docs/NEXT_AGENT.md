@@ -24,3 +24,7 @@ AutoCAD 已停在 NETLOAD 的“安全性—未签名的可执行文件”弹窗
 - T12：三图幅真实业务样本、正式标准发布、外机安装、一次打印、专业复核，CAL-06 Word/WPS 同义证据整理。
 - 不合 main，阶段验收后再按用户决定顺序集成；只备份任务分支。字体/SDK/本机业务及 artifacts 不入库。
 - 另有测试夹具 test-note-standard.json 末行换行差异，未纳入本任务提交，不覆盖它。
+
+## 本轮提交与包
+
+f7a1576、e03d01d 已推送 origin/task/T11-offline-delivery，远端 SHA 已核对。最新包为 artifacts/packages/20260923-175653-822/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-e03d01d.zip；包内校验脚本在 Windows PowerShell 5.1 下验证22文件通过。当前弹窗/benchmark.scr 仍引用17:50同功能代码包，保持该现场等待用户加载。本记录另行提交并推送同分支。
