@@ -1,6 +1,6 @@
 # 当前接续状态（所有 Agent 共用）
 
-更新：2026-09-22 20:20。T06 上下标与字符清单已落地并通过真实宿主验证；验收范围按用户确认收窄。分支task/T09-dbtext，继承未验收T06/T07/T08，不合main、不打标签、不推送。
+更新：2026-09-23。T06～T10 验收登记已完成；task/T09-dbtext 已推送 GitHub 私有仓库作阶段备份，并设置远程跟踪。不合 main、不打新标签。
 
 ## 已有证据
 
@@ -27,4 +27,6 @@ CAL-06 Word/WPS 同义核对（轻量，可并入 T12）；T11 冷/热性能、�
 
 ## 2026-09-23 推送状态
 
-用户决定：不合 main，task/T09-dbtext 以分支形式推送 GitHub 私有仓库作阶段备份。本地提交就绪（main 之上 32 个提交，含 T06～T10 与阶段2验收登记）。推送未完成：本机到 github.com 不通（直连 Connection reset/超时；Clash 7890 代理对 api.github.com 通但对 github.com 主站不通，疑似规则分流）；未修改用户代理配置。恢复动作：网络/代理恢复后执行 `git push -u origin task/T09-dbtext`（仍不通则先切 Clash 节点或换可访问 GitHub 的环境）；凭据已由 gh CLI helper 配置。main 仍停在 T05（c8e75fd），阶段3从 main 开新分支。
+用户要求检测并恢复 GitHub 连接、推送仓库。此次 `git ls-remote origin` 成功，GitHub API 确认仓库为 PRIVATE、当前账号有 ADMIN 权限；`git push -u origin task/T09-dbtext` 成功，新建远端同名分支并建立跟踪。此前连接 reset/超时未复现，无需修改代理、TLS 或凭据配置。阶段代码基线 0ac4ef0 已完成远程备份；本次连接检查记录随后同分支提交推送。
+
+main 保持 T05（c8e75fd），未合并、未打新标签。用户无需网络修复或手工推送操作。唯一下一步：继续阶段3（T11 性能/离线包/部署文档，随后 T12 正式验收）；按已记录决定从 main 开新任务分支，实施前核对并明确继承当前已验收功能代码的方式，避免丢失 T06～T10 成果。
