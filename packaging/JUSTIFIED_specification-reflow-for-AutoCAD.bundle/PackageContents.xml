@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ApplicationPackage SchemaVersion="1.0" AppVersion="0.1.0" ProductCode="{A01DE782-693C-4BE0-A47B-B01AA18B9A10}" UpgradeCode="{6850C7E2-655F-405C-A325-98EB208888B7}" Name="JUSTIFIED_specification-reflow-for-AutoCAD" Description="M0 foundation diagnostic" Author="Stephen Kim">
+<ApplicationPackage SchemaVersion="1.0" AppVersion="0.1.0" ProductCode="{A01DE782-693C-4BE0-A47B-B01AA18B9A10}" UpgradeCode="{6850C7E2-655F-405C-A325-98EB208888B7}" Name="JUSTIFIED_specification-reflow-for-AutoCAD" Description="Word to DBText - validation candidate" Author="Stephen Kim">
   <Components>
     <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R24.0" SeriesMax="R24.0" />
-    <ComponentEntry AppName="JUSTIFIED_specification-reflow-for-AutoCAD" ModuleName="./Contents/Windows/Justified.SpecificationReflow.AutoCAD.PluginHost.dll" AppDescription="M0 diagnostic only" LoadOnCommandInvocation="True">
-      <Commands GroupName="DESIGNNOTE"><Command Global="DN_DIAG" Local="DN_DIAG" /></Commands>
+    <ComponentEntry AppName="JUSTIFIED_specification-reflow-for-AutoCAD" ModuleName="./Contents/Windows/Justified.SpecificationReflow.AutoCAD.PluginHost.dll" AppDescription="Word to DBText" LoadOnCommandInvocation="True">
+      <Commands GroupName="DESIGNNOTE">
+        <Command Global="DN_DIAG" Local="DN_DIAG" />
+        <Command Global="DN_NOTE_SET" Local="DN_NOTE_SET" />
+        <Command Global="DN_NOTE" Local="DN_NOTE" />
+      </Commands>
     </ComponentEntry>
   </Components>
 </ApplicationPackage>

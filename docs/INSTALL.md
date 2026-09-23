@@ -1,18 +1,28 @@
-# JUSTIFIED_specification-reflow-for-AutoCAD：M0 安装检查
-此包仅包含 DN_DIAG 技术诊断，没有 DOCX 生成命令、生产院标或图纸排版功能。
+# Word→CAD 安装与使用
 
-## 环境与安装
-- Windows x64、AutoCAD 2021（R24.0）、.NET Framework 4.8。
-- 解压 ZIP，将 JUSTIFIED_specification-reflow-for-AutoCAD.bundle 放入当前用户
-  %APPDATA%/Autodesk/ApplicationPlugins；安装前退出 AutoCAD。
-- 若有同名包，先保留旧包到 ApplicationPlugins 之外；禁止覆盖正在加载的 DLL。
-- 启动 AutoCAD，依正常安全提示确认可信来源；不要关闭 SECURELOAD。
-- 打开空白图，输入 DN_DIAG；预期列出依赖版本并出现 DN_DIAG_OK。
-- 命令不创建、删除、保存实体，也不修改现有图纸。
-- 未签名包可能出现信任提示；如被组织策略阻止，记录情况，由环境管理者处理。
+当前 ZIP 是 0.1.0 验收候选包，已包含 Word→DBText 功能。BUILD.json 标明源码提交、工作区是否有改动及未验收项。三图幅正式标准尚未发布，不能把候选包当成正式出图版本。
 
-## 复测与回滚
-记录包 SHA256、AutoCAD 版本、Windows 版本、命令输出和测试人。
-开发机控制台加载通过不代表图形界面自动加载已验收，外部电脑必须独立记录。
-退出 AutoCAD 后移出本包，恢复先前备份的完整包即可回滚；旧包与标准资产保持版本配对。
-安装包不包含 Autodesk DLL、字体和业务样本，也不需要在目标机运行 NuGet。
+## 安装与完整性检查
+
+1. 环境：Windows x64、AutoCAD 2021（R24.0）、.NET Framework 4.8。其他 CAD 版本尚未承诺。
+2. 解压 ZIP。可在 PowerShell 中运行 `& '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle/verify-package.ps1' -BundlePath '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle'`，应显示 PACKAGE_VERIFY_OK。此检查确认文件完整性，不代替发布者签名或可信来源核验。
+3. 退出 AutoCAD，把完整 .bundle 文件夹放入当前用户 `%APPDATA%/Autodesk/ApplicationPlugins`。如有旧版，先移动旧版到该目录之外留作回滚，不覆盖正在使用的 DLL。
+4. 启动 AutoCAD，按正常安全提示加载可信来源插件；保持 SECURELOAD 和组织安全策略。执行 `DN_DIAG` 应显示 DN_DIAG_OK。DN_NOTE_SET、DN_NOTE 均已登记按命令自动加载。
+5. 目标机无需安装 .NET SDK、NuGet 或联网下载运行依赖。字体与大字体需由有授权的来源单独安装；插件包不分发 Autodesk SDK 或字体。
+
+## 设计人员使用
+
+- 维护人准备已校验的标准包，目录为 `standards/<标准ID>/<版本>.json`、`templates/<模板ID>/<版本>.json`。默认位置是插件 `Contents/Windows/standards/published`；也可在首次设置时指定其他目录。候选包的默认目录目前只有说明，必须明确选择本机验收包才能试验；不要把草案改名冒充生产值。
+- 打开模型空间图纸，执行一次 `DN_NOTE_SET`，选择标准包、图幅、单位比例、DOCX 和可选本地报告目录，保存图纸后设置随图保存。单位不明时先确认，一毫米对应一个图形单位才填 1。
+- 日常执行 `DN_NOTE`，点一次说明区右上角。无警告不再提问；有警告先确认。错误则不落图。生成结果为可编辑单行文字，一次 `U` 撤销本次生成。
+- 改好 DOCX 后，删除原说明并重新生成；不删除则另加一份，不会自动更新旧文字。不要使用 DN_NOTE_DEV 作为正式流程。
+
+## 报告、验收与异常
+
+报告只存本地，包含输入 hash、规则版本、行/页/对象数及读取、解析、排版、坐标放置、落图、用户等待和总耗时。EngineMilliseconds 不含用户等待；FirstRunInProcess 仅指首次生成命令，不能代表启动 CAD 的成本。输入 hash 来自实际解析的文件内容，不是事后重新读取的文件。
+
+在同一输入和设置下生成两次，比较文字和坐标；测试图中一次 U 后应恢复生成前状态。异常时保留报告、命令输出、BUILD.json、AutoCAD 版本及触发步骤。报告可能含本地路径和诊断正文，发送前脱敏。外机安装、断网实测、正式三图幅/真实打印和专业复核须独立登记，不能由核心测试替代。
+
+## 回滚
+
+退出 AutoCAD，把此包移出 ApplicationPlugins，恢复备份的完整旧包及匹配的标准配置后重新启动。不要同时安装两个同名包。回滚不删除图纸或 DOCX；已生成 DBText 随图纸保留。

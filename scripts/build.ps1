@@ -52,11 +52,32 @@ try {
         }
         Copy-Item -LiteralPath 'docs/INSTALL.md','docs/THIRD_PARTY.md' -Destination $bundle
         Copy-Item -LiteralPath 'third-party' -Destination $bundle -Recurse
+        Copy-Item -LiteralPath 'scripts/verify-package.ps1' -Destination $bundle
+        Copy-Item -LiteralPath 'schemas' -Destination $bundle -Recurse
+        $published = Join-Path $contents 'standards/published'
+        New-Item -ItemType Directory -Path $published -Force | Out-Null
+        Copy-Item -Path 'standards/published/*' -Destination $published -Recurse
+        $commit = (& git rev-parse HEAD).Trim()
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source commit.' }
+        $dirty = @(& git status --porcelain --untracked-files=normal).Count -gt 0
+        $metadata = [ordered]@{
+            classification = 'validation-candidate'
+            version = '0.1.0'
+            sourceCommit = $commit
+            workingTreeDirty = $dirty
+            builtUtc = [DateTime]::UtcNow.ToString('o')
+            supportedHost = 'AutoCAD 2021 R24.0 / Windows x64 / .NET Framework 4.8'
+            productionReady = $false
+            pending = @('T11 host performance and offline acceptance', 'T12 three-paper production assets, external machine, printing and professional review')
+        }
+        $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $bundle 'BUILD.json') -Encoding UTF8
         $hashes = Get-ChildItem -LiteralPath $bundle -Recurse -File | Get-FileHash -Algorithm SHA256 |
             Select-Object @{n='File';e={$_.Path.Substring($bundle.Length + 1)}},Hash
         $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'SHA256.json') -Encoding UTF8
-        $zip = Join-Path $output 'JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-m0.zip'
+        & (Join-Path $PSScriptRoot 'verify-package.ps1') -BundlePath $bundle
+        $zip = Join-Path $output "JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-$($commit.Substring(0,7)).zip"
         Compress-Archive -LiteralPath $bundle -DestinationPath $zip
+        (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash | Set-Content -LiteralPath "$zip.sha256" -Encoding ASCII
         # Stable, visible handoff location for manual testing; do not change CAD trust settings.
         $handoff = Join-Path $taskRoot ([string][char]0x6D4B + [char]0x8BD5 + [char]0x6587 + [char]0x4EF6)
         $program = Join-Path $handoff ([string][char]0x7A0B + [char]0x5E8F)
@@ -64,7 +85,7 @@ try {
         Get-ChildItem -LiteralPath $contents -Filter *.dll | Copy-Item -Destination $program -Force
         Copy-Item -LiteralPath $zip -Destination $handoff -Force
         Write-Host "Manual test DLL: $(Join-Path $program 'Justified.SpecificationReflow.AutoCAD.PluginHost.dll')"
-        Write-Host "M0 diagnostic package: $zip"
+        Write-Host "Validation candidate package (not production): $zip"
     }
 }
 finally { Pop-Location }
