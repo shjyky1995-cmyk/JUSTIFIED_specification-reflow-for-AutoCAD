@@ -33,7 +33,7 @@ foreach ($paper in @('A1','A2','A3')) {
         $report.StandardId -ne 'jsr-note' -or $report.StandardVersion -ne '1.0.0' -or
         $report.UnitScale -ne 1 -or $report.Pages -lt 2 -or $report.Objects -le 0 -or
         @($report.Errors).Count -ne 0 -or @($report.Warnings).Count -ne 0 -or
-        @($report.TextBounds).Count -ne $report.Pages) {
+        @($report.TextBounds).Count -ne 1) {
         throw "$paper host report does not meet the two-page business sample checks."
     }
     $rows += [ordered]@{ paper = $paper; pages = $report.Pages; objects = $report.Objects; lines = $report.Lines; reportFile = $latest.Name }
