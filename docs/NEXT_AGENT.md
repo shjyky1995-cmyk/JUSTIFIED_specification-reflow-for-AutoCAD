@@ -23,7 +23,6 @@
 
 - T11：新版处理中取消/时延和预检报告宿主复核；冷启动加载、限额标定、断网实测。合成样本热运行已测，不等于真实业务性能签收。
 - T12：三图幅真实业务样本、正式标准发布、外机安装、一次打印、专业复核，CAL-06 Word/WPS同义证据。
-- 最新功能提交8f0225b、协作规则f145625及本轮人工验证工具待本轮推送核对；main不变。人工操作尚未发生，检查器合成正反例不算宿主验收。
+- 最新功能8f0225b、协作规则f145625及人工验证工具a0bb22f已推送origin/task/T11-offline-delivery，push返回成功；main不变。人工操作尚未发生，检查器合成正反例不算宿主验收。
 - main不合并、不打标签；字体/SDK/业务文件/artifacts不入库。
 - 夹具 tests/Justified.SpecificationReflow.AutoCAD.Core.Tests/Fixtures/test-note-standard.json 另有末行换行差异，保留且不暂存。
-
