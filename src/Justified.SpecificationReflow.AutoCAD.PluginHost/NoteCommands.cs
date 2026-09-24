@@ -189,7 +189,7 @@ public class NoteCommands
                 return;
             }
 
-            editor.WriteMessage("\nDN_NOTE_SET_OK 设置已记住在当前图。日常生成请执行 DN_NOTE，点一次说明区右上角。\n");
+            editor.WriteMessage("\nDN_NOTE_SET_OK 设置已记住在当前图。执行 DN_NOTE 可重新选择本次内容；DN_NOTE_REPEAT 可直接沿用这组设置点位生成。\n");
             editor.WriteMessage("\nDN_NOTE_SET_DETAIL standard=" + settings.StandardId + " " + settings.StandardVersion
                 + " template=" + settings.TemplateId + " " + settings.TemplateVersion
                 + " paper=" + settings.PaperCode

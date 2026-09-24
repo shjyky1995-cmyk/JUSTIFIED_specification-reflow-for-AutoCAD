@@ -7,7 +7,7 @@
 1. 环境：Windows x64、AutoCAD 2021（R24.0）、.NET Framework 4.8。其他 CAD 版本尚未承诺。
 2. 解压 ZIP。可在 PowerShell 中运行 `& '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle/verify-package.ps1' -BundlePath '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle'`，应显示 PACKAGE_VERIFY_OK。此检查确认文件完整性，不代替发布者签名或可信来源核验。
 3. 退出 AutoCAD，把完整 .bundle 文件夹放入当前用户 `%APPDATA%/Autodesk/ApplicationPlugins`。如有旧版，先移动旧版到该目录之外留作回滚，不覆盖正在使用的 DLL。
-4. 启动 AutoCAD，按正常安全提示加载可信来源插件；保持 SECURELOAD 和组织安全策略。执行 `DN_DIAG` 应显示 DN_DIAG_OK。DN_NOTE_SET、DN_NOTE 均已登记按命令自动加载。
+4. 启动 AutoCAD，按正常安全提示加载可信来源插件；保持 SECURELOAD 和组织安全策略。执行 `DN_DIAG` 应显示 DN_DIAG_OK。DN_NOTE、DN_NOTE_REPEAT、DN_NOTE_SET 均已登记按命令自动加载。
 5. 目标机无需安装 .NET SDK、NuGet 或联网下载运行依赖。字体与大字体需由有授权的来源单独安装；插件包不分发 Autodesk SDK 或字体。
 
 ## 设计人员使用
