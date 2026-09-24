@@ -58,6 +58,9 @@ foreach (var path in Directory.EnumerateFiles(documentDirectory, "*.docx").Order
         var sourceTextUnits = root.Descendants(word + "t").Sum(node => node.Value.Length);
         var tableCount = root.Descendants(word + "tbl").Count();
         var result = parser.Parse(new DocxFileSource(path), profile, CancellationToken.None);
+        var knownMissing = result.Document?.Blocks.SelectMany(block => block.Runs)
+            .Select(run => FontGlyphCoverage.FirstMissingGlyph("tssdeng.shx", "tssdchn.shx", run.Text))
+            .FirstOrDefault(character => character.HasValue);
         documents.Add(new
         {
             name = Path.GetFileName(path),
@@ -70,6 +73,7 @@ foreach (var path in Directory.EnumerateFiles(documentDirectory, "*.docx").Order
             parseSuccess = result.Success,
             blocks = result.Document?.Blocks.Count,
             parsedRunUtf16Units = result.Document?.Blocks.Sum(block => block.Runs.Sum(run => run.Text.Length)),
+            knownMissingGlyph = knownMissing.HasValue ? "U+" + ((int)knownMissing.Value).ToString("X4") : null,
             diagnostics = result.Diagnostics.GroupBy(item => item.Code)
                 .Select(group => new { code = group.Key, count = group.Count() }).ToArray()
         });
