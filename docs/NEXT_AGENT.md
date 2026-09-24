@@ -4,7 +4,7 @@
 
 ## 2026-09-25 本机测试接续
 
-用户现在按 `docs/T14_HOME_TEST.md` 在 AutoCAD 2021 空白图核对新版窗口、A2 点位耗时、字形与取消行为。Agent 已获授权准备本机部署；部署位置、备份和候选 SHA 应见 T14 日志最新追加。用户回报失败则先修，成功则继续 T12 剩余真实验收及 T14 不同 DOCX/点位取消，随后 T13 图形化安装。`tests/.../Fixtures/test-note-standard.json` 原有换行差异及 `测试结果/` 用户资料不得覆盖或入库。
+用户现在按 `docs/T14_HOME_TEST.md` 在 AutoCAD 2021 空白图核对新版窗口、A2 点位耗时、字形与取消行为。本机候选 `314e6c9` 已部署至 `%APPDATA%/Autodesk/ApplicationPlugins/JUSTIFIED_specification-reflow-for-AutoCAD.bundle`，旧版备份为同目录的 `.bundle.backup-20260925-0114`；候选 ZIP SHA256 和检查结果见 T14 日志。用户回报失败则先修，成功则继续 T12 剩余真实验收及 T14 不同 DOCX/点位取消，随后 T13 图形化安装。`tests/.../Fixtures/test-note-standard.json` 原有换行差异及 `测试结果/` 用户资料不得覆盖或入库。
 
 2026-09-24 新需求及分支：用户明确同一 DWG 可先后插入不同图幅/版本/DOCX，要求每次在 CAD 小窗口选择。`task/T14-note-picker` 从 `task/T12-acceptance` 派生，不能绕过未验收祖先直接合 main。T14 的 WinForms 入口已接入 `DN_NOTE`；`DN_NOTE_REPEAT` 重用最后一次选择；`DN_NOTE_SET` 仍供旧图/验收。单位电脑已实测同图连续 A1/A2/A3 与窗口取消；外观改版、不同 DOCX 等仍 pending。原 T12 私有转移 ZIP 是旧入口，不含 T14。
 
