@@ -28,6 +28,6 @@
 
 ## 分支与交付
 
-T14 最新独立候选包：`artifacts/packages/20260924-083931-125/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-7fb5884.zip`，SHA256 `FDA77CE7B7ABB8DEA31A09DB950B8F69B75663FD717BC85DB9A9BDF85612D41A`；0 警告、双框架各 143/143、bundle 22 文件校验通过。原 T12 私有转移 ZIP 不含新界面。
+T14 最新独立候选包：`artifacts/packages/20260924-084110-671/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-bc3cb48.zip`，SHA256 `D368945B1E898895A7449F9231C1EF268123B07D886FDA3759B4E8F8D6CE2B84`；0 警告、双框架各 143/143、bundle 22 文件校验通过，BUILD.json 已如实列出 T12/T14/T13 待验项。前两个 T14 ZIP 留历史，不作为当前验证包；原 T12 私有转移 ZIP 不含新界面。
 
 当前唯一恢复动作：由用户方便时在 AutoCAD 2021 空白图用 T14 候选包执行 `DN_NOTE`，验证窗口、取消与连续两次不同选择的落图；报告结果后修复问题，再继续 T12 三图幅/外机等真实验收。T12/T14 完成后进入 T13 安装体验交付，正式发布不能跳过。宿主/桌面默认由用户操作；仅用户明确不方便并要求代操作时使用 Computer Use。
