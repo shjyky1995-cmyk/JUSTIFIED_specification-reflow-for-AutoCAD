@@ -8,7 +8,7 @@
 - T12 已取得 WPS 工程说明 A1 宿主证据：2 页、219 个 DBText、字形与续页核对；CAL-06 Word/WPS 输入语义完成，见 `docs/devlog/T12.md`。独立复核修正了旧日志的字符数：同 SHA 的原始 w:t 为 9080 个 UTF-16 单元，实体显示文本为 9076；仅 4 个自然换行边界可折叠空格，源映射保留。旧“8863 完全一致”不再作为证据。
 - 本轮用项目真实 DocxAdapter 扫描用户 13 份原始说明：4 份无表格可解析，9 份含表格按 V1 拒绝。原件不改、不入库；本机报告在 `artifacts/t12-paper/20260924-074811-649/source-inventory.json`。
 - 本机三图幅测试包与同一份无表格 WPS 样本已准备：`artifacts/t12-paper/20260924-074811-649`。样本 SHA256 `3D6402EC462A5649341718B3A5597C39BDF6F519D8D4FD92EF0D250EEFA10E98`；标准及 A1/A2/A3 模板均通过正式加载校验，外层清单标 local-test-only/releaseAccepted=false。`standards/published` 仍为空，不能把测试包当发布资产。步骤在 `docs/T12_ACCEPTANCE.md`。
-- 外机/断网材料已装成私有本机转移包 `artifacts/t12-transfer/20260924-080138-241.zip`，ZIP SHA256 `01914E1365E67E1EFD7D916022B1DD9AD1205EA4895C5FA6A7DE529505913205`；解压后清单校验 8 文件通过。含用户业务样本，仅在其授权设备内使用，外机运行本身仍 pending。
+- 外机/断网材料已装成私有本机转移包 `artifacts/t12-transfer/20260924-080328-947.zip`，ZIP SHA256 `E7848DED77D078BD625D8BC9478452C3DF6644726F88A903A09A944583CB1209`；解压后清单校验 9 文件通过，候选插件内部 22 文件校验通过。包内标准目录另有 LOCAL-TEST-ONLY 标识。含用户业务样本，仅在其授权设备内使用，外机运行本身仍 pending。
 
 ## 用户待办与唯一恢复动作
 

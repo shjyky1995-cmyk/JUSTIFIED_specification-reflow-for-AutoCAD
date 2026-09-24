@@ -9,6 +9,8 @@ $run = Join-Path $workspace ('artifacts/t12-paper/' + (Get-Date -Format 'yyyyMMd
 $package = Join-Path $run 'local-test-package'
 $standardDir = Join-Path $package 'standards/jsr-note'
 New-Item -ItemType Directory -Path $standardDir -Force | Out-Null
+'LOCAL TEST ONLY. Inner JSON uses production classification only to exercise DN_NOTE_SET; this directory is not a published standard.' |
+    Set-Content -LiteralPath (Join-Path $package 'LOCAL-TEST-ONLY.txt') -Encoding ASCII
 Copy-Item -LiteralPath $sample -Destination (Join-Path $run 'sample.docx')
 foreach ($paper in @('A1','A2','A3')) {
     New-Item -ItemType Directory -Path (Join-Path $run "reports/$paper") -Force | Out-Null
