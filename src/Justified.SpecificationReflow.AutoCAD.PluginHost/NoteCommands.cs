@@ -373,7 +373,8 @@ public class NoteCommands
             using var cancellation = new HostGenerationCancellation();
             using (document.LockDocument())
             {
-                measureService = new HostTextMeasureService(database);
+                using var measurement = new HostTextMeasureService(database);
+                measureService = measurement;
                 var service = new NoteGenerationService(
                     new DocxDocumentParser(new DocxParseOptions
                     {
@@ -485,6 +486,7 @@ public class NoteCommands
                     + " parse=" + Format(generated.ParseMilliseconds)
                     + " layout=" + Format(generated.LayoutMilliseconds)
                     + " cad_measure=" + Format(measureService?.MeasureMilliseconds ?? 0)
+                    + " cad_measure_cleanup=" + Format(measureService?.CleanupMilliseconds ?? 0)
                     + " measure_calls=" + (measureService?.MeasureCalls ?? 0).ToString(CultureInfo.InvariantCulture)
                     + " placement=" + Format(generated.PlacementMilliseconds)
                     + " render=" + Format(renderTimer.Elapsed.TotalMilliseconds) + "\n");

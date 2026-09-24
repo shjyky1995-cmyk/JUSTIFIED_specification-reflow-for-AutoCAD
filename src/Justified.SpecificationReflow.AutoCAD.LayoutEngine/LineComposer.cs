@@ -70,6 +70,13 @@ internal sealed class LineComposer
         public List<Diagnostic> Warnings { get; } = new List<Diagnostic>();
     }
 
+    private sealed class ScriptPiece
+    {
+        public string Text { get; set; } = string.Empty;
+        public int Start { get; set; }
+        public RunSemantic Semantic { get; set; }
+    }
+
     private readonly CachedMeasure _measure;
 
     public LineComposer(CachedMeasure measure)
@@ -113,26 +120,29 @@ internal sealed class LineComposer
                 return false;
             }
 
-            if (!TextTokenizer.TryTokenize(run.Text, out var tokens, out var tokenError))
+            foreach (var piece in SplitLiteralScripts(run.Text, run.Semantic))
             {
-                error = Problem(DiagnosticCodes.ENoLegalBreak, tokenError ?? "无法切分文本。", Source(paragraph, index, null));
-                return false;
-            }
-
-            foreach (var token in tokens)
-            {
-                hasBody = true;
-                cursor.Atoms.Add(new Atom
+                if (!TextTokenizer.TryTokenize(piece.Text, out var tokens, out var tokenError))
                 {
-                    Text = token.Text,
-                    CollapsibleSpace = token.CollapsibleSpace,
-                    Splittable = token.Splittable,
-                    ParagraphIndex = paragraph,
-                    RunIndex = index,
-                    TextStart = token.Start,
-                    TextLength = token.Text.Length,
-                    Semantic = run.Semantic
-                });
+                    error = Problem(DiagnosticCodes.ENoLegalBreak, tokenError ?? "无法切分文本。", Source(paragraph, index, null));
+                    return false;
+                }
+
+                foreach (var token in tokens)
+                {
+                    hasBody = true;
+                    cursor.Atoms.Add(new Atom
+                    {
+                        Text = token.Text,
+                        CollapsibleSpace = token.CollapsibleSpace,
+                        Splittable = token.Splittable,
+                        ParagraphIndex = paragraph,
+                        RunIndex = index,
+                        TextStart = piece.Start + token.Start,
+                        TextLength = token.Text.Length,
+                        Semantic = piece.Semantic
+                    });
+                }
             }
         }
 
@@ -149,6 +159,52 @@ internal sealed class LineComposer
         }
 
         return true;
+    }
+
+    internal static bool ContainsLiteralScript(string? text)
+    {
+        if (text == null || text.Length == 0) return false;
+        foreach (var character in text)
+        {
+            if (TryLiteralScript(character, out _)) return true;
+        }
+        return false;
+    }
+
+    private static List<ScriptPiece> SplitLiteralScripts(string text, RunSemantic semantic)
+    {
+        var pieces = new List<ScriptPiece>();
+        var start = 0;
+        var current = semantic;
+        var content = new StringBuilder();
+        for (var index = 0; index < text.Length; index++)
+        {
+            var isScript = TryLiteralScript(text[index], out var replacement);
+            var next = isScript ? RunSemantic.Superscript : semantic;
+            if (content.Length > 0 && next != current)
+            {
+                pieces.Add(new ScriptPiece { Text = content.ToString(), Start = start, Semantic = current });
+                content.Clear();
+                start = index;
+            }
+            current = next;
+            content.Append(isScript ? replacement : text[index]);
+        }
+        if (content.Length > 0)
+            pieces.Add(new ScriptPiece { Text = content.ToString(), Start = start, Semantic = current });
+        return pieces;
+    }
+
+    private static bool TryLiteralScript(char character, out char replacement)
+    {
+        // 此组字符在当前 SHX 宿主截图中落成问号；改由已标定的普通字形+上标位置表达。
+        switch (character)
+        {
+            case '\u00B3': replacement = '3'; return true;
+            case '\u207B': replacement = '-'; return true;
+            case '\u2074': replacement = '4'; return true;
+            default: replacement = character; return false;
+        }
     }
 
     public Decision Next(Cursor cursor, double available, double indent, ResolvedStyle style, double tolerance, System.Threading.CancellationToken cancellationToken)

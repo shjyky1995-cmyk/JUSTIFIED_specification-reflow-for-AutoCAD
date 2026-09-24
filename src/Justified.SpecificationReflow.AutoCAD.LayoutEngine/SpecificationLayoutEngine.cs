@@ -468,7 +468,7 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
         if (block?.Runs == null) return false;
         foreach (var run in block.Runs)
         {
-            if (run != null && run.Semantic != RunSemantic.Normal) return true;
+            if (run != null && (run.Semantic != RunSemantic.Normal || LineComposer.ContainsLiteralScript(run.Text))) return true;
         }
 
         return false;

@@ -57,7 +57,7 @@ public class Commands
         var before = CountEntities(database);
         try
         {
-            var service = new HostTextMeasureService(database);
+            using var service = new HostTextMeasureService(database);
             var style = TestStyle("txt.shx", null);
             var sample = service.Measure(new[] { new TextRun { Text = "W20", Semantic = RunSemantic.Normal } }, style, System.Threading.CancellationToken.None);
             if (!sample.Success || sample.Runs.Count != 1)
@@ -90,6 +90,7 @@ public class Commands
                 System.Threading.CancellationToken.None);
             editor.WriteMessage("\nDN_MEASURE_SUPERSCRIPT " + First(superscript));
 
+            service.Dispose();
             var after = CountEntities(database);
             editor.WriteMessage("\nDN_MEASURE_ENTITIES before=" + before + " after=" + after);
             if (missing.Diagnostics.Count == 1 && missing.Diagnostics[0].Code == DiagnosticCodes.EFontMissing

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
@@ -13,12 +14,17 @@ using Justified.SpecificationReflow.AutoCAD.Contracts.Ports;
 namespace Justified.SpecificationReflow.AutoCAD.AutoCadAdapter;
 
 // 用当前图的 DBText 字形边界测量。事务不提交，临时文字和临时文字样式不会留下。
-public sealed class HostTextMeasureService : ITextMeasureService
+public sealed class HostTextMeasureService : ITextMeasureService, IDisposable
 {
     private readonly Database _database;
+    private readonly Dictionary<string, ObjectId> _styles = new Dictionary<string, ObjectId>(StringComparer.Ordinal);
+    private Transaction? _transaction;
+    private BlockTableRecord? _space;
+    private bool _disposed;
 
     public int MeasureCalls { get; private set; }
     public double MeasureMilliseconds { get; private set; }
+    public double CleanupMilliseconds { get; private set; }
 
     public HostTextMeasureService(Database database)
     {
@@ -42,6 +48,7 @@ public sealed class HostTextMeasureService : ITextMeasureService
 
     private TextMeasurement MeasureCore(IReadOnlyList<TextRun> runs, ResolvedStyle style, CancellationToken cancellationToken)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(HostTextMeasureService));
         if (runs == null) throw new ArgumentNullException(nameof(runs));
         if (style == null) throw new ArgumentNullException(nameof(style));
         if (cancellationToken.IsCancellationRequested)
@@ -72,52 +79,87 @@ public sealed class HostTextMeasureService : ITextMeasureService
 
         var measurements = new List<RunMeasurement>();
         var diagnostics = new List<Diagnostic>();
-        using (var transaction = _database.TransactionManager.StartTransaction())
+        try
         {
-            try
+            EnsureSession();
+            var key = StyleKey(fontPath, bigPath, style);
+            if (!_styles.TryGetValue(key, out var styleId))
             {
-                var styleId = CreateStyle(transaction, fontPath, bigPath, style);
-                var space = (BlockTableRecord)transaction.GetObject(_database.CurrentSpaceId, OpenMode.ForWrite);
-                foreach (var run in runs)
+                styleId = CreateStyle(_transaction!, fontPath, bigPath, style);
+                _styles.Add(key, styleId);
+            }
+            foreach (var run in runs)
+            {
+                if (run == null || run.Text.Length == 0 || run.Text == "\n")
                 {
-                    if (run == null || run.Text.Length == 0 || run.Text == "\n")
-                    {
-                        measurements.Add(new RunMeasurement(0, new Bounds2()));
-                        continue;
-                    }
-
-                    var text = new DBText();
-                    text.SetDatabaseDefaults(_database);
-                    text.TextStyleId = styleId;
-                    text.Height = style.TextHeight;
-                    text.WidthFactor = style.WidthFactor;
-                    text.Oblique = style.ObliqueAngle * Math.PI / 180.0;
-                    text.Position = Point3d.Origin;
-                    text.HorizontalMode = TextHorizontalMode.TextLeft;
-                    text.VerticalMode = TextVerticalMode.TextBase;
-                    text.TextString = run.Text;
-                    space.AppendEntity(text);
-                    transaction.AddNewlyCreatedDBObject(text, true);
-                    var extents = text.GeometricExtents;
-                    measurements.Add(new RunMeasurement(
-                        extents.MaxPoint.X - text.Position.X,
-                        new Bounds2
-                        {
-                            MinX = extents.MinPoint.X - text.Position.X,
-                            MinY = extents.MinPoint.Y - text.Position.Y,
-                            MaxX = extents.MaxPoint.X - text.Position.X,
-                            MaxY = extents.MaxPoint.Y - text.Position.Y
-                        }));
+                    measurements.Add(new RunMeasurement(0, new Bounds2()));
+                    continue;
                 }
+
+                var text = new DBText();
+                text.SetDatabaseDefaults(_database);
+                text.TextStyleId = styleId;
+                text.Height = style.TextHeight;
+                text.WidthFactor = style.WidthFactor;
+                text.Oblique = style.ObliqueAngle * Math.PI / 180.0;
+                text.Position = Point3d.Origin;
+                text.HorizontalMode = TextHorizontalMode.TextLeft;
+                text.VerticalMode = TextVerticalMode.TextBase;
+                text.TextString = CadTextCodes.Encode(run.Text, fontName);
+                _space!.AppendEntity(text);
+                _transaction!.AddNewlyCreatedDBObject(text, true);
+                var extents = text.GeometricExtents;
+                measurements.Add(new RunMeasurement(
+                    extents.MaxPoint.X - text.Position.X,
+                    new Bounds2
+                    {
+                        MinX = extents.MinPoint.X - text.Position.X,
+                        MinY = extents.MinPoint.Y - text.Position.Y,
+                        MaxX = extents.MaxPoint.X - text.Position.X,
+                        MaxY = extents.MaxPoint.Y - text.Position.Y
+                    }));
             }
-            catch (System.Exception error)
-            {
-                measurements.Clear();
-                diagnostics.Add(Problem(DiagnosticCodes.ECadEnv, "宿主测量失败：" + error.GetType().Name + ": " + error.Message));
-            }
+        }
+        catch (System.Exception error)
+        {
+            measurements.Clear();
+            diagnostics.Add(Problem(DiagnosticCodes.ECadEnv, "宿主测量失败：" + error.GetType().Name + ": " + error.Message));
+            Dispose();
         }
 
         return new TextMeasurement(measurements, diagnostics);
+    }
+
+    private void EnsureSession()
+    {
+        if (_transaction != null) return;
+        _transaction = _database.TransactionManager.StartTransaction();
+        _space = (BlockTableRecord)_transaction.GetObject(_database.CurrentSpaceId, OpenMode.ForWrite);
+    }
+
+    private static string StyleKey(string fontPath, string? bigPath, ResolvedStyle style)
+    {
+        return string.Join("|", new[]
+        {
+            fontPath,
+            bigPath ?? string.Empty,
+            style.TextHeight.ToString("R", CultureInfo.InvariantCulture),
+            style.WidthFactor.ToString("R", CultureInfo.InvariantCulture),
+            style.ObliqueAngle.ToString("R", CultureInfo.InvariantCulture)
+        });
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        var timer = Stopwatch.StartNew();
+        _transaction?.Dispose(); // 未 Commit；全部临时 DBText 和样式回滚。
+        timer.Stop();
+        CleanupMilliseconds += timer.Elapsed.TotalMilliseconds;
+        _transaction = null;
+        _space = null;
+        _styles.Clear();
     }
 
     private ObjectId CreateStyle(Transaction transaction, string fontPath, string? bigPath, ResolvedStyle style)

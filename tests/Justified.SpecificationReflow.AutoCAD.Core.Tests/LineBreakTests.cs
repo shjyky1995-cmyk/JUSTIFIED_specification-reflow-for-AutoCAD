@@ -280,6 +280,24 @@ public class LineBreakTests
     }
 
     [Test]
+    public void LiteralCubicAndNegativeExponentUseCalibratedSuperscript()
+    {
+        var document = LayoutSamples.DocumentOf(LayoutSamples.Runs(0, BlockType.Paragraph, null,
+            LayoutSamples.Run("强度 N/mm²；含量 3.0kg/m³；膨胀率 2.5×10⁻⁴")));
+        var result = LayoutSamples.Engine().Layout(document, LayoutSamples.Standard(), LayoutSamples.Columns(200), new FakeMeasure { Cjk = 4, Unit = 2 }, CancellationToken.None);
+        LayoutSamples.Ok(result);
+        var rendered = LayoutSamples.Rows(result).Where(row => row.Occupancy == Occupancy.Text)
+            .SelectMany(row => row.VisualLine!.RenderRuns).ToArray();
+        Assert.That(rendered.Any(run => run.Text == "3" && run.ResolvedStyle.Semantic == RunSemantic.Superscript), Is.True);
+        Assert.That(rendered.Any(run => run.Text == "-4" && run.ResolvedStyle.Semantic == RunSemantic.Superscript), Is.True);
+        Assert.That(rendered.Any(run => run.Text.Contains('²') && run.ResolvedStyle.Semantic == RunSemantic.Normal), Is.True);
+        Assert.That(rendered.All(run => !run.Text.Contains('³') && !run.Text.Contains('⁻') && !run.Text.Contains('⁴')), Is.True);
+
+        var uncalibrated = LayoutSamples.Engine().Layout(document, LayoutSamples.Standard(calibrateScripts: false), LayoutSamples.Columns(200), new FakeMeasure(), CancellationToken.None);
+        Assert.That(uncalibrated.Diagnostics.Any(item => item.Code == DiagnosticCodes.ETemplateInvalid), Is.True);
+    }
+
+    [Test]
     public void SubscriptDropsBelowTheBaseline()
     {
         var standard = LayoutSamples.Standard();

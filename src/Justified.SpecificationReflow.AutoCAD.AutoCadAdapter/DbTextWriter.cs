@@ -52,7 +52,7 @@ public sealed class DbTextWriter
                     entity.Position = new Point3d(text.Position.X, text.Position.Y, elevation);
                     entity.HorizontalMode = TextHorizontalMode.TextLeft;
                     entity.VerticalMode = TextVerticalMode.TextBase;
-                    entity.TextString = text.Text;
+                    entity.TextString = CadTextCodes.Encode(text.Text, text.FontFile);
                     space.AppendEntity(entity);
                     transaction.AddNewlyCreatedDBObject(entity, true);
                     pages.Add(text.PageIndex);
