@@ -1,80 +1,107 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Standards;
 using Justified.SpecificationReflow.AutoCAD.Standards;
+using Newtonsoft.Json.Linq;
 
 namespace Justified.SpecificationReflow.AutoCAD.PluginHost;
 
-// 本次生成的选择只由用户确认。目录和文档沿用上次值，但不按文件名推断图幅或单位。
+// 本次选择只由用户确认；上次选择仅预填，不推断图幅、标准或单位。
 internal sealed class NotePickerForm : Form
 {
+    private static readonly Color Ink = Color.FromArgb(26, 34, 51);
+    private static readonly Color Muted = Color.FromArgb(99, 111, 133);
+    private static readonly Color Blue = Color.FromArgb(19, 101, 230);
+    private static readonly Color Line = Color.FromArgb(210, 220, 235);
     private readonly TextBox _root = new TextBox();
-    private readonly ComboBox _paper = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _template = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly TextBox _scale = new TextBox();
     private readonly TextBox _docx = new TextBox();
+    private readonly TextBox _scale = new TextBox();
+    private readonly ComboBox _template = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Label _status = new Label();
-    private readonly Button _generate = new Button();
+    private readonly Button _continue = new Button();
+    private readonly List<PaperCard> _cards = new List<PaperCard>();
     private List<TemplateSummary> _available = new List<TemplateSummary>();
     private readonly NoteSettings? _previous;
+    private string? _selectedPaper;
 
     public NotePickerForm(string defaultRoot, NoteSettings? previous)
     {
         _previous = previous;
-        Text = "导入 Word 说明";
-        Width = 620;
-        Height = 335;
-        MinimumSize = new System.Drawing.Size(620, 335);
+        Text = "导入说明";
+        ClientSize = new Size(830, 634);
+        MinimumSize = new Size(846, 673);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
+        AutoScaleMode = AutoScaleMode.Font;
+        Font = new Font("Microsoft YaHei UI", 10F);
+        BackColor = Color.White;
+        ForeColor = Ink;
 
-        AddLabel("标准包", 18);
-        Place(_root, 96, 15, 410);
-        _root.Text = previous?.StandardRoot ?? defaultRoot;
-        AddButton("浏览…", 514, 14, () => BrowseFolder(_root));
+        Label("导入说明", 30, 21, 220, 38, 20F, true);
+        Label("选择文件与图幅", 30, 59, 250, 28, 11F, false).ForeColor = Muted;
+        Label("◇", 753, 29, 40, 40, 24F, true).ForeColor = Blue; // 临时符号；正式标志待原始文件。
+        Divider(99);
 
-        AddLabel("图幅", 55);
-        Place(_paper, 96, 52, 180);
-        _paper.SelectedIndexChanged += (_, _) => FillTemplates();
-
-        AddLabel("模板版本", 92);
-        Place(_template, 96, 89, 480);
-
-        AddLabel("单位比例", 129);
-        Place(_scale, 96, 126, 180);
-        _scale.Text = previous == null ? string.Empty : previous.UnitScale.ToString("G17", CultureInfo.InvariantCulture);
-        var hint = new Label { Text = "1 个标准毫米对应的图形单位数；不确定时先核对图纸", Left = 286, Top = 132, Width = 300 };
-        Controls.Add(hint);
-
-        AddLabel("Word 文件", 166);
-        Place(_docx, 96, 163, 410);
+        Section("Word 文件", 130);
+        _docx.SetBounds(185, 119, 475, 38);
         _docx.Text = previous?.DocumentPath ?? string.Empty;
-        AddButton("浏览…", 514, 162, BrowseDocx);
+        _docx.BorderStyle = BorderStyle.FixedSingle;
+        Controls.Add(_docx);
+        AddButton("更换", 674, 119, 118, 38, BrowseDocx);
 
-        _status.Left = 18;
-        _status.Top = 205;
-        _status.Width = 560;
-        _status.Height = 45;
+        Section("图幅", 190);
+        var papers = new[] { ("A1", "3 列"), ("A2", "3 列"), ("A3", "2 列"), ("更多", "···") };
+        for (var i = 0; i < papers.Length; i++)
+        {
+            var card = new PaperCard(papers[i].Item1, papers[i].Item2)
+                { Left = 185 + i * 153, Top = 181, Width = 137, Height = 136 };
+            card.Click += (_, _) => SelectPaper(card.Paper);
+            _cards.Add(card);
+            Controls.Add(card);
+        }
+        Divider(339);
+
+        Section("模板版本", 368);
+        _template.SetBounds(185, 357, 607, 40);
+        _template.FlatStyle = FlatStyle.Flat;
+        Controls.Add(_template);
+
+        Section("单位比例", 431);
+        _scale.SetBounds(185, 420, 438, 39);
+        _scale.BorderStyle = BorderStyle.FixedSingle;
+        _scale.Text = previous == null ? string.Empty : previous.UnitScale.ToString("G17", CultureInfo.InvariantCulture);
+        Controls.Add(_scale);
+        Label("按图纸单位核对", 646, 426, 146, 28, 10F, false).ForeColor = Muted;
+
+        _status.SetBounds(185, 472, 607, 47);
+        _status.ForeColor = Muted;
         Controls.Add(_status);
+        _root.Text = previous?.StandardRoot ?? defaultRoot;
+        var rootButton = AddButton("选择模板目录", 185, 501, 160, 28, BrowseFolder);
+        rootButton.FlatAppearance.BorderSize = 0;
+        rootButton.TextAlign = ContentAlignment.MiddleLeft;
 
-        _generate.Text = "确认并点选位置";
-        _generate.Left = 386;
-        _generate.Top = 258;
-        _generate.Width = 126;
-        _generate.Click += (_, _) => Confirm();
-        Controls.Add(_generate);
-        var cancel = new Button { Text = "取消", Left = 520, Top = 258, Width = 60, DialogResult = DialogResult.Cancel };
-        Controls.Add(cancel);
+        Divider(546);
+        Label("① 选择", 32, 562, 120, 29, 10F, true).ForeColor = Blue;
+        Label("② 点位置", 155, 562, 120, 29, 10F, false).ForeColor = Muted;
+        _continue.Text = "在图纸中点位置";
+        _continue.SetBounds(480, 559, 221, 51);
+        _continue.BackColor = Blue;
+        _continue.ForeColor = Color.White;
+        _continue.FlatStyle = FlatStyle.Flat;
+        _continue.FlatAppearance.BorderSize = 0;
+        _continue.Click += (_, _) => Confirm();
+        Controls.Add(_continue);
+        var cancel = AddButton("取消", 710, 559, 82, 51, () => { DialogResult = DialogResult.Cancel; Close(); });
         CancelButton = cancel;
-        AcceptButton = _generate;
-
-        _root.Leave += (_, _) => RefreshTemplates();
+        AcceptButton = _continue;
         RefreshTemplates();
     }
 
@@ -86,50 +113,86 @@ internal sealed class NotePickerForm : Form
 
     private void RefreshTemplates()
     {
-        _paper.Items.Clear();
-        _template.Items.Clear();
         _available.Clear();
-        _generate.Enabled = false;
-        var root = StandardRoot;
-        if (!Directory.Exists(root))
+        _template.Items.Clear();
+        _continue.Enabled = false;
+        if (!Directory.Exists(StandardRoot))
         {
-            _status.Text = "找不到标准包。请使用已发布标准包所在目录。";
+            _status.Text = "尚未找到模板目录。请选择本机测试包中的 local-test-package。";
+            UpdateCards();
             return;
         }
-
         try
         {
-            var result = new DirectoryPackageCatalog(root, allowTestFixtures: false)
+            var result = new DirectoryPackageCatalog(StandardRoot, allowTestFixtures: false)
                 .ListTemplates(System.Threading.CancellationToken.None);
             _available = result.Templates.Where(item =>
                 string.Equals(item.Classification, "production", StringComparison.OrdinalIgnoreCase)
                 && item.Calibrated && !string.IsNullOrWhiteSpace(item.PaperCode)
+                && (item.PaperCode == "A1" || item.PaperCode == "A2" || item.PaperCode == "A3")
                 && !string.IsNullOrWhiteSpace(item.TemplateId) && !string.IsNullOrWhiteSpace(item.Version)).ToList();
-            foreach (var paper in _available.Select(item => item.PaperCode).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(item => item))
-                _paper.Items.Add(paper);
-            if (_paper.Items.Count == 0)
+            if (_available.Count == 0)
             {
-                _status.Text = "该目录没有可用的已发布模板。";
+                _status.Text = "该目录没有可用的已发布模板；请选择正确的模板目录。";
+                UpdateCards();
                 return;
             }
             var savedPaper = _previous?.PaperCode;
-            var savedIndex = savedPaper == null ? -1 : _paper.FindStringExact(savedPaper);
-            _paper.SelectedIndex = savedIndex >= 0 ? savedIndex : 0;
-            _status.Text = "每次生成均可重新选择图幅、模板版本和 Word 文件。";
-            _generate.Enabled = true;
+            _selectedPaper = _available.Any(item => string.Equals(item.PaperCode, savedPaper, StringComparison.OrdinalIgnoreCase))
+                ? savedPaper : _available[0].PaperCode;
+            UpdateCards();
+            FillTemplates();
+            _status.Text = "核对图纸单位后，选择在图纸中的放置位置。";
+            _continue.Enabled = true;
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException || error is ArgumentException)
         {
-            _status.Text = "读取标准包失败：" + error.Message;
+            _status.Text = "读取模板失败：" + error.Message;
+            UpdateCards();
+        }
+    }
+
+    private void SelectPaper(string paper)
+    {
+        if (paper == "更多")
+        {
+            var extra = _available.Select(item => item.PaperCode).Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(item => item != "A1" && item != "A2" && item != "A3").ToList();
+            if (extra.Count == 0) { _status.Text = "当前没有其他已发布图幅。"; return; }
+            var menu = new ContextMenuStrip();
+            foreach (var item in extra)
+            {
+                var code = item;
+                menu.Items.Add(item, null, (_, _) => SelectPaper(code));
+            }
+            menu.Show(_cards[3], new Point(0, _cards[3].Height));
+            return;
+        }
+        if (!_available.Any(item => string.Equals(item.PaperCode, paper, StringComparison.OrdinalIgnoreCase)))
+        {
+            _status.Text = paper + " 尚无可用模板。";
+            return;
+        }
+        _selectedPaper = paper;
+        UpdateCards();
+        FillTemplates();
+    }
+
+    private void UpdateCards()
+    {
+        foreach (var card in _cards)
+        {
+            card.Selected = string.Equals(card.Paper, _selectedPaper, StringComparison.OrdinalIgnoreCase);
+            card.Available = card.Paper == "更多" || _available.Any(item =>
+                string.Equals(item.PaperCode, card.Paper, StringComparison.OrdinalIgnoreCase));
+            card.Invalidate();
         }
     }
 
     private void FillTemplates()
     {
         _template.Items.Clear();
-        var paper = _paper.SelectedItem as string;
-        if (paper == null) return;
-        foreach (var item in _available.Where(item => string.Equals(item.PaperCode, paper, StringComparison.OrdinalIgnoreCase)))
+        foreach (var item in _available.Where(item => string.Equals(item.PaperCode, _selectedPaper, StringComparison.OrdinalIgnoreCase)))
             _template.Items.Add(new TemplateChoice(item));
         var prior = _previous == null ? -1 : Enumerable.Range(0, _template.Items.Count).Where(index =>
             _template.Items[index] is TemplateChoice choice
@@ -140,15 +203,11 @@ internal sealed class NotePickerForm : Form
 
     private void Confirm()
     {
-        if (SelectedTemplate == null)
-        {
-            _status.Text = "请先选择模板版本。";
-            return;
-        }
+        if (SelectedTemplate == null) { _status.Text = "请先选择模板版本。"; return; }
         if (!double.TryParse(_scale.Text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
             || double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
         {
-            _status.Text = "请填写已确认的单位比例，例如 1。";
+            _status.Text = "请填写已核对的单位比例，例如 1 图形单位 = 1 mm 时填 1。";
             _scale.Focus();
             return;
         }
@@ -170,42 +229,96 @@ internal sealed class NotePickerForm : Form
         if (picker.ShowDialog(this) == DialogResult.OK) _docx.Text = picker.FileName;
     }
 
-    private void BrowseFolder(TextBox target)
+    private void BrowseFolder()
     {
-        using var picker = new FolderBrowserDialog { Description = "选择已发布标准包的根目录" };
-        if (Directory.Exists(target.Text)) picker.SelectedPath = target.Text;
-        if (picker.ShowDialog(this) == DialogResult.OK)
-        {
-            target.Text = picker.SelectedPath;
-            RefreshTemplates();
-        }
+        using var picker = new FolderBrowserDialog { Description = "选择包含 standards 与 templates 的模板目录" };
+        if (Directory.Exists(StandardRoot)) picker.SelectedPath = StandardRoot;
+        if (picker.ShowDialog(this) == DialogResult.OK) { _root.Text = picker.SelectedPath; RefreshTemplates(); }
     }
 
-    private void AddLabel(string text, int top)
+    private void Divider(int top) => Controls.Add(new Panel { Left = 0, Top = top, Width = 830, Height = 1, BackColor = Line });
+    private void Section(string text, int top) => Label(text, 30, top, 145, 30, 11F, true);
+    private Label Label(string text, int left, int top, int width, int height, float size, bool bold)
     {
-        Controls.Add(new Label { Text = text, Left = 18, Top = top + 5, Width = 76 });
+        var label = new Label { Text = text, Left = left, Top = top, Width = width, Height = height,
+            Font = new Font(Font.FontFamily, size, bold ? FontStyle.Bold : FontStyle.Regular) };
+        Controls.Add(label);
+        return label;
     }
-
-    private void Place(Control control, int left, int top, int width)
+    private Button AddButton(string text, int left, int top, int width, int height, Action click)
     {
-        control.Left = left;
-        control.Top = top;
-        control.Width = width;
-        Controls.Add(control);
-    }
-
-    private void AddButton(string text, int left, int top, Action click)
-    {
-        var button = new Button { Text = text, Left = left, Top = top, Width = 65 };
+        var button = new Button { Text = text, Left = left, Top = top, Width = width, Height = height,
+            BackColor = Color.FromArgb(245, 248, 253), ForeColor = Blue, FlatStyle = FlatStyle.Flat };
+        button.FlatAppearance.BorderSize = 0;
         button.Click += (_, _) => click();
         Controls.Add(button);
+        return button;
     }
 
     private sealed class TemplateChoice
     {
-        public TemplateChoice(TemplateSummary template) => Template = template;
+        private readonly string _source;
+        public TemplateChoice(TemplateSummary template)
+        {
+            Template = template;
+            try
+            {
+                var standard = JObject.Parse(File.ReadAllText(template.FilePath))["standardRef"];
+                var id = standard?["id"]?.ToString() ?? string.Empty;
+                _source = string.IsNullOrWhiteSpace(id) ? string.Empty : id + " v" + (standard?["version"]?.ToString() ?? string.Empty);
+            }
+            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException || error is Newtonsoft.Json.JsonException)
+            { _source = string.Empty; }
+        }
         public TemplateSummary Template { get; }
-        public override string ToString() => Template.TemplateId + "  v" + Template.Version
-            + (string.IsNullOrWhiteSpace(Template.DisciplineCode) ? string.Empty : "  " + Template.DisciplineCode);
+        public override string ToString()
+        {
+            return Template.TemplateId + " · v" + Template.Version
+                + (string.IsNullOrWhiteSpace(_source) ? string.Empty : " · " + _source);
+        }
+    }
+
+    private sealed class PaperCard : Panel
+    {
+        public PaperCard(string paper, string detail) { Paper = paper; Detail = detail; Cursor = Cursors.Hand; DoubleBuffered = true; }
+        public string Paper { get; }
+        public string Detail { get; }
+        public bool Selected { get; set; }
+        public bool Available { get; set; }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            var g = e.Graphics;
+            g.Clear(Selected ? Color.FromArgb(242, 248, 255) : Color.White);
+            using (var border = new Pen(Selected ? Blue : Line, Selected ? 2F : 1F))
+                g.DrawRectangle(border, 1, 1, Width - 3, Height - 3);
+            var color = Available ? Ink : Muted;
+            if (Paper == "更多")
+            {
+                using var pen = new Pen(color, 2F);
+                for (var row = 0; row < 2; row++)
+                    for (var column = 0; column < 2; column++)
+                        g.DrawRectangle(pen, 49 + column * 21, 24 + row * 21, 16, 16);
+            }
+            else
+            {
+                using var pen = new Pen(color, 1.5F);
+                g.DrawRectangle(pen, 49, 20, 43, 48);
+                var columns = Paper == "A3" ? 2 : 3;
+                for (var i = 1; i < columns; i++)
+                    g.DrawLine(pen, 49 + i * 43 / columns, 25, 49 + i * 43 / columns, 63);
+                if (Selected)
+                {
+                    using var dot = new SolidBrush(Blue);
+                    g.FillEllipse(dot, 110, 8, 18, 18);
+                    using var tick = new Pen(Color.White, 2F);
+                    g.DrawLines(tick, new[] { new Point(114, 17), new Point(118, 21), new Point(124, 13) });
+                }
+            }
+            TextRenderer.DrawText(g, Paper, new Font(Font.FontFamily, 13F, FontStyle.Bold),
+                new Rectangle(4, 77, Width - 8, 26), color, TextFormatFlags.HorizontalCenter);
+            TextRenderer.DrawText(g, Detail, new Font(Font.FontFamily, 10F),
+                new Rectangle(4, 107, Width - 8, 22), Muted, TextFormatFlags.HorizontalCenter);
+        }
     }
 }
