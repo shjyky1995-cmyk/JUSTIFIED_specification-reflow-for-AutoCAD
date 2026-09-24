@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
@@ -16,12 +17,30 @@ public sealed class HostTextMeasureService : ITextMeasureService
 {
     private readonly Database _database;
 
+    public int MeasureCalls { get; private set; }
+    public double MeasureMilliseconds { get; private set; }
+
     public HostTextMeasureService(Database database)
     {
         _database = database ?? throw new ArgumentNullException(nameof(database));
     }
 
     public TextMeasurement Measure(IReadOnlyList<TextRun> runs, ResolvedStyle style, CancellationToken cancellationToken)
+    {
+        var timer = Stopwatch.StartNew();
+        try
+        {
+            return MeasureCore(runs, style, cancellationToken);
+        }
+        finally
+        {
+            timer.Stop();
+            MeasureCalls++;
+            MeasureMilliseconds += timer.Elapsed.TotalMilliseconds;
+        }
+    }
+
+    private TextMeasurement MeasureCore(IReadOnlyList<TextRun> runs, ResolvedStyle style, CancellationToken cancellationToken)
     {
         if (runs == null) throw new ArgumentNullException(nameof(runs));
         if (style == null) throw new ArgumentNullException(nameof(style));

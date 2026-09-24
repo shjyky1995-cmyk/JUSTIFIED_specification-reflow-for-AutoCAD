@@ -281,6 +281,8 @@ public class NoteCommands
         var firstRun = System.Threading.Interlocked.Increment(ref _generationAttempts) == 1;
         var wait = new Stopwatch();
         var renderTimer = new Stopwatch();
+        var anchorTimer = new Stopwatch();
+        HostTextMeasureService? measureService = null;
         double preparation = 0;
         NoteSettings? settings = null;
         InstitutionStandard? reportStandard = null;
@@ -359,6 +361,8 @@ public class NoteCommands
                 return;
             }
 
+            anchorTimer.Start();
+
             var wcs = point.Value.TransformBy(editor.CurrentUserCoordinateSystem);
             editor.WriteMessage("\nDN_NOTE_ANCHOR_WCS " + Format(wcs.X) + "," + Format(wcs.Y) + "," + Format(wcs.Z));
             editor.WriteMessage("\nDN_NOTE_STANDARD " + standard.StandardId + " " + standard.Version);
@@ -369,6 +373,7 @@ public class NoteCommands
             using var cancellation = new HostGenerationCancellation();
             using (document.LockDocument())
             {
+                measureService = new HostTextMeasureService(database);
                 var service = new NoteGenerationService(
                     new DocxDocumentParser(new DocxParseOptions
                     {
@@ -377,7 +382,7 @@ public class NoteCommands
                         StyleMap = Map()
                     }),
                     new SpecificationLayoutEngine(GenerationLimits.Default.MaxPages),
-                    new HostTextMeasureService(database));
+                    measureService);
                 generated = service.Generate(
                     new DocxFileSource(settings.DocumentPath),
                     standard,
@@ -471,7 +476,19 @@ public class NoteCommands
         {
             wait.Stop();
             renderTimer.Stop();
+            anchorTimer.Stop();
             total.Stop();
+            if (anchorTimer.ElapsedTicks > 0)
+            {
+                editor.WriteMessage("\nDN_NOTE_TIMING_MS anchor_to_finish=" + Format(anchorTimer.Elapsed.TotalMilliseconds)
+                    + " read=" + Format(generated.ReadMilliseconds)
+                    + " parse=" + Format(generated.ParseMilliseconds)
+                    + " layout=" + Format(generated.LayoutMilliseconds)
+                    + " cad_measure=" + Format(measureService?.MeasureMilliseconds ?? 0)
+                    + " measure_calls=" + (measureService?.MeasureCalls ?? 0).ToString(CultureInfo.InvariantCulture)
+                    + " placement=" + Format(generated.PlacementMilliseconds)
+                    + " render=" + Format(renderTimer.Elapsed.TotalMilliseconds) + "\n");
+            }
             if (settings != null && reportStandard != null && reportTemplate != null)
             {
                 var runReport = NoteRunReportBuilder.Create(document.Name, settings, reportStandard, reportTemplate,
