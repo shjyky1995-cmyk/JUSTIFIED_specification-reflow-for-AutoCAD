@@ -16,7 +16,7 @@
 
 ## 用户待办与唯一恢复动作
 
-用户方便时按 `docs/T12_ACCEPTANCE.md` 在 AutoCAD 2021 三张独立空白图分别执行正式 `DN_NOTE_SET` + `DN_NOTE`，检查至少两页、A1/A2 三栏及 A3 两栏，保留每种图幅一张截图。Agent 随后运行 `scripts/check-t12-paper-validation.ps1 -RunDirectory 'G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\t12-paper\20260924-074811-649'` 读取报告，登记通过或修复失败项。宿主/桌面默认由用户操作；仅用户明确不方便并要求代操作时才用 Computer Use。
+当前先验 T14 新窗口：用户方便时在 AutoCAD 2021 独立空白图，使用 T14 候选插件与本地测试标准包，执行 `DN_NOTE` 选择 A1/样本 DOCX 点位一次；再次 `DN_NOTE` 改选 A2 或 A3/另一 DOCX，再点另一处；检查两组文字均在、图幅不同、取消窗口不落图。留窗口与图面截图、命令输出。完成后再按 `docs/T12_ACCEPTANCE.md` 用原 T12 私有转移 ZIP 验收三张独立空白图的原有正式链路，不能混用两份候选插件。Agent 随后运行 `scripts/check-t12-paper-validation.ps1 -RunDirectory 'G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\t12-paper\20260924-074811-649'` 读取报告，登记通过或修复失败项。宿主/桌面默认由用户操作；仅用户明确不方便并要求代操作时才用 Computer Use。
 
 ## 仍待完成
 
@@ -28,4 +28,6 @@
 
 ## 分支与交付
 
-当前唯一恢复动作：先准备 T14 的独立候选包与短步骤，由用户方便时在 AutoCAD 2021 空白图打开 `DN_NOTE` 验证窗口、取消与连续两次不同选择的落图；报告结果后修复问题，再继续 T12 三图幅/外机等真实验收。T12/T14 完成后进入 T13 安装体验交付，正式发布不能跳过。宿主/桌面默认由用户操作；仅用户明确不方便并要求代操作时使用 Computer Use。
+T14 最新独立候选包：`artifacts/packages/20260924-083931-125/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-7fb5884.zip`，SHA256 `FDA77CE7B7ABB8DEA31A09DB950B8F69B75663FD717BC85DB9A9BDF85612D41A`；0 警告、双框架各 143/143、bundle 22 文件校验通过。原 T12 私有转移 ZIP 不含新界面。
+
+当前唯一恢复动作：由用户方便时在 AutoCAD 2021 空白图用 T14 候选包执行 `DN_NOTE`，验证窗口、取消与连续两次不同选择的落图；报告结果后修复问题，再继续 T12 三图幅/外机等真实验收。T12/T14 完成后进入 T13 安装体验交付，正式发布不能跳过。宿主/桌面默认由用户操作；仅用户明确不方便并要求代操作时使用 Computer Use。
