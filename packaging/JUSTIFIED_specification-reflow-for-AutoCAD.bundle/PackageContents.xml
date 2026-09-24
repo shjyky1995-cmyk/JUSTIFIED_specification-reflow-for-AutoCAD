@@ -7,6 +7,7 @@
         <Command Global="DN_DIAG" Local="DN_DIAG" />
         <Command Global="DN_NOTE_SET" Local="DN_NOTE_SET" />
         <Command Global="DN_NOTE" Local="DN_NOTE" />
+        <Command Global="DN_NOTE_REPEAT" Local="DN_NOTE_REPEAT" />
       </Commands>
     </ComponentEntry>
   </Components>

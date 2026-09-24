@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Windows.Forms;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
@@ -27,8 +28,8 @@ using Newtonsoft.Json;
 
 namespace Justified.SpecificationReflow.AutoCAD.PluginHost;
 
-// 正式两步：DN_NOTE_SET 设一次标准、图幅、单位比例和说明文档并记住在当前图；
-// DN_NOTE 日常只点一次位置。只接受 classification=production 的已发布标准包，草案包只能走 DN_NOTE_DEV。
+// DN_NOTE 每次选择本次模板与 DOCX，然后点一次位置；DN_NOTE_REPEAT 可重用当前图最后一次选择。
+// DN_NOTE_SET 保留给旧图和开发验收。正式入口只接受 classification=production 的已发布标准包。
 public class NoteCommands
 {
     private static int _generationAttempts;
@@ -209,6 +210,70 @@ public class NoteCommands
         var document = CadApplication.DocumentManager.MdiActiveDocument;
         if (document == null) return;
         var editor = document.Editor;
+        try
+        {
+            var chunks = new DrawingSettingsStore().Load(document.Database);
+            var previous = chunks == null ? null : NoteSettingsCodec.Decode(chunks);
+            using var picker = new NotePickerForm(DefaultStandardRoot(), previous);
+            if (picker.ShowDialog() != DialogResult.OK)
+            {
+                editor.WriteMessage("\nDN_NOTE_CANCELLED\n");
+                return;
+            }
+
+            var chosen = picker.SelectedTemplate;
+            if (chosen == null) return;
+            var loaded = LoadProductionPackage(picker.StandardRoot, chosen.TemplateId, chosen.Version);
+            if (loaded.Standard == null || loaded.Template == null)
+            {
+                foreach (var diagnostic in loaded.Diagnostics.Where(item => item.Severity == Severity.Error))
+                    editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
+                return;
+            }
+            if (!string.Equals(loaded.Template.PaperCode.ToString(), chosen.PaperCode, StringComparison.OrdinalIgnoreCase))
+            {
+                editor.WriteMessage("\nDN_NOTE_FAILED 模板摘要与已发布模板的图幅不一致。\n");
+                return;
+            }
+            var settings = new NoteSettings
+            {
+                StandardRoot = Path.GetFullPath(picker.StandardRoot),
+                StandardId = loaded.Standard.StandardId,
+                StandardVersion = loaded.Standard.Version,
+                TemplateId = loaded.Template.TemplateId,
+                TemplateVersion = loaded.Template.Version,
+                PaperCode = chosen.PaperCode,
+                UnitScale = picker.UnitScale,
+                DocumentPath = picker.DocumentPath,
+                ReportDirectory = picker.ReportDirectory,
+                SavedUtc = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture)
+            };
+            var problems = settings.Problems();
+            if (problems.Count > 0)
+            {
+                foreach (var problem in problems) editor.WriteMessage("\nDN_NOTE_FAILED " + problem);
+                return;
+            }
+            var saveError = new DrawingSettingsStore().Save(document.Database, NoteSettingsCodec.Encode(settings));
+            if (saveError != null)
+            {
+                editor.WriteMessage("\nDN_NOTE_FAILED " + saveError.Code + " " + saveError.Message);
+                return;
+            }
+            RunSavedNote();
+        }
+        catch (System.Exception error)
+        {
+            editor.WriteMessage("\nDN_NOTE_FAILED " + error.GetType().Name + " " + error.Message + "\n");
+        }
+    }
+
+    [CommandMethod("DN_NOTE_REPEAT", CommandFlags.Modal)]
+    public void RunSavedNote()
+    {
+        var document = CadApplication.DocumentManager.MdiActiveDocument;
+        if (document == null) return;
+        var editor = document.Editor;
         var database = document.Database;
         var before = Count(database);
         var started = DateTimeOffset.UtcNow;
@@ -228,7 +293,7 @@ public class NoteCommands
             settings = chunks == null ? null : NoteSettingsCodec.Decode(chunks);
             if (settings == null)
             {
-                editor.WriteMessage("\nDN_NOTE_SET_REQUIRED 本图还没有工程设置。请先执行 DN_NOTE_SET 记住标准、图幅、单位比例和说明文档。\n");
+                editor.WriteMessage("\nDN_NOTE_SET_REQUIRED 本图还没有选择记录。请执行 DN_NOTE 选择图幅、模板和说明文档。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
@@ -238,7 +303,7 @@ public class NoteCommands
                 reportStandard = new InstitutionStandard { StandardId = settings.StandardId, Version = settings.StandardVersion };
                 reportTemplate = new LayoutTemplate { TemplateId = settings.TemplateId, Version = settings.TemplateVersion };
                 generated.Diagnostics.Add(Problem(DiagnosticCodes.EDocxRead, "说明文档不存在：" + settings.DocumentPath));
-                editor.WriteMessage("\nDN_NOTE_FAILED " + DiagnosticCodes.EDocxRead + " 说明文档不存在：" + settings.DocumentPath + "。请重新 DN_NOTE_SET。\n");
+                editor.WriteMessage("\nDN_NOTE_FAILED " + DiagnosticCodes.EDocxRead + " 说明文档不存在：" + settings.DocumentPath + "。请重新执行 DN_NOTE 选择文件。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
@@ -252,7 +317,7 @@ public class NoteCommands
                 generated.Diagnostics.AddRange(loaded.Diagnostics);
                 foreach (var diagnostic in loaded.Diagnostics.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
-                editor.WriteMessage("\nDN_NOTE_FAILED 设置引用的标准包已变化。请重新执行 DN_NOTE_SET。\n");
+                editor.WriteMessage("\nDN_NOTE_FAILED 设置引用的标准包已变化。请重新执行 DN_NOTE 选择模板。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
@@ -264,10 +329,11 @@ public class NoteCommands
             if (!string.Equals(standard.StandardId, settings.StandardId, StringComparison.Ordinal)
                 || !string.Equals(standard.Version, settings.StandardVersion, StringComparison.Ordinal)
                 || !string.Equals(template.TemplateId, settings.TemplateId, StringComparison.Ordinal)
-                || !string.Equals(template.Version, settings.TemplateVersion, StringComparison.Ordinal))
+                || !string.Equals(template.Version, settings.TemplateVersion, StringComparison.Ordinal)
+                || !string.Equals(template.PaperCode.ToString(), settings.PaperCode, StringComparison.OrdinalIgnoreCase))
             {
                 generated.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "标准包与记住的设置不是同一次发布。"));
-                editor.WriteMessage("\nDN_NOTE_FAILED 标准包与记住的设置不是同一次发布。请重新执行 DN_NOTE_SET。\n");
+                editor.WriteMessage("\nDN_NOTE_FAILED 标准包与记住的设置不是同一次发布。请重新执行 DN_NOTE 选择模板。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }

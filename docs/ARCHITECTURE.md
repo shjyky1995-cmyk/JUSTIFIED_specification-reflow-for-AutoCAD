@@ -41,6 +41,8 @@ T03 已交付：上述契约与 7 个 Active 端口冻结于 Contracts；schemas
 
 T10/T11 已交付（ADR-010 落地）：Contracts 增加 `NoteSettings`（工程设置快照：包根目录、标准与模板 id/version、图幅、单位比例、说明文档、可选报告目录）与 `GenerationLimits`（单次生成资源上限）；AutoCadAdapter 增加 `DrawingSettingsStore`，把设置的 Base64 分块 JSON 存进当前图 JSR_NOTE_SETTINGS 命名字典，跟随图纸走；Application 的 `NoteGenerationService` 增加限额检查点（E_RESOURCE_LIMIT，不截断）与 `NoteRunReportBuilder` 本地运行报告；Standards 的 `DirectoryPackageCatalog` 增加 `ListTemplates` 摘要枚举，`NoteSettingsCodec` 负责编解码。正式入口为 `DN_NOTE_SET`（设一次，只接受 classification=production 的包）+ `DN_NOTE`（日常点一次位置）；原多步命令更名 `DN_NOTE_DEV` 留作开发核对，仍走草案内存补齐。不改变依赖方向或技术栈；限额与报告不写入共享 Schema。
 
+2026-09-24 ADR-011（用户更新）：同图允许多次插入不同图幅、模板版本和 DOCX。`NoteSettings` 与图内 `JSR_NOTE_SETTINGS` 保留原结构，只表示上一次明确选择，用作下次窗口预填；不把它当成全图唯一说明类型。`DN_NOTE` 每次打开 PluginHost 内的 WinForms 选择窗口，确认本次选择后复用已验证的排版/落图链路。`DN_NOTE_REPEAT` 明确重用上次选择；`DN_NOTE_SET` 保留供旧图及验收脚本。当前模型/模板仅支持 A1/A2/A3，未来新增图幅需另行扩展 enum、资产和验证。此项不改变共享协议、模块依赖或技术栈；影响 PRD 3.3、操作文档与宿主验收。
+
 ## 已确认决策
 - ADR-001：首版只承诺 AutoCAD 2021，其他版本必须单独验证。
 - ADR-002：分层单仓库，本地生成不依赖网络或服务。
