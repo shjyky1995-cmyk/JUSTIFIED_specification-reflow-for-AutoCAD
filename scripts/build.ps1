@@ -68,7 +68,7 @@ try {
             builtUtc = [DateTime]::UtcNow.ToString('o')
             supportedHost = 'AutoCAD 2021 R24.0 / Windows x64 / .NET Framework 4.8'
             productionReady = $false
-            pending = @('T11 host performance and offline acceptance', 'T12 three-paper production assets, external machine, printing and professional review')
+            pending = @('T12 three-paper production assets, external machine, offline run, printing and professional review', 'T14 in-CAD picker and mixed-paper host validation', 'T13 graphical installer and clean-machine acceptance')
         }
         $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $bundle 'BUILD.json') -Encoding UTF8
         $hashes = Get-ChildItem -LiteralPath $bundle -Recurse -File | Get-FileHash -Algorithm SHA256 |
