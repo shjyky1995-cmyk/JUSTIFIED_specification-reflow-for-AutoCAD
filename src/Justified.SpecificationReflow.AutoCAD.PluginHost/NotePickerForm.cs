@@ -43,7 +43,7 @@ internal sealed class NotePickerForm : Form
         _root = defaultRoot;
         Text = "导入说明";
         AutoScaleMode = AutoScaleMode.None;
-        ClientSize = new Size(780, 480);
+        ClientSize = new Size(700, 400);
         FormBorderStyle = FormBorderStyle.None;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -59,63 +59,63 @@ internal sealed class NotePickerForm : Form
         var logo = LoadLogo();
         if (logo != null)
         {
-            var logoBox = new PictureBox { Image = logo, SizeMode = PictureBoxSizeMode.Zoom, Left = 26, Top = 12, Width = 46, Height = 48 };
+            var logoBox = new PictureBox { Image = logo, SizeMode = PictureBoxSizeMode.Zoom, Left = 22, Top = 10, Width = 40, Height = 42 };
             Controls.Add(logoBox);
             EnableDragging(logoBox);
         }
-        EnableDragging(Label("导入说明", 90, 10, 300, 28, 20F, true));
-        var subtitle = Label("选择文件与图幅", 90, 38, 300, 20, 12F, false);
+        EnableDragging(Label("导入说明", 78, 8, 300, 26, 20F, true));
+        var subtitle = Label("选择文件与图幅", 78, 32, 300, 18, 12F, false);
         subtitle.ForeColor = Muted;
         EnableDragging(subtitle);
-        var close = AddButton("×", 718, 12, 34, 34, () => { DialogResult = DialogResult.Cancel; Close(); });
-        close.Font = new Font(Font.FontFamily, 20F, FontStyle.Regular, GraphicsUnit.Pixel);
+        var close = AddButton("×", 640, 10, 30, 30, () => { DialogResult = DialogResult.Cancel; Close(); });
+        close.Font = new Font(Font.FontFamily, 18F, FontStyle.Regular, GraphicsUnit.Pixel);
         close.ForeColor = Muted;
         close.BackColor = Color.White;
-        Divider(72);
+        Divider(60);
 
-        Section("Word 文件", 86);
-        var wordBox = Box(150, 78, 596, 52);
-        var wordIcon = Label("W", 14, 8, 30, 36, 14F, true, wordBox);
+        Section("Word 文件", 72);
+        var wordBox = Box(130, 64, 548, 46);
+        var wordIcon = Label("W", 12, 7, 26, 32, 14F, true, wordBox);
         wordIcon.ForeColor = Color.White;
         wordIcon.BackColor = Color.FromArgb(40, 103, 191);
         wordIcon.TextAlign = ContentAlignment.MiddleCenter;
-        _docx.SetBounds(56, 12, 420, 26);
+        _docx.SetBounds(48, 10, 380, 24);
         _docx.Text = previous?.DocumentPath ?? string.Empty;
         _docx.BorderStyle = BorderStyle.None;
         _docx.Font = new Font(Font.FontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
         wordBox.Controls.Add(_docx);
-        AddButton("更换", 492, 7, 88, 38, BrowseDocx, wordBox);
+        AddButton("更换", 456, 6, 78, 34, BrowseDocx, wordBox);
 
-        Section("图幅", 152);
+        Section("图幅", 130);
         var papers = new[] { ("A1", "3 列"), ("A2", "3 列"), ("A3", "2 列"), ("更多", "···") };
         for (var i = 0; i < papers.Length; i++)
         {
             var card = new PaperCard(papers[i].Item1, papers[i].Item2)
-                { Left = 150 + i * 152, Top = 144, Width = 140, Height = 126 };
+                { Left = 176 + i * 117, Top = 120, Width = 105, Height = 94 };
             card.Click += (_, _) => SelectPaper(card.Paper);
             _cards.Add(card);
             Controls.Add(card);
         }
-        Divider(296, 26, 730);
+        Divider(230, 22, 656);
 
-        Section("单位比例", 312);
-        var scaleBox = Box(150, 304, 420, 44);
-        _scale.SetBounds(12, 10, 396, 24);
+        Section("单位比例", 246);
+        var scaleBox = Box(130, 238, 360, 40);
+        _scale.SetBounds(10, 8, 360, 24);
         _scale.BorderStyle = BorderStyle.None;
         _scale.Font = new Font(Font.FontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
         _scale.Text = previous == null ? string.Empty : previous.UnitScale.ToString("G17", CultureInfo.InvariantCulture);
         scaleBox.Controls.Add(_scale);
-        Label("按图纸单位核对", 588, 316, 160, 22, 12F, false).ForeColor = Muted;
+        Label("按图纸单位核对", 510, 248, 150, 20, 12F, false).ForeColor = Muted;
 
-        _status.SetBounds(150, 358, 460, 20);
+        _status.SetBounds(130, 286, 420, 18);
         _status.ForeColor = Muted;
         _status.Font = new Font(Font.FontFamily, 12F, FontStyle.Regular, GraphicsUnit.Pixel);
         Controls.Add(_status);
-        Divider(394);
-        Label("① 选择", 30, 406, 80, 26, 13F, true).ForeColor = Blue;
-        Label("② 点位置", 124, 406, 100, 26, 13F, false).ForeColor = Muted;
+        Divider(318);
+        Label("① 选择", 22, 328, 70, 24, 13F, true).ForeColor = Blue;
+        Label("② 点位置", 104, 328, 90, 24, 13F, false).ForeColor = Muted;
         _continue.Text = "在图纸中点位置";
-        _continue.SetBounds(440, 400, 220, 44);
+        _continue.SetBounds(370, 322, 200, 40);
         _continue.BackColor = Blue;
         _continue.ForeColor = Color.White;
         _continue.Font = new Font(Font.FontFamily, 14F, FontStyle.Bold, GraphicsUnit.Pixel);
@@ -123,7 +123,7 @@ internal sealed class NotePickerForm : Form
         _continue.FlatAppearance.BorderSize = 0;
         _continue.Click += (_, _) => Confirm();
         Controls.Add(_continue);
-        var cancel = AddButton("取消", 672, 400, 78, 44, () => { DialogResult = DialogResult.Cancel; Close(); });
+        var cancel = AddButton("取消", 582, 322, 78, 40, () => { DialogResult = DialogResult.Cancel; Close(); });
         cancel.BackColor = Color.White;
         cancel.ForeColor = Muted;
         CancelButton = cancel;
@@ -308,7 +308,7 @@ internal sealed class NotePickerForm : Form
         };
     }
 
-    private void Divider(int top, int left = 0, int width = 780) =>
+    private void Divider(int top, int left = 0, int width = 700) =>
         Controls.Add(new Panel { Left = left, Top = top, Width = width, Height = 1, BackColor = Line });
     private Panel Box(int left, int top, int width, int height)
     {
@@ -320,7 +320,7 @@ internal sealed class NotePickerForm : Form
         Controls.Add(panel);
         return panel;
     }
-    private void Section(string text, int top) => Label(text, 26, top, 125, 26, 14F, true);
+    private void Section(string text, int top) => Label(text, 22, top, 125, 24, 14F, true);
     private Label Label(string text, int left, int top, int width, int height, float size, bool bold, Control? parent = null)
     {
         var label = new Label { Text = text, Left = left, Top = top, Width = width, Height = height,
@@ -373,29 +373,29 @@ internal sealed class NotePickerForm : Form
                 using var pen = new Pen(color, 2F);
                 for (var row = 0; row < 2; row++)
                     for (var column = 0; column < 2; column++)
-                        g.DrawRectangle(pen, 46 + column * 19, 16 + row * 19, 14, 14);
+                        g.DrawRectangle(pen, 36 + column * 17, 10 + row * 17, 13, 13);
             }
             else
             {
                 using var pen = new Pen(color, 1.5F);
-                g.DrawRectangle(pen, 47, 16, 46, 44);
+                g.DrawRectangle(pen, 34, 12, 38, 32);
                 var columns = Paper == "A3" ? 2 : 3;
                 for (var i = 1; i < columns; i++)
-                    g.DrawLine(pen, 47 + i * 46 / columns, 21, 47 + i * 46 / columns, 55);
+                    g.DrawLine(pen, 34 + i * 38 / columns, 16, 34 + i * 38 / columns, 40);
                 if (Selected)
                 {
                     using var dot = new SolidBrush(Blue);
-                    g.FillEllipse(dot, 108, 8, 18, 18);
+                    g.FillEllipse(dot, 84, 6, 16, 16);
                     using var tick = new Pen(Color.White, 2F);
-                    g.DrawLines(tick, new[] { new Point(112, 17), new Point(117, 22), new Point(125, 12) });
+                    g.DrawLines(tick, new[] { new Point(88, 13), new Point(93, 18), new Point(101, 8) });
                 }
             }
             using var mainFont = new Font(UiFontFamily, 16F, FontStyle.Bold, GraphicsUnit.Pixel);
             using var detailFont = new Font(UiFontFamily, 11F, FontStyle.Regular, GraphicsUnit.Pixel);
             TextRenderer.DrawText(g, Paper, mainFont,
-                new Rectangle(4, 74, Width - 8, 24), color, TextFormatFlags.HorizontalCenter);
+                new Rectangle(4, 52, Width - 8, 22), color, TextFormatFlags.HorizontalCenter);
             TextRenderer.DrawText(g, Detail, detailFont,
-                new Rectangle(4, 100, Width - 8, 18), Muted, TextFormatFlags.HorizontalCenter);
+                new Rectangle(4, 76, Width - 8, 16), Muted, TextFormatFlags.HorizontalCenter);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)

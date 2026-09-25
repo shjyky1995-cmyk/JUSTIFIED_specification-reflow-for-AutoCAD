@@ -42,7 +42,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $bundleRoot 'third-party/NotoSansSC-
 }
 [xml]$xml = Get-Content -LiteralPath (Join-Path $bundleRoot 'PackageContents.xml') -Raw
 $commands = @($xml.ApplicationPackage.Components.ComponentEntry.Commands.Command | ForEach-Object { $_.Global })
-foreach ($command in @('DN_DIAG','DN_NOTE_SET','DN_NOTE')) {
+foreach ($command in @('DN_DIAG','DN_NOTE_SET','DSS','DN_NOTE')) {
     if ($command -notin $commands) { throw "Missing autoload command: $command" }
 }
 Write-Output "PACKAGE_VERIFY_OK files=$(@($manifest).Count)"

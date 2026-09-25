@@ -15,7 +15,7 @@
    - 环境检查三项应全为 ✔（.NET 4.8、AutoCAD 2021、AutoCAD 已退出）；点“开始安装”。
    - 安装页显示校验与复制日志，约十几秒；出现“安装完成”后点“完成”。
    - 核对：`%APPDATA%\Autodesk\ApplicationPlugins` 出现 `JUSTIFIED_specification-reflow-for-AutoCAD.bundle`；Windows“应用和功能”里能搜到本工具。
-2. **使用**：启动 AutoCAD 2021，按单位既有流程处理插件安全提示（安装程序不改安全设置）。命令行输入 `DN_DIAG` 应显示 `DN_DIAG_OK`。执行 `DN_NOTE`，窗口选择 DOCX、图幅、确认单位比例后点一次位置，确认出图。
+2. **使用**：启动 AutoCAD 2021，按单位既有流程处理插件安全提示（安装程序不改安全设置）。命令行输入 `DN_DIAG` 应显示 `DN_DIAG_OK`。执行 `DSS`，窗口选择 DOCX、图幅、确认单位比例后点一次位置，确认出图。
 3. **升级**：退出 AutoCAD，再次双击新版 `Setup.exe` 安装。应看到旧版被备份为 `.bundle.backup-<时间戳>`，新版复制后仍可正常 `DN_DIAG`。
 4. **卸载**：在“应用和功能”卸载，或运行 `Setup.exe --uninstall`。卸载后插件目录与卸载入口都应消失；图纸中已生成的文字不受影响。
 5. **回滚演练**（可选）：退出 AutoCAD，把新版 `.bundle` 移出 ApplicationPlugins，把某次 `.backup-<时间戳>` 目录改回原名，重启 CAD 后 `DN_DIAG` 应恢复。

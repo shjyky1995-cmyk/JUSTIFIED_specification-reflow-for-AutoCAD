@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using Justified.SpecificationReflow.AutoCAD.Setup;
 using Microsoft.Win32;
 
@@ -50,6 +53,56 @@ internal sealed class InstalledInfo
     public string? UninstallerDirectory { get; set; }
 
     public bool Registered { get; set; }
+}
+
+internal static class PrerequisiteInstaller
+{
+    public static async Task<bool> InstallNet48Async(IProgress<string> progress)
+    {
+        var installer = Path.Combine(Path.GetTempPath(), "ndp48-x86-x64-allos-enu.exe");
+        try
+        {
+            using (var client = new System.Net.WebClient())
+            {
+                progress.Report("正在下载 .NET Framework 4.8 安装程序…");
+                await client.DownloadFileTaskAsync(new Uri(EnvironmentInspector.Net48DownloadUrl), installer);
+            }
+        }
+        catch (System.Exception error) when (error is System.Net.WebException || error is ArgumentException || error is IOException)
+        {
+            progress.Report("下载失败：" + error.Message + "。请检查网络后重试，或手动安装。");
+            return false;
+        }
+
+        progress.Report("正在安装 .NET Framework 4.8，请在系统提示中允许…");
+        try
+        {
+            var exitCode = await Task.Run(() =>
+            {
+                var start = new ProcessStartInfo(installer)
+                {
+                    Arguments = "/q /norestart",
+                    UseShellExecute = true
+                };
+                using var process = Process.Start(start);
+                if (process == null) return -1;
+                process.WaitForExit();
+                return process.ExitCode;
+            });
+            if (exitCode == 0 || exitCode == 1641 || exitCode == 3010)
+            {
+                progress.Report(".NET Framework 4.8 安装完成。");
+                return true;
+            }
+            progress.Report(".NET Framework 4.8 安装程序返回代码 " + exitCode.ToString(CultureInfo.InvariantCulture) + "，请手动安装后重试。");
+            return false;
+        }
+        catch (System.Exception error) when (error is System.ComponentModel.Win32Exception || error is InvalidOperationException)
+        {
+            progress.Report("启动安装程序失败：" + error.Message + "。请手动安装 .NET Framework 4.8。");
+            return false;
+        }
+    }
 }
 
 internal static class RegistryStore

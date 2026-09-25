@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -38,7 +40,7 @@ internal sealed class SetupWizard : Form
     {
         _uninstallMode = uninstallMode;
         _service = new InstallService(BundleLocator.BundleRoot);
-        Text = _uninstallMode ? "卸载 Word 设计说明落图工具" : "安装 Word 设计说明落图工具";
+        Text = _uninstallMode ? "卸载 Word 设计说明工具" : "安装 Word 设计说明工具";
         ClientSize = new Size(780, 580);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -61,7 +63,7 @@ internal sealed class SetupWizard : Form
             var logoBox = new PictureBox { Image = logo, SizeMode = PictureBoxSizeMode.Zoom, Left = 28, Top = 14, Width = 56, Height = 58 };
             Controls.Add(logoBox);
         }
-        Controls.Add(Label(_uninstallMode ? "卸载 Word 设计说明落图工具" : "安装 Word 设计说明落图工具", 100, 14, 640, 34, 22, true));
+        Controls.Add(Label(_uninstallMode ? "卸载 Word 设计说明工具" : "安装 Word 设计说明工具", 100, 14, 640, 34, 22, true));
         _versionLine = Label(string.Empty, 100, 52, 640, 24, 14, false);
         _versionLine.ForeColor = Muted;
         Controls.Add(_versionLine);
@@ -73,10 +75,11 @@ internal sealed class SetupWizard : Form
         _welcomePage = Page();
         _envTable = new TableLayoutPanel
         {
-            Left = 0, Top = 56, Width = 748, Height = 300, ColumnCount = 2, GrowStyle = TableLayoutPanelGrowStyle.AddRows
+            Left = 0, Top = 56, Width = 748, Height = 300, ColumnCount = 3, GrowStyle = TableLayoutPanelGrowStyle.AddRows
         };
         _envTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 30));
-        _envTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        _envTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 540));
+        _envTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 178));
         _envSummary = Label(string.Empty, 0, 368, 748, 24, 14, true);
         _envPage = Page();
         _envPage.Controls.Add(Label("运行环境检查", 0, 8, 748, 28, 18, true));
@@ -134,19 +137,16 @@ internal sealed class SetupWizard : Form
     {
         var build = _service.LoadBuildInfo();
         _versionLine.Text = "版本 " + build.Version + " · 源码提交 " + Short(build.SourceCommit) + " · 构建于 " + build.BuiltUtc;
-        var pending = build.Pending.Count == 0 ? string.Empty : "\n未完成验收 " + build.Pending.Count + " 项，详见包内 BUILD.json。";
         _welcomePage.Controls.Clear();
         _welcomePage.Controls.Add(Label("欢迎使用", 0, 8, 748, 32, 20, true));
         _welcomePage.Controls.Add(Body(
             _service.BundleLooksComplete
-                ? "本程序安装 Word 设计说明落图工具（AutoCAD 2021 插件）。\n\n" +
-                  "安装前请先保存图纸并退出 AutoCAD 2021。装约十几秒，不需要联网。\n\n" +
-                  "支持环境：" + build.SupportedHost + "\n" +
-                  "内含 Noto Sans SC 界面字体（SIL OFL 1.1）。" + pending
+                ? "本程序用于安装 Word 设计说明工具（AutoCAD 插件）。\n\n" +
+                  "安装前请先保存图纸并退出 AutoCAD。\n\n" +
+                  "支持环境：AutoCAD 2021（R24.0）；后续版本将适配 AutoCAD 2014–2021 全系。"
                 : "未找到随本程序的安装内容（.bundle 文件夹）。\n\n" +
                   "请把发布 ZIP 完整解压到一个文件夹，保持 Setup.exe 与 JUSTIFIED_specification-reflow-for-AutoCAD.bundle 文件夹在同一目录，再重新运行本程序。\n\n" +
-                  "不要单独拷贝 Setup.exe 到其他位置运行。"));
-        ShowPage(_welcomePage);
+                  "不要单独拷贝 Setup.exe 到其他位置运行。"));        ShowPage(_welcomePage);
         _steps.Text = "① 欢迎 → ② 环境检查 → ③ 安装 → ④ 完成";
         _page = 0;
         _primary.Text = "下一步";
@@ -199,7 +199,7 @@ internal sealed class SetupWizard : Form
         switch (_page)
         {
             case 0:
-                ShowEnvironment();
+                ShowEnvironment(autoFix: true);
                 break;
             case 1:
                 StartInstall();
@@ -210,11 +210,21 @@ internal sealed class SetupWizard : Form
         }
     }
 
-    private void ShowEnvironment()
+    private void ShowEnvironment(bool autoFix)
+    {
+        var checks = EnvironmentProbe.Inspect();
+        RenderChecks(checks);
+        if (autoFix && !EnvironmentInspector.AllBlockingChecksPassed(checks)
+            && checks.Where(item => !item.Passed).All(item => item.AutoInstallable))
+        {
+            FixNet48Async();
+        }
+    }
+
+    private void RenderChecks(IReadOnlyList<EnvironmentCheck> checks)
     {
         _envTable.Controls.Clear();
         _envTable.RowStyles.Clear();
-        var checks = EnvironmentProbe.Inspect();
         _envTable.RowCount = checks.Count;
         var row = 0;
         foreach (var check in checks)
@@ -229,25 +239,96 @@ internal sealed class SetupWizard : Form
             };
             var text = new Label
             {
-                Text = check.Name + "\n" + check.Detail,
+                Text = check.Passed ? check.Name : check.Name + "\n" + check.Detail,
                 ForeColor = Ink,
                 Font = UiFont.Pixel(14),
                 AutoSize = true,
-                MaximumSize = new Size(690, 0),
+                MaximumSize = new Size(530, 0),
                 Margin = new Padding(0, 4, 0, 8)
             };
             _envTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _envTable.Controls.Add(glyph, 0, row);
             _envTable.Controls.Add(text, 1, row);
+            if (!check.Passed && check.AutoInstallable)
+            {
+                var action = Button("一键安装", 0, 4, 120, 34, Blue, Color.White, 13, true);
+                action.Click += (_, _) => FixNet48Async();
+                _envTable.Controls.Add(action, 2, row);
+            }
+            else if (!check.Passed)
+            {
+                var url = check.HelpUrl;
+                var hasUrl = !string.IsNullOrWhiteSpace(url);
+                var action = Button(hasUrl ? "去获取" : "重新检查", 0, 4, 120, 34, Color.White, Blue, 13, true);
+                action.Click += (_, _) =>
+                {
+                    if (hasUrl) OpenUrl(url!);
+                    else RenderChecks(EnvironmentProbe.Inspect());
+                };
+                _envTable.Controls.Add(action, 2, row);
+            }
+            else
+            {
+                _envTable.Controls.Add(new Panel(), 2, row);
+            }
             row++;
         }
         var passed = EnvironmentInspector.AllBlockingChecksPassed(checks);
-        _envSummary.Text = passed ? "全部满足，可以开始安装。" : "有不满足的项目，请先按上面提示处理，再运行本安装程序。";
+        _envSummary.Text = passed
+            ? "全部满足，可以开始安装。"
+            : "环境不满足。可自动安装的项目点“一键安装”；AutoCAD 需自行安装。";
         _envSummary.ForeColor = passed ? Good : Bad;
         ShowPage(_envPage);
         _page = 1;
         _primary.Text = "开始安装";
         _primary.Enabled = passed;
+        _cancel.Enabled = true;
+    }
+
+    private async void FixNet48Async()
+    {
+        _primary.Enabled = false;
+        _envSummary.Text = "正在安装缺失组件，请按系统提示操作…";
+        _envSummary.ForeColor = Muted;
+        var progress = new Progress<string>(line =>
+        {
+            _envSummary.Text = line;
+        });
+        try
+        {
+            var ok = await PrerequisiteInstaller.InstallNet48Async(progress);
+            var checks = EnvironmentProbe.Inspect();
+            RenderChecks(checks);
+            _envSummary.Text = ok
+                ? "缺失组件已安装，正在重新检查…"
+                : "自动安装未完成，请手动安装后点“重新检查”。";
+            _envSummary.ForeColor = ok ? Good : Bad;
+        }
+        catch (System.Exception error)
+        {
+            RenderChecks(EnvironmentProbe.Inspect());
+            _envSummary.Text = "自动安装出错：" + error.Message;
+            _envSummary.ForeColor = Bad;
+        }
+    }
+
+    private static void OpenUrl(string url)
+    {
+        try
+        {
+            global::System.Diagnostics.Process.Start(new global::System.Diagnostics.ProcessStartInfo(url)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (System.Exception error) when (error is System.ComponentModel.Win32Exception || error is InvalidOperationException)
+        {
+            global::System.Windows.Forms.MessageBox.Show(
+                "无法打开浏览器，请手动访问：\n" + url,
+                "安装 Word 设计说明工具",
+                global::System.Windows.Forms.MessageBoxButtons.OK,
+                global::System.Windows.Forms.MessageBoxIcon.Information);
+        }
     }
 
     private void StartInstall()
@@ -294,9 +375,7 @@ internal sealed class SetupWizard : Form
             _finishBody.Text =
                 "接下来：\n" +
                 "1. 启动 AutoCAD 2021；如有插件安全提示，按你单位既有流程加载。\n" +
-                "2. 命令行输入 DN_DIAG，应显示 DN_DIAG_OK。\n" +
-                "3. 执行 DN_NOTE，选择说明文档和图幅、确认单位比例，点一次位置即可生成。\n\n" +
-                "以后可在“应用和功能”中卸载本工具。" + backup;
+                "2. 命令行输入 DSS，选择说明文档和图幅、确认单位比例，点一次位置即可生成。" + backup;
             ShowPage(_finishPage);
             _page = 3;
             _steps.Text = "④ 完成";

@@ -213,18 +213,26 @@ public sealed class EnvironmentCheck
 
     public string Detail { get; }
 
-    public EnvironmentCheck(string name, bool passed, bool blocking, string detail)
+    public string? HelpUrl { get; }
+
+    public bool AutoInstallable { get; }
+
+    public EnvironmentCheck(string name, bool passed, bool blocking, string detail, string? helpUrl = null, bool autoInstallable = false)
     {
         Name = name;
         Passed = passed;
         Blocking = blocking;
         Detail = detail;
+        HelpUrl = helpUrl;
+        AutoInstallable = autoInstallable;
     }
 }
 
 public static class EnvironmentInspector
 {
     public const int Net48Release = 528040;
+    public const string Net48DownloadUrl = "https://go.microsoft.com/fwlink/?linkid=2088631";
+    public const string AutoCadUrl = "https://www.autodesk.com.cn/products/autocad/overview";
 
     public static IReadOnlyList<EnvironmentCheck> Inspect(int? netFrameworkRelease, bool autoCadKeyPresent, bool autoCadRunning)
     {
@@ -235,23 +243,26 @@ public static class EnvironmentInspector
             release >= Net48Release,
             true,
             release == 0
-                ? "未读到 .NET Framework 4.8 安装信息，请先安装 .NET Framework 4.8 运行时。"
+                ? "未安装 .NET Framework 4.8，点右侧按钮一键安装。"
                 : release >= Net48Release
                     ? "已安装（Release=" + release.ToString(CultureInfo.InvariantCulture) + "）。"
-                    : "当前版本过低（Release=" + release.ToString(CultureInfo.InvariantCulture) + "），请先升级到 .NET Framework 4.8。"));
+                    : "版本过低（Release=" + release.ToString(CultureInfo.InvariantCulture) + "），点右侧按钮一键升级。",
+            Net48DownloadUrl,
+            autoInstallable: true));
         checks.Add(new EnvironmentCheck(
             "AutoCAD 2021（R24.0）",
             autoCadKeyPresent,
             true,
             autoCadKeyPresent
                 ? "已检测到 AutoCAD 2021 安装信息。"
-                : "未检测到 AutoCAD 2021。本工具面向 AutoCAD 2021，其他版本尚未承诺支持。"));
+                : "未检测到 AutoCAD 2021。本工具需要 AutoCAD 2021 环境，请先安装。",
+            AutoCadUrl));
         checks.Add(new EnvironmentCheck(
             "AutoCAD 已退出",
             !autoCadRunning,
             true,
             autoCadRunning
-                ? "检测到 AutoCAD 正在运行。请先保存图纸并退出 AutoCAD，再继续安装。"
+                ? "AutoCAD 正在运行。请先保存图纸并退出，再点右侧按钮重新检查。"
                 : "AutoCAD 未运行，可以安全复制插件文件。"));
         return checks;
     }

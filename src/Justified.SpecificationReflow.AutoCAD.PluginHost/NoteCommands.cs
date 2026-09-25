@@ -28,7 +28,7 @@ using Newtonsoft.Json;
 
 namespace Justified.SpecificationReflow.AutoCAD.PluginHost;
 
-// DN_NOTE 每次选择本次模板与 DOCX，然后点一次位置；DN_NOTE_REPEAT 可重用当前图最后一次选择。
+// DSS 每次选择本次模板与 DOCX，然后点一次位置；DN_NOTE_REPEAT 可重用当前图最后一次选择；DN_NOTE 为兼容保留的旧命令名。
 // DN_NOTE_SET 保留给旧图和开发验收。正式入口只接受 classification=production 的已发布标准包。
 public class NoteCommands
 {
@@ -208,6 +208,7 @@ public class NoteCommands
         }
     }
 
+    [CommandMethod("DSS", CommandFlags.Modal)]
     [CommandMethod("DN_NOTE", CommandFlags.Modal)]
     public void Note()
     {

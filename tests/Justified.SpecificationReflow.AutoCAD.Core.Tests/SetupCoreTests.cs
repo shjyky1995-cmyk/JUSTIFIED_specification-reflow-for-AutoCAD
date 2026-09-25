@@ -163,6 +163,19 @@ public class SetupCoreTests
     }
 
     [Test]
+    public void EnvironmentMarksNet48AsAutoInstallableAndKeepsOthersManual()
+    {
+        var checks = EnvironmentInspector.Inspect(null, autoCadKeyPresent: false, autoCadRunning: true);
+        var net = checks.Single(check => check.Name.Contains(".NET"));
+        Assert.That(net.AutoInstallable, Is.True);
+        Assert.That(net.HelpUrl, Does.Contain("http"));
+        var cad = checks.Single(check => check.Name.Contains("AutoCAD 2021"));
+        Assert.That(cad.AutoInstallable, Is.False);
+        var running = checks.Single(check => check.Name == "AutoCAD 已退出");
+        Assert.That(running.AutoInstallable, Is.False);
+    }
+
+    [Test]
     public void EnvironmentPassesOnReadyMachine()
     {
         var checks = EnvironmentInspector.Inspect(EnvironmentInspector.Net48Release, autoCadKeyPresent: true, autoCadRunning: false);
@@ -194,6 +207,6 @@ public class SetupCoreTests
         var checks = EnvironmentInspector.Inspect(EnvironmentInspector.Net48Release, autoCadKeyPresent: true, autoCadRunning: true);
         Assert.That(EnvironmentInspector.AllBlockingChecksPassed(checks), Is.False);
         var running = checks.Single(check => check.Name == "AutoCAD 已退出");
-        Assert.That(running.Detail, Does.Contain("退出 AutoCAD"));
+        Assert.That(running.Detail, Does.Contain("退出"));
     }
 }
