@@ -131,16 +131,20 @@ internal sealed class SetupWizard : Form
         _welcomePage.Controls.Clear();
         _welcomePage.Controls.Add(Label("欢迎使用", 0, 8, 748, 32, 20, true));
         _welcomePage.Controls.Add(Body(
-            "本程序在你的电脑上安装 Word 设计说明落图工具（AutoCAD 2021 插件）。\n\n" +
-            "安装步骤：检查运行环境 → 校验安装包完整性 → 复制插件并注册卸载入口。全程约十几秒，不需要联网。\n\n" +
-            "安装前请先保存图纸并退出 AutoCAD 2021。\n\n" +
-            "支持环境：" + build.SupportedHost + "\n" +
-            "插件内含 Noto Sans SC 界面字体（SIL OFL 1.1 许可，见包内 third-party 目录）。" + pending));
+            _service.BundleLooksComplete
+                ? "本程序在你的电脑上安装 Word 设计说明落图工具（AutoCAD 2021 插件）。\n\n" +
+                  "安装步骤：检查运行环境 → 校验安装包完整性 → 复制插件并注册卸载入口。全程约十几秒，不需要联网。\n\n" +
+                  "安装前请先保存图纸并退出 AutoCAD 2021。\n\n" +
+                  "支持环境：" + build.SupportedHost + "\n" +
+                  "插件内含 Noto Sans SC 界面字体（SIL OFL 1.1 许可，见包内 third-party 目录）。" + pending
+                : "未找到随本程序的安装内容（.bundle 文件夹）。\n\n" +
+                  "请把发布 ZIP 完整解压到一个文件夹，保持 Setup.exe 与 JUSTIFIED_specification-reflow-for-AutoCAD.bundle 文件夹在同一目录，再重新运行本程序。\n\n" +
+                  "不要单独拷贝 Setup.exe 到其他位置运行。"));
         ShowPage(_welcomePage);
         _steps.Text = "① 欢迎 → ② 环境检查 → ③ 安装 → ④ 完成";
         _page = 0;
         _primary.Text = "下一步";
-        _primary.Enabled = true;
+        _primary.Enabled = _service.BundleLooksComplete;
         _cancel.Text = "取消";
         _cancel.Enabled = true;
     }
