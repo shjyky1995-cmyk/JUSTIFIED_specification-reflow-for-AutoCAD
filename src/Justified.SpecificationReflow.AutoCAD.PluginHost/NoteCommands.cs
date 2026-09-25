@@ -295,7 +295,7 @@ public class NoteCommands
             settings = chunks == null ? null : NoteSettingsCodec.Decode(chunks);
             if (settings == null)
             {
-                editor.WriteMessage("\nDN_NOTE_SET_REQUIRED 本图还没有选择记录。请执行 DN_NOTE 选择图幅、模板和说明文档。\n");
+                editor.WriteMessage("\nDN_NOTE_SET_REQUIRED 本图还没有选择记录。请执行 DN_NOTE 选择说明文档、图幅和单位比例。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
@@ -319,7 +319,7 @@ public class NoteCommands
                 generated.Diagnostics.AddRange(loaded.Diagnostics);
                 foreach (var diagnostic in loaded.Diagnostics.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
-                editor.WriteMessage("\nDN_NOTE_FAILED 设置引用的标准包已变化。请重新执行 DN_NOTE 选择模板。\n");
+                editor.WriteMessage("\nDN_NOTE_FAILED 内置模板已变化。请联系管理员检查后重新执行 DN_NOTE。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
@@ -335,7 +335,7 @@ public class NoteCommands
                 || !string.Equals(template.PaperCode.ToString(), settings.PaperCode, StringComparison.OrdinalIgnoreCase))
             {
                 generated.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "标准包与记住的设置不是同一次发布。"));
-                editor.WriteMessage("\nDN_NOTE_FAILED 标准包与记住的设置不是同一次发布。请重新执行 DN_NOTE 选择模板。\n");
+                editor.WriteMessage("\nDN_NOTE_FAILED 内置模板与本图记录不一致。请联系管理员检查后重新执行 DN_NOTE。\n");
                 editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
