@@ -69,21 +69,23 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source commit.' }
         $dirty = @(& git status --porcelain --untracked-files=normal).Count -gt 0
         $metadata = [ordered]@{
-            classification = 'validation-candidate'
+            classification = 'production-release'
             version = '0.1.0'
             sourceCommit = $commit
             workingTreeDirty = $dirty
             builtUtc = [DateTime]::UtcNow.ToString('o')
             supportedHost = 'AutoCAD 2021 R24.0 / Windows x64 / .NET Framework 4.8'
-            productionReady = $false
-            pending = @('T12 three-paper production assets, external machine, offline run, printing and professional review', 'T14 in-CAD picker and mixed-paper host validation', 'T13 clean-machine graphical install, upgrade, uninstall and rollback acceptance')
+            productionReady = $true
+            acceptanceBasis = 'T12/T13 user signoff on 2026-09-26; T14 host flow and offline UI layout verified'
+            waivedChecks = @('20-run host performance P95', 'per-page signed print checklist for template 1.1.0', 'clean-machine install and rollback exercise')
+            pending = @()
         }
         $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $bundle 'BUILD.json') -Encoding UTF8
         $hashes = Get-ChildItem -LiteralPath $bundle -Recurse -File | Get-FileHash -Algorithm SHA256 |
             Select-Object @{n='File';e={$_.Path.Substring($bundle.Length + 1)}},Hash
         $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'SHA256.json') -Encoding UTF8
         & (Join-Path $PSScriptRoot 'verify-package.ps1') -BundlePath $bundle
-        $zip = Join-Path $output "JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-$($commit.Substring(0,7)).zip"
+        $zip = Join-Path $output "JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-release-$($commit.Substring(0,7)).zip"
         $zipItems = @($bundle) + ($setupFiles | ForEach-Object { Join-Path $output $_ })
         Compress-Archive -LiteralPath $zipItems -DestinationPath $zip
         (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash | Set-Content -LiteralPath "$zip.sha256" -Encoding ASCII

@@ -1,5 +1,7 @@
 # T12 三图幅业务样本核对（本机）
 
+> 历史验收操作指南。2026-09-26 用户已签收本阶段；原先待办的处理结果与未取得数值的说明见 `T12_SIGNOFF.md`。
+
 当前只验证 A1/A2/A3 的正式两步命令与同一份业务说明。测试标准包在 `artifacts`，仅供本机验收；它的 JSON 为使正式命令可加载而标 `production`，外层 `manifest.json` 明确 `local-test-only`、`releaseAccepted=false`，不能放进 `standards/published` 或业务项目。
 
 本轮目录：`G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\t12-paper\20260924-074811-649`。样本 `sample.docx`，SHA256 `3D6402EC462A5649341718B3A5597C39BDF6F519D8D4FD92EF0D250EEFA10E98`；已由项目 DOCX 解析器通过，160 块、无表格。三份本地模板均通过正式包校验。这些检查不替代 AutoCAD 字体、页面或打印实测。
@@ -31,4 +33,4 @@
 | 专业签收 | `docs/T12_SIGNOFF.md`（签收单模板） | 待签收 |
 | 不同 DOCX / 点位取消（T14） | `docs/T14_SAMPLES.md` + 样本包 `artifacts/t14-docx-samples/`（5 份本地预检通过） | 待用户执行 |
 
-以上任一项未完成前，`productionReady=false` 与“未验收”状态不变。
+上表是 2026-09-25 的原始待办清单。2026-09-26 用户明确签收并免除未收集的补充量化材料作为发布关卡；最终发布包在 `BUILD.json` 记录免除项，不把其写成已实测。
