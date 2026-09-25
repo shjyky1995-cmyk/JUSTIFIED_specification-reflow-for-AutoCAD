@@ -294,6 +294,7 @@ public class NoteCommands
         LayoutTemplate? reportTemplate = null;
         var generated = new NoteGenerationResult();
         var rendered = new RenderReportResult();
+        double cancelAfterMs = -1;
         try
         {
             var chunks = new DrawingSettingsStore().Load(database);
@@ -405,6 +406,7 @@ public class NoteCommands
                     cancellation.Token,
                     GenerationLimits.Default);
             }
+            cancelAfterMs = cancellation.CancelledAfterMilliseconds;
 
             foreach (var diagnostic in generated.Diagnostics.Where(item => item.Severity == Severity.Warning))
                 editor.WriteMessage("\nDN_NOTE_WARN " + diagnostic.Code + " " + diagnostic.Message);
@@ -519,6 +521,11 @@ public class NoteCommands
                 runReport.UserWaitMilliseconds = wait.Elapsed.TotalMilliseconds;
                 runReport.RenderMilliseconds = renderTimer.Elapsed.TotalMilliseconds;
                 runReport.FirstRunInProcess = firstRun;
+                if (cancelAfterMs >= 0)
+                {
+                    runReport.Cancelled = true;
+                    runReport.CancelToFinishMilliseconds = total.Elapsed.TotalMilliseconds - cancelAfterMs;
+                }
                 WriteRunReport(editor, settings, runReport);
             }
         }

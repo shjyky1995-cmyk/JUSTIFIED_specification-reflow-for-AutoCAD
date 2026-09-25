@@ -46,6 +46,27 @@ public class FoundationTests
     }
 
     [Test]
+    public void PluginSourcesDoNotUseNetworkApis()
+    {
+        var root = Root();
+        var offenders = new List<string>();
+        foreach (var project in new[] { "Contracts", "DocumentCore", "DocxAdapter", "Standards", "LayoutEngine", "Application", "AutoCadAdapter", "PluginHost" })
+        {
+            var directory = Path.Combine(root, "src", "Justified.SpecificationReflow.AutoCAD." + project);
+            foreach (var source in Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories)
+                .Where(x => !x.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar)))
+            {
+                var text = File.ReadAllText(source);
+                if (text.Contains("System.Net") || text.Contains("HttpClient") || text.Contains("WebClient"))
+                {
+                    offenders.Add(source);
+                }
+            }
+        }
+        Assert.That(offenders, Is.Empty, "Offline guarantee: plugin assemblies must not reference network APIs (T12 offline acceptance).");
+    }
+
+    [Test]
     public void ProductionProjectGraphMatchesApprovedBoundaries()
     {
         var allowed = new Dictionary<string, string[]>

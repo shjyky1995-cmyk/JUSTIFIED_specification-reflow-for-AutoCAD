@@ -20,3 +20,16 @@
 ## 证据边界与后续
 
 既有 WPS A1 记录使用 `DN_NOTE_DEV` 与草案包，已证明真实字体及字符路径；本轮补正式 `DN_NOTE_SET` + `DSS` 三图幅。其余用户原始说明中部分含表格，V1 解析器按 `E_UNSUPPORTED_CONTENT` 阻断，不能直接把表格版拿来当“排版通过”样本，也不修改原件。用户不方便操作时按 AGENTS 规则另行告知 Agent 代操作。
+
+## 剩余验收项与材料索引（2026-09-25 备齐）
+
+| 项 | 材料 | 状态 |
+| --- | --- | --- |
+| 一次真实打印 | `docs/T12_PRINT.md`（打印步骤 + 逐页清单） | 待用户执行 |
+| 断网运行 | `docs/T12_OFFLINE.md`（步骤 + 代码侧无网络引用测试已入核心测试） | 待用户执行 |
+| 取消时延 P95（CAL-08） | `scripts/check-cancel-latency.ps1` + `docs/T14_SAMPLES.md` 第二节（报告新增 `Cancelled`/`CancelToFinishMilliseconds` 字段） | 待用户取样 |
+| 真实性能 P95 | `scripts/summarize-performance.ps1`（≥20 次热运行，`DN_NOTE_TRACE=1` 可取命令行计时） | 待用户取样 |
+| 专业签收 | `docs/T12_SIGNOFF.md`（签收单模板） | 待签收 |
+| 不同 DOCX / 点位取消（T14） | `docs/T14_SAMPLES.md` + 样本包 `artifacts/t14-docx-samples/`（5 份本地预检通过） | 待用户执行 |
+
+以上任一项未完成前，`productionReady=false` 与“未验收”状态不变。
