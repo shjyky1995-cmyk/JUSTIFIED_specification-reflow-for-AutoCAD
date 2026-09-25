@@ -104,7 +104,7 @@ try {
         Copy-Item -LiteralPath $zip -Destination $handoff -Force
         Write-Host "Manual test DLL: $(Join-Path $program 'Justified.SpecificationReflow.AutoCAD.PluginHost.dll')"
         Write-Host "Graphical installer (double-click to install): $(Join-Path $program 'Setup.exe')"
-        Write-Host "Validation candidate package (not production): $zip"
+        Write-Host "Release package: $zip"
     }
 }
 finally { Pop-Location }

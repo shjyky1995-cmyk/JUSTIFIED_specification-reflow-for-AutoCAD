@@ -39,7 +39,7 @@ public class Commands
                     throw new InvalidOperationException("Dependency version mismatch: " + assembly.FullName);
                 editor.WriteMessage("\nDN_DEP " + assembly.GetName().Name + " " + assembly.GetName().Version);
             }
-            editor.WriteMessage("\nDN_DIAG_OK: 依赖已加载。生成命令是 DN_NOTE。草案不是已发布院标。\n");
+            editor.WriteMessage("\nDN_DIAG_OK: 依赖已加载。输入 DSS 开始导入。\n");
         }
         catch (System.Exception error)
         {
