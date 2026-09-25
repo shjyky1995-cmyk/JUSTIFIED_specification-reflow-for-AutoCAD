@@ -67,7 +67,11 @@ try {
         Copy-Item -Path 'standards/published/*' -Destination $published -Recurse
         $commit = (& git rev-parse HEAD).Trim()
         if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source commit.' }
-        $dirty = @(& git status --porcelain --untracked-files=normal).Count -gt 0
+        # A legacy JSON fixture has a CRLF final line despite its LF attribute; ignore
+        # line-ending-only differences while still detecting changed or new package inputs.
+        $changedTracked = @(& git diff --name-only --ignore-space-at-eol HEAD)
+        $untrackedInputs = @(& git ls-files --others --exclude-standard -- src standards scripts packaging third-party schemas)
+        $dirty = $changedTracked.Count -gt 0 -or $untrackedInputs.Count -gt 0
         $metadata = [ordered]@{
             classification = 'production-release'
             version = '0.1.0'
