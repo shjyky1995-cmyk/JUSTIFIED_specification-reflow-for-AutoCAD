@@ -33,6 +33,10 @@ namespace Justified.SpecificationReflow.AutoCAD.PluginHost;
 public class NoteCommands
 {
     private static int _generationAttempts;
+
+    private static bool TraceEnabled =>
+        string.Equals(Environment.GetEnvironmentVariable("DN_NOTE_TRACE"), "1", StringComparison.Ordinal);
+
     [CommandMethod("DN_NOTE_SET", CommandFlags.Modal)]
     public void SetSettings()
     {
@@ -296,7 +300,7 @@ public class NoteCommands
             if (settings == null)
             {
                 editor.WriteMessage("\nDN_NOTE_SET_REQUIRED 本图还没有选择记录。请执行 DN_NOTE 选择说明文档、图幅和单位比例。\n");
-                editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+                if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
 
@@ -306,7 +310,7 @@ public class NoteCommands
                 reportTemplate = new LayoutTemplate { TemplateId = settings.TemplateId, Version = settings.TemplateVersion };
                 generated.Diagnostics.Add(Problem(DiagnosticCodes.EDocxRead, "说明文档不存在：" + settings.DocumentPath));
                 editor.WriteMessage("\nDN_NOTE_FAILED " + DiagnosticCodes.EDocxRead + " 说明文档不存在：" + settings.DocumentPath + "。请重新执行 DN_NOTE 选择文件。\n");
-                editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+                if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
 
@@ -320,7 +324,7 @@ public class NoteCommands
                 foreach (var diagnostic in loaded.Diagnostics.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
                 editor.WriteMessage("\nDN_NOTE_FAILED 内置模板已变化。请联系管理员检查后重新执行 DN_NOTE。\n");
-                editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+                if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
 
@@ -336,7 +340,7 @@ public class NoteCommands
             {
                 generated.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "标准包与记住的设置不是同一次发布。"));
                 editor.WriteMessage("\nDN_NOTE_FAILED 内置模板与本图记录不一致。请联系管理员检查后重新执行 DN_NOTE。\n");
-                editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+                if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
 
@@ -346,7 +350,7 @@ public class NoteCommands
                 generated.Diagnostics.AddRange(fontProblems);
                 foreach (var diagnostic in fontProblems.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
-                editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+                if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
 
@@ -364,10 +368,13 @@ public class NoteCommands
             anchorTimer.Start();
 
             var wcs = point.Value.TransformBy(editor.CurrentUserCoordinateSystem);
-            editor.WriteMessage("\nDN_NOTE_ANCHOR_WCS " + Format(wcs.X) + "," + Format(wcs.Y) + "," + Format(wcs.Z));
-            editor.WriteMessage("\nDN_NOTE_STANDARD " + standard.StandardId + " " + standard.Version);
-            editor.WriteMessage("\nDN_NOTE_TEMPLATE " + template.TemplateId + " " + template.Version);
-            editor.WriteMessage("\nDN_NOTE_SCALE " + Format(settings.UnitScale));
+            if (TraceEnabled)
+            {
+                editor.WriteMessage("\nDN_NOTE_ANCHOR_WCS " + Format(wcs.X) + "," + Format(wcs.Y) + "," + Format(wcs.Z));
+                editor.WriteMessage("\nDN_NOTE_STANDARD " + standard.StandardId + " " + standard.Version);
+                editor.WriteMessage("\nDN_NOTE_TEMPLATE " + template.TemplateId + " " + template.Version);
+                editor.WriteMessage("\nDN_NOTE_SCALE " + Format(settings.UnitScale));
+            }
 
             editor.WriteMessage("\n正在读取和排版说明；按住 Esc 可取消。\n");
             using var cancellation = new HostGenerationCancellation();
@@ -406,7 +413,7 @@ public class NoteCommands
                     editor.WriteMessage("\nDN_NOTE_CANCELLED\n");
                 foreach (var diagnostic in generated.Diagnostics.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
-                editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+                if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
 
@@ -429,15 +436,18 @@ public class NoteCommands
                 }
             }
 
-            editor.WriteMessage("\nDN_NOTE_SUMMARY pages=" + (generated.Layout == null ? 0 : generated.Layout.Pages.Count)
-                + " objects=" + generated.Texts.Count
-                + " warnings=" + generated.Diagnostics.Count(item => item.Severity == Severity.Warning));
-            if (generated.Texts.Count > 0)
+            if (TraceEnabled)
             {
-                var first = generated.Texts[0];
-                var preview = first.Text.Length <= 40 ? first.Text : first.Text.Substring(0, 40);
-                editor.WriteMessage("\nDN_NOTE_FIRST x=" + Format(first.Position.X) + " y=" + Format(first.Position.Y)
-                    + " h=" + Format(first.Height) + " widthFactor=" + Format(first.WidthFactor) + " text=" + preview);
+                editor.WriteMessage("\nDN_NOTE_SUMMARY pages=" + (generated.Layout == null ? 0 : generated.Layout.Pages.Count)
+                    + " objects=" + generated.Texts.Count
+                    + " warnings=" + generated.Diagnostics.Count(item => item.Severity == Severity.Warning));
+                if (generated.Texts.Count > 0)
+                {
+                    var first = generated.Texts[0];
+                    var preview = first.Text.Length <= 40 ? first.Text : first.Text.Substring(0, 40);
+                    editor.WriteMessage("\nDN_NOTE_FIRST x=" + Format(first.Position.X) + " y=" + Format(first.Position.Y)
+                        + " h=" + Format(first.Height) + " widthFactor=" + Format(first.WidthFactor) + " text=" + preview);
+                }
             }
 
             RenderReport report;
@@ -463,15 +473,20 @@ public class NoteCommands
                 return;
             }
 
-            editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + after);
-            editor.WriteMessage("\nDN_NOTE_OK objects=" + report.ObjectCount);
-            editor.WriteMessage("\nDN_NOTE_UNDO 一次 U 撤销本次提交。已有同名样式不会被修改，旧文字也不会被删除。\n");
+            if (TraceEnabled)
+            {
+                editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + after);
+            }
+            var pages = generated.Layout == null ? 0 : generated.Layout.Pages.Count;
+            var warnings = generated.Diagnostics.Count(item => item.Severity == Severity.Warning);
+            editor.WriteMessage("\nDN_NOTE_OK pages=" + pages + " objects=" + report.ObjectCount
+                + " warnings=" + warnings + "；一次 U 可撤销本次生成。\n");
         }
         catch (System.Exception error)
         {
             generated.Diagnostics.Add(Problem(DiagnosticCodes.ERenderFailed, error.GetType().Name + " " + error.Message));
             editor.WriteMessage("\nDN_NOTE_FAILED " + error.GetType().Name + " " + error.Message);
-            editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
+            if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
         }
         finally
         {
@@ -479,17 +494,20 @@ public class NoteCommands
             renderTimer.Stop();
             anchorTimer.Stop();
             total.Stop();
-            if (anchorTimer.ElapsedTicks > 0)
+            if (TraceEnabled)
             {
-                editor.WriteMessage("\nDN_NOTE_TIMING_MS anchor_to_finish=" + Format(anchorTimer.Elapsed.TotalMilliseconds)
-                    + " read=" + Format(generated.ReadMilliseconds)
-                    + " parse=" + Format(generated.ParseMilliseconds)
-                    + " layout=" + Format(generated.LayoutMilliseconds)
-                    + " cad_measure=" + Format(measureService?.MeasureMilliseconds ?? 0)
-                    + " cad_measure_cleanup=" + Format(measureService?.CleanupMilliseconds ?? 0)
-                    + " measure_calls=" + (measureService?.MeasureCalls ?? 0).ToString(CultureInfo.InvariantCulture)
-                    + " placement=" + Format(generated.PlacementMilliseconds)
-                    + " render=" + Format(renderTimer.Elapsed.TotalMilliseconds) + "\n");
+                if (anchorTimer.ElapsedTicks > 0)
+                {
+                    editor.WriteMessage("\nDN_NOTE_TIMING_MS anchor_to_finish=" + Format(anchorTimer.Elapsed.TotalMilliseconds)
+                        + " read=" + Format(generated.ReadMilliseconds)
+                        + " parse=" + Format(generated.ParseMilliseconds)
+                        + " layout=" + Format(generated.LayoutMilliseconds)
+                        + " cad_measure=" + Format(measureService?.MeasureMilliseconds ?? 0)
+                        + " cad_measure_cleanup=" + Format(measureService?.CleanupMilliseconds ?? 0)
+                        + " measure_calls=" + (measureService?.MeasureCalls ?? 0).ToString(CultureInfo.InvariantCulture)
+                        + " placement=" + Format(generated.PlacementMilliseconds)
+                        + " render=" + Format(renderTimer.Elapsed.TotalMilliseconds) + "\n");
+                }
             }
             if (settings != null && reportStandard != null && reportTemplate != null)
             {

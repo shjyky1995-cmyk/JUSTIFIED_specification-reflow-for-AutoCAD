@@ -47,6 +47,13 @@ internal sealed class SetupWizard : Form
         BackColor = Color.White;
         ForeColor = Ink;
         Font = UiFont.Pixel(15);
+        try
+        {
+            Icon = global::System.Drawing.Icon.ExtractAssociatedIcon(global::System.Windows.Forms.Application.ExecutablePath);
+        }
+        catch (System.Exception error) when (error is ArgumentException || error is System.ComponentModel.Win32Exception)
+        {
+        }
 
         var logo = LogoLoader.Load();
         if (logo != null)
@@ -127,16 +134,15 @@ internal sealed class SetupWizard : Form
     {
         var build = _service.LoadBuildInfo();
         _versionLine.Text = "版本 " + build.Version + " · 源码提交 " + Short(build.SourceCommit) + " · 构建于 " + build.BuiltUtc;
-        var pending = build.Pending.Count == 0 ? string.Empty : "\n尚未完成的验收项：" + string.Join("；", build.Pending);
+        var pending = build.Pending.Count == 0 ? string.Empty : "\n未完成验收 " + build.Pending.Count + " 项，详见包内 BUILD.json。";
         _welcomePage.Controls.Clear();
         _welcomePage.Controls.Add(Label("欢迎使用", 0, 8, 748, 32, 20, true));
         _welcomePage.Controls.Add(Body(
             _service.BundleLooksComplete
-                ? "本程序在你的电脑上安装 Word 设计说明落图工具（AutoCAD 2021 插件）。\n\n" +
-                  "安装步骤：检查运行环境 → 校验安装包完整性 → 复制插件并注册卸载入口。全程约十几秒，不需要联网。\n\n" +
-                  "安装前请先保存图纸并退出 AutoCAD 2021。\n\n" +
+                ? "本程序安装 Word 设计说明落图工具（AutoCAD 2021 插件）。\n\n" +
+                  "安装前请先保存图纸并退出 AutoCAD 2021。装约十几秒，不需要联网。\n\n" +
                   "支持环境：" + build.SupportedHost + "\n" +
-                  "插件内含 Noto Sans SC 界面字体（SIL OFL 1.1 许可，见包内 third-party 目录）。" + pending
+                  "内含 Noto Sans SC 界面字体（SIL OFL 1.1）。" + pending
                 : "未找到随本程序的安装内容（.bundle 文件夹）。\n\n" +
                   "请把发布 ZIP 完整解压到一个文件夹，保持 Setup.exe 与 JUSTIFIED_specification-reflow-for-AutoCAD.bundle 文件夹在同一目录，再重新运行本程序。\n\n" +
                   "不要单独拷贝 Setup.exe 到其他位置运行。"));
@@ -159,12 +165,12 @@ internal sealed class SetupWizard : Form
         _welcomePage.Controls.Add(Label("卸载确认", 0, 8, 748, 32, 20, true));
         _welcomePage.Controls.Add(Body(
             found
-                ? "已检测到安装位置：\n" + location + "\n\n卸载将删除该插件包，并移除“应用和功能”中的卸载入口。图纸中已生成的 DBText 文字不受影响。"
-                : "未检测到已注册的安装记录。仍会尝试删除默认位置的插件包（如存在）。\n\n图纸中已生成的 DBText 文字不受影响。"));
+                ? "将移除本机安装的插件。图纸中已生成的文字不受影响。\n\n是否继续卸载？"
+                : "未检测到已注册的安装记录。仍会尝试删除默认位置的插件包（如存在）。\n\n是否继续卸载？"));
         ShowPage(_welcomePage);
         _steps.Text = "卸载向导";
         _page = 0;
-        _primary.Text = "卸载";
+        _primary.Text = "继续卸载";
         _primary.Enabled = true;
         _cancel.Text = "关闭";
         _cancel.Enabled = true;
@@ -284,13 +290,12 @@ internal sealed class SetupWizard : Form
             _finishTitle.ForeColor = Good;
             var backup = string.IsNullOrEmpty(result.BackupPath)
                 ? string.Empty
-                : "\n\n旧版本已备份到：\n" + result.BackupPath + "\n如需回滚：退出 AutoCAD，把新版插件包移出 %APPDATA%\\Autodesk\\ApplicationPlugins，再把该备份目录改回原名称。";
+                : "\n\n旧版本已备份；如需回滚，退出 AutoCAD 后把备份目录改回原名称即可（详见包内 INSTALL.md）。";
             _finishBody.Text =
                 "接下来：\n" +
-                "1. 启动 AutoCAD 2021。\n" +
-                "2. 如弹出插件安全提示，请按你单位既有流程加载可信来源；本程序不修改 CAD 安全设置。\n" +
-                "3. 在命令行输入 DN_DIAG，应显示 DN_DIAG_OK。\n" +
-                "4. 执行 DN_NOTE：在弹窗中选择说明 Word 文档和图幅、确认单位比例，然后点一次说明区右上角。\n\n" +
+                "1. 启动 AutoCAD 2021；如有插件安全提示，按你单位既有流程加载。\n" +
+                "2. 命令行输入 DN_DIAG，应显示 DN_DIAG_OK。\n" +
+                "3. 执行 DN_NOTE，选择说明文档和图幅、确认单位比例，点一次位置即可生成。\n\n" +
                 "以后可在“应用和功能”中卸载本工具。" + backup;
             ShowPage(_finishPage);
             _page = 3;
@@ -320,7 +325,7 @@ internal sealed class SetupWizard : Form
             _progress.Value = _progress.Maximum;
             _finishTitle.Text = "卸载完成";
             _finishTitle.ForeColor = Good;
-            _finishBody.Text = "插件文件与卸载入口已移除。\n\n如果之后想重新使用，重新运行安装程序即可。图纸中已生成的文字不受影响。";
+            _finishBody.Text = "卸载完成。\n\n重新运行安装程序即可再次安装。图纸中已生成的文字不受影响。";
             ShowPage(_finishPage);
             _page = 1;
             _steps.Text = "卸载完成";
