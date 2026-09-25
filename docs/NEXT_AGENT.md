@@ -1,6 +1,10 @@
 # 当前接续状态（所有 Agent 共用）
 
-## 2026-09-25 T12/T14 验收材料已备齐（最新）
+## 2026-09-26 T14 实测反馈修复完成（最新）
+
+用户完成 T14 不同 DOCX 与点位取消实测，反馈已全部修复（提交 `1572812`，候选包 `测试文件/程序/T13验收包-1572812/`）：①**取消时延 P95 测试按用户要求取消**（埋点/分析器/文档已移除，不作验收标准）；②选择窗比例框左侧裁字（"100"显示"00"）修复并加 1×/10×/100×/1000× 档位；③页面间隙消除（pageStep=页宽）；④锚点改**图面左上角**、说明栏组整页横向居中、顶部预留 60mm 图框+标题栏（模板升 1.1.0，数值测试锁定）；⑤竖向对齐网格（内容左缘 130/右缘 670）；⑥圆角白斑修复（屏蔽 OnPaintBackground + 圆角填充，选中态改白底蓝框）。打印/断网/不同 DOCX/点位取消用户实测通过；打印时间距问题随③修复。**用户待办**：装新包后复测新锚点与版式（左上角点击、居中、标题栏、页紧贴）、`DN_NOTE_OK`、`DN_NOTE_TRACE=1` 计时；剩余：T12 打印清单核对、性能取样、专业签收。T13 全新电脑安装 pending。夹具换行差异与 `测试结果/` 未暂存。停止 Google Drive 上传。
+
+## 2026-09-25 T12/T14 验收材料已备齐
 
 用户批准继续 T12/T14。本轮完成（提交 `5f9c430`）：①取消时延（CAL-08）埋点——`HostGenerationCancellation` 记录 Esc 时刻，运行报告新增 `Cancelled`/`CancelToFinishMilliseconds`，分析器 `scripts/check-cancel-latency.ps1`（≥20 次取消样本出 P95，provisional 阈值 2000ms）；②断网保证入核心测试（插件程序集禁引用网络 API，164/164）；③新文档 `T12_PRINT.md`（打印清单）、`T12_OFFLINE.md`（断网步骤）、`T12_SIGNOFF.md`（专业签收单）、`T14_SAMPLES.md`（不同 DOCX+点位取消）；④样本包 `artifacts/t14-docx-samples/`（5 份 local-test-only，本地预解析全通过）。**用户待办**：装一次新包（`测试文件/程序/T13验收包-5f9c430/`，取消时延取样必须用新插件；安装即顺便复测升级流程）→ 按 T14_SAMPLES 跑不同 DOCX 与点位取消 → 按 T12_PRINT/T12_OFFLINE 跑打印与断网 → 取消时延 ≥20 次取样 → 回传，Agent 跑 check-cancel-latency/summarize-performance/check-t12-paper-validation 出报告 → T12_SIGNOFF 签收。候选包 candidate-5f9c430（PACKAGE_VERIFY_OK，含随包模板）。T13 全新电脑安装仍 pending。原有测试夹具换行差异及 `测试结果/` 保持未暂存。停止 Google Drive 上传。
 
