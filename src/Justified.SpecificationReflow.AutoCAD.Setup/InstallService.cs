@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -181,26 +182,40 @@ internal sealed class InstallService
             }
         }
         log.Report("卸载完成。图纸中已生成的文字不受影响。");
-        RemoveUninstallerFolderAfterExit(uninstallerRoot);
+        RemoveUninstallerFolderAfterExit(uninstallerRoot, log);
     }
 
-    private static void RemoveUninstallerFolderAfterExit(string? uninstallerRoot)
+    private static void RemoveUninstallerFolderAfterExit(string? uninstallerRoot, IProgress<string> log)
     {
-        if (uninstallerRoot == null || uninstallerRoot.Trim().Length == 0 || !Directory.Exists(uninstallerRoot)) return;
+        if (uninstallerRoot == null || uninstallerRoot.Trim().Length == 0 || !Directory.Exists(uninstallerRoot))
+        {
+            return;
+        }
         var running = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
         var target = uninstallerRoot.TrimEnd(Path.DirectorySeparatorChar);
-        if (!string.Equals(running, target, StringComparison.OrdinalIgnoreCase)) return;
+        if (!string.Equals(running, target, StringComparison.OrdinalIgnoreCase))
+        {
+            log.Report("卸载程序不在安装位置运行，保留卸载程序目录：" + target);
+            return;
+        }
         try
         {
-            var start = new ProcessStartInfo("cmd.exe", "/c timeout /t 2 >nul & rmdir /s /q \"" + target + "\"")
+            var pid = Process.GetCurrentProcess().Id;
+            var command = "Wait-Process -Id " + pid.ToString(CultureInfo.InvariantCulture)
+                + " -ErrorAction SilentlyContinue; foreach ($i in 1..5) { try { Remove-Item -LiteralPath '"
+                + target + "' -Recurse -Force -ErrorAction Stop; break } catch { Start-Sleep -Milliseconds 800 } }";
+            var start = new ProcessStartInfo("powershell.exe",
+                "-NoProfile -WindowStyle Hidden -Command \"" + command + "\"")
             {
                 CreateNoWindow = true,
                 UseShellExecute = false
             };
             Process.Start(start);
+            log.Report("已安排退出后自动清理卸载程序目录。");
         }
         catch (System.Exception error) when (error is System.ComponentModel.Win32Exception || error is InvalidOperationException)
         {
+            log.Report("卸载程序目录自动清理未安排成功：" + error.Message);
         }
     }
 
