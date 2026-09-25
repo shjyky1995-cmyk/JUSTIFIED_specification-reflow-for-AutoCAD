@@ -77,6 +77,12 @@
           "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
         }
       },
+      "justified.specificationreflow.autocad.setupcore": {
+        "type": "Project",
+        "dependencies": {
+          "Newtonsoft.Json": "[13.0.3, )"
+        }
+      },
       "justified.specificationreflow.autocad.standards": {
         "type": "Project",
         "dependencies": {
@@ -213,6 +219,12 @@
         "type": "Project",
         "dependencies": {
           "Justified.SpecificationReflow.AutoCAD.Contracts": "[0.1.0, )"
+        }
+      },
+      "justified.specificationreflow.autocad.setupcore": {
+        "type": "Project",
+        "dependencies": {
+          "Newtonsoft.Json": "[13.0.3, )"
         }
       },
       "justified.specificationreflow.autocad.standards": {

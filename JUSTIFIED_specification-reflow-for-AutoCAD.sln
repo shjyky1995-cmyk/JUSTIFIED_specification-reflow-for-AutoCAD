@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationRefl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.Standards", "src\Justified.SpecificationReflow.AutoCAD.Standards\Justified.SpecificationReflow.AutoCAD.Standards.csproj", "{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.SetupCore", "src\Justified.SpecificationReflow.AutoCAD.SetupCore\Justified.SpecificationReflow.AutoCAD.SetupCore.csproj", "{7C4A1E92-3B5D-4F8A-9E21-6D0B5A7C3F14}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.Setup", "src\Justified.SpecificationReflow.AutoCAD.Setup\Justified.SpecificationReflow.AutoCAD.Setup.csproj", "{8B5D2F03-4C6E-4A9B-8F32-7E1C6B8D4A25}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D14EC8B1-0F9B-4C0A-B51B-1D40642B9760}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Justified.SpecificationReflow.AutoCAD.Core.Tests", "tests\Justified.SpecificationReflow.AutoCAD.Core.Tests\Justified.SpecificationReflow.AutoCAD.Core.Tests.csproj", "{ADF3A544-B6FD-44C2-9544-55AA81B64102}"
@@ -66,6 +70,14 @@ Global
 		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C4A1E92-3B5D-4F8A-9E21-6D0B5A7C3F14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C4A1E92-3B5D-4F8A-9E21-6D0B5A7C3F14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C4A1E92-3B5D-4F8A-9E21-6D0B5A7C3F14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C4A1E92-3B5D-4F8A-9E21-6D0B5A7C3F14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B5D2F03-4C6E-4A9B-8F32-7E1C6B8D4A25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B5D2F03-4C6E-4A9B-8F32-7E1C6B8D4A25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B5D2F03-4C6E-4A9B-8F32-7E1C6B8D4A25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B5D2F03-4C6E-4A9B-8F32-7E1C6B8D4A25}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ADF3A544-B6FD-44C2-9544-55AA81B64102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ADF3A544-B6FD-44C2-9544-55AA81B64102}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADF3A544-B6FD-44C2-9544-55AA81B64102}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -80,6 +92,8 @@ Global
 		{E3EB8A79-1279-445D-81EB-221A5D312EAF} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
 		{3D1138EE-8452-4300-97DE-456970F96AB7} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
 		{1EB74FDB-0992-44CE-9AB7-FE0DCA719B9C} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{7C4A1E92-3B5D-4F8A-9E21-6D0B5A7C3F14} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
+		{8B5D2F03-4C6E-4A9B-8F32-7E1C6B8D4A25} = {D7036C9E-AEE0-493E-AFA9-09AFE6645AEB}
 		{ADF3A544-B6FD-44C2-9544-55AA81B64102} = {D14EC8B1-0F9B-4C0A-B51B-1D40642B9760}
 	EndGlobalSection
 EndGlobal

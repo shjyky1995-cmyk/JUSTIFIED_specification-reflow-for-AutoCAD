@@ -32,8 +32,11 @@ Electron 用于独立桌面进程在技术上可行，但不会把 Electron 或�
 | Application | Contracts、DocumentCore | 用端口编排生成流程 |
 | AutoCadAdapter | Contracts | 宿主测量、DBText 渲染、事务适配 |
 | PluginHost | Application、DocumentCore、DocxAdapter、Standards、LayoutEngine、AutoCadAdapter、Contracts | 装配、环境、用户交互 |
+| SetupCore | 无项目引用 | 安装包清单校验、安装计划、环境检查判断（netstandard2.0 纯逻辑） |
+| Setup | SetupCore | 普通用户图形化安装/升级/卸载向导（net48 WinForms，不引用 AutoCAD API） |
 
 Contracts、引擎不得引用宿主 SDK、UI、数据库、AI SDK。测试工程可引用被测模块。
+Setup 与 SetupCore 不接触 CAD 图纸与共享协议；AutoCAD API 仍只允许出现在 AutoCadAdapter、PluginHost。
 渲染器不读 DOCX、不重新换行；解析器不决定字体或坐标。
 坐标与标准配置的生产值须来自有来源的实测资产或用户授权制定的版本化规则；正式发布仍需通过相关验证，不能用制定规则代替验证证据。字体环境影响测量缓存键。
 

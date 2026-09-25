@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Setup</AssemblyName>
+    <RootNamespace>Justified.SpecificationReflow.AutoCAD.Setup</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+    <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.SetupCore/Justified.SpecificationReflow.AutoCAD.SetupCore.csproj" />
+    <EmbeddedResource Include="../Justified.SpecificationReflow.AutoCAD.PluginHost/Assets/note-logo.png" Link="Assets/note-logo.png" />
+  </ItemGroup>
+</Project>

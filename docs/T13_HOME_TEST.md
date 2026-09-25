@@ -1,0 +1,31 @@
+# T13 图形化安装器本机验收（用户操作）
+
+目标：普通设计人员视角，从单一发布包完成安装、升级、卸载，不碰 GitHub/PowerShell/手工复制。开发期已用重定向根目录（沙箱）实测过安装与卸载全流程；本验收在真实位置做一次。
+
+## 准备
+
+1. 从维护人处取得候选 ZIP（内含 `Setup.exe`、`SetupCore.dll`、`Newtonsoft.Json.dll` 和 `.bundle` 文件夹）。
+2. 保存并退出 AutoCAD 2021。
+3. 把 ZIP 解压到普通文件夹（如桌面），保持四个内容在同一层。
+
+## 验收步骤
+
+1. **安装**：双击 `Setup.exe`。
+   - 欢迎页显示版本、源码提交、构建时间与未完成验收项；点“下一步”。
+   - 环境检查三项应全为 ✔（.NET 4.8、AutoCAD 2021、AutoCAD 已退出）；点“开始安装”。
+   - 安装页显示校验与复制日志，约十几秒；出现“安装完成”后点“完成”。
+   - 核对：`%APPDATA%\Autodesk\ApplicationPlugins` 出现 `JUSTIFIED_specification-reflow-for-AutoCAD.bundle`；Windows“应用和功能”里能搜到本工具。
+2. **使用**：启动 AutoCAD 2021，按单位既有流程处理插件安全提示（安装程序不改安全设置）。命令行输入 `DN_DIAG` 应显示 `DN_DIAG_OK`。执行 `DN_NOTE`，窗口选择 DOCX、图幅、确认单位比例后点一次位置，确认出图。
+3. **升级**：退出 AutoCAD，再次双击新版 `Setup.exe` 安装。应看到旧版被备份为 `.bundle.backup-<时间戳>`，新版复制后仍可正常 `DN_DIAG`。
+4. **卸载**：在“应用和功能”卸载，或运行 `Setup.exe --uninstall`。卸载后插件目录与卸载入口都应消失；图纸中已生成的文字不受影响。
+5. **回滚演练**（可选）：退出 AutoCAD，把新版 `.bundle` 移出 ApplicationPlugins，把某次 `.backup-<时间戳>` 目录改回原名，重启 CAD 后 `DN_DIAG` 应恢复。
+
+## 预期与已知边界
+
+- 候选包的 `standards/published` 在仓库正式标准发布前可能为空：安装后 `DN_NOTE` 会提示缺模板，这是预期，不是安装失败；测试模板由维护人另行放置。
+- 全新电脑、断网、升级跨版本、签名的验收未做之前，本验收结果只代表本机。
+- 异常时记录：安装页日志文字、`%APPDATA%/Autodesk/ApplicationPlugins` 目录内容、AutoCAD 版本与操作步骤，回传维护人。
+
+## 开发自测（不需要真人点击以外的操作）
+
+`scripts/test-installer.ps1 -ZipPath <候选ZIP>`：自动解包到临时沙箱、用环境变量把安装目标重定向到沙箱（不碰真实候选包），启动安装/卸载向导并提示点击步骤，自动核对安装文件数、注册表安装位置与卸载清理，最后输出 `T13_ACCEPTANCE_OK/FAILED`。

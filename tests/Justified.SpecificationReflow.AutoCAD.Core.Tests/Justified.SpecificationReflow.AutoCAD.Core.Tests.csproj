@@ -7,6 +7,7 @@
     <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.Application/Justified.SpecificationReflow.AutoCAD.Application.csproj" />
     <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.DocxAdapter/Justified.SpecificationReflow.AutoCAD.DocxAdapter.csproj" />
     <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.LayoutEngine/Justified.SpecificationReflow.AutoCAD.LayoutEngine.csproj" />
+    <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.SetupCore/Justified.SpecificationReflow.AutoCAD.SetupCore.csproj" />
     <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.Standards/Justified.SpecificationReflow.AutoCAD.Standards.csproj" />
   </ItemGroup>
   <ItemGroup>

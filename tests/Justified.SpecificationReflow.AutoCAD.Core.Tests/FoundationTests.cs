@@ -57,6 +57,8 @@ public class FoundationTests
             ["LayoutEngine"] = new[] { "Contracts" },
             ["Application"] = new[] { "Contracts", "DocumentCore" },
             ["AutoCadAdapter"] = new[] { "Contracts" },
+            ["SetupCore"] = Array.Empty<string>(),
+            ["Setup"] = new[] { "SetupCore" },
             ["PluginHost"] = new[] { "Application", "Contracts", "DocumentCore", "DocxAdapter", "Standards", "LayoutEngine", "AutoCadAdapter" }
         };
         var projects = Directory.GetFiles(Path.Combine(Root(), "src"), "*.csproj", SearchOption.AllDirectories);
@@ -70,7 +72,14 @@ public class FoundationTests
                 .Select(x => Path.GetFileNameWithoutExtension((string)x.Attribute("Include")!).Replace("Justified.SpecificationReflow.AutoCAD.", "")).ToArray();
             Assert.That(refs, Is.SubsetOf(allowed[name]), name);
             if (name == "AutoCadAdapter" || name == "PluginHost") continue;
-            Assert.That(project.Descendants("TargetFramework").Single().Value, Is.EqualTo("netstandard2.0"), name);
+            if (name == "Setup")
+            {
+                Assert.That(project.Descendants("TargetFramework").Single().Value, Is.EqualTo("net48"), name);
+            }
+            else
+            {
+                Assert.That(project.Descendants("TargetFramework").Single().Value, Is.EqualTo("netstandard2.0"), name);
+            }
             var forbidden = project.Descendants("Reference").Concat(project.Descendants("PackageReference"))
                 .Select(x => (string)x.Attribute("Include")!)
                 .Where(x => x.StartsWith("AcMgd", StringComparison.OrdinalIgnoreCase)

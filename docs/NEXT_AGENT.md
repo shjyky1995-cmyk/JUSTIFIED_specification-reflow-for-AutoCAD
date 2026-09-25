@@ -1,6 +1,10 @@
 # 当前接续状态（所有 Agent 共用）
 
-## 2026-09-25 CAD 保存/新建弹窗定位（最新）
+## 2026-09-25 T13 图形化安装器已开发并通过沙箱实测（最新）
+
+用户批准“全部一起做”：T13 为主线，FILEDIA 硬化与视觉规范同步完成。当前分支 `task/T13-installer`（自 task/T14-note-picker 派生，未合 main）。新增 SetupCore（netstandard2.0 纯逻辑）+ Setup（net48 WinForms 向导，不引用 AutoCAD API），`build.ps1 -Target Package` 的 ZIP 根目录现含 Setup.exe 等三个安装文件；架构边界测试与 ARCHITECTURE.md 已登记两个新模块。验证：0 警告、双框架各 159/159、PACKAGE_VERIFY_OK files=24；沙箱（重定向根目录）实测安装（25 文件+注册表）与卸载（三项全清）通过，`scripts/test-installer.ps1` 输出 T13_ACCEPTANCE_OK；真实 ApplicationPlugins 候选包未被动过。视觉规范落 `docs/VISUAL_SPEC_V1.md`；`prepare-manual-validation.ps1` 增加 `restore-filedia.scr`。CAD 保存/新建弹窗仍待用户按会话内 `FILEDIA`→`1` 步骤处理并正常退出 CAD 后回传。用户待办：按 `docs/T13_HOME_TEST.md` 在真实位置验收安装/升级/卸载/回滚。T12 打印/断网/专业签收、T14 不同 DOCX/点位取消照旧 pending；正式标准未发布前包装后 `standards/published` 为空、装完缺模板属预期。原有测试夹具换行差异及 `测试结果/` 保持未暂存。停止 Google Drive 上传。
+
+## 2026-09-25 CAD 保存/新建弹窗定位
 
 用户反馈 CAD 又不弹保存窗口、新建图纸不弹样式选择窗口。已定位：截图证明会话内 `FILEDIA=0`（QSAVE 走命令行提示）；排查时 `acad.exe` 未运行且 Computer Use 枚举不到 AutoCAD，无法代操作，已给用户会话内步骤：`FILEDIA`→`1`，核对 `CMDDIA=1`、`STARTUP=1`，然后**正常退出 CAD** 让设置写回配置文件。根因同 T11：无人值守验证脚本置 0 后被打断残留并经退出写入配置；上次会话内修复因部署时结束进程未持久化。已排除插件（无 LISP、无 setvar FILEDIA）。用户待办：按步骤设置并正常退出后回传保存/新建是否恢复弹窗；再复发需查其他插件/LISP 与验证脚本执行情况。T12/T14 其余未验项不变。原有测试夹具换行差异及 `测试结果/` 保持未暂存。停止 Google Drive 上传。
 

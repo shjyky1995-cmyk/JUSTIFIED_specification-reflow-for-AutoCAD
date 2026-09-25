@@ -59,6 +59,9 @@ $lines | Set-Content -LiteralPath (Join-Path $run '01-auto.scr') -Encoding UTF8
     ('(if (findfile "' + "$r/normal.hidden" + '") (vl-file-rename "' + "$r/normal.hidden" + '" "' + "$r/normal.docx" + '"))'),
     '(princ "\nT11_LOCAL_STATE_RESTORED\n")') |
     Set-Content -LiteralPath (Join-Path $run '99-restore.scr') -Encoding UTF8
+# Standalone recovery when a run is interrupted before FILEDIA is restored: SCRIPT this file in CAD.
+@('(setvar "FILEDIA" 1)', '(princ "\nFILEDIA_RESTORED\n")') |
+    Set-Content -LiteralPath (Join-Path $run 'restore-filedia.scr') -Encoding UTF8
 [ordered]@{
     classification='local-test-only'; preparedUtc=[DateTime]::UtcNow.ToString('o')
     bundle=$bundle; dllSha256=(Get-FileHash -LiteralPath $dll).Hash

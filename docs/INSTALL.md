@@ -1,14 +1,22 @@
 # Word→CAD 安装与使用
 
-当前 ZIP 是 0.1.0 验收候选包，已包含 Word→DBText 功能。BUILD.json 标明源码提交、工作区是否有改动及未验收项。三图幅正式标准尚未发布，不能把候选包当成正式出图版本。2026-09-24 新选择窗口的宿主验收尚未完成；旧 ZIP 仍按其随包说明操作。
+当前 ZIP 是 0.1.0 验收候选包，已包含 Word→DBText 功能。BUILD.json 标明源码提交、工作区是否有改动及未验收项。三图幅正式标准尚未发布，不能把候选包当成正式出图版本。2026-09-25 起提供图形化安装程序（Setup.exe）；旧 ZIP 仍按其随包说明操作。
 
-## 安装与完整性检查
+## 图形化安装（普通用户，推荐）
 
 1. 环境：Windows x64、AutoCAD 2021（R24.0）、.NET Framework 4.8。其他 CAD 版本尚未承诺。
-2. 解压 ZIP。可在 PowerShell 中运行 `& '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle/verify-package.ps1' -BundlePath '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle'`，应显示 PACKAGE_VERIFY_OK。此检查确认文件完整性，不代替发布者签名或可信来源核验。
-3. 退出 AutoCAD，把完整 .bundle 文件夹放入当前用户 `%APPDATA%/Autodesk/ApplicationPlugins`。如有旧版，先移动旧版到该目录之外留作回滚，不覆盖正在使用的 DLL。
-4. 启动 AutoCAD，按正常安全提示加载可信来源插件；保持 SECURELOAD 和组织安全策略。执行 `DN_DIAG` 应显示 DN_DIAG_OK。DN_NOTE、DN_NOTE_REPEAT、DN_NOTE_SET 均已登记按命令自动加载。
-5. 目标机无需安装 .NET SDK、NuGet 或联网下载运行依赖。字体与大字体需由有授权的来源单独安装；插件包不分发 Autodesk SDK 或字体。
+2. 解压 ZIP，双击根目录的 `Setup.exe`。安装程序依次：检查运行环境（.NET 4.8、AutoCAD 2021、AutoCAD 已退出）→ 按 SHA256.json 校验包完整性 → 复制插件到当前用户 `%APPDATA%/Autodesk/ApplicationPlugins` → 注册“应用和功能”卸载入口。不需要联网，不使用 GitHub、PowerShell 或手工复制 `.bundle`。
+3. 升级：自动把旧版 `.bundle` 备份为同目录 `.bundle.backup-<时间戳>` 后再复制新版；回滚 = 退出 AutoCAD，把新版移出 ApplicationPlugins，再把备份目录改回原名称。
+4. 卸载：在 Windows“应用和功能”选择本工具卸载，或重新运行 `Setup.exe --uninstall`。卸载只删插件文件，不删图纸或已生成的文字。
+5. 安装完成后启动 AutoCAD，按正常安全提示加载可信来源插件；安装程序不修改 CAD 安全设置。执行 `DN_DIAG` 应显示 DN_DIAG_OK。DN_NOTE、DN_NOTE_REPEAT、DN_NOTE_SET 均已登记按命令自动加载。
+6. 环境不满足（缺 .NET 4.8、无 AutoCAD 2021、AutoCAD 正在运行）时安装程序明确阻断并说明原因；包校验不通过时停止安装并列出问题文件。
+7. 目标机无需安装 .NET SDK、NuGet 或联网下载运行依赖。字体与大字体需由有授权的来源单独安装；插件包不分发 Autodesk SDK 或字体。
+
+## 手动安装与完整性检查（备用/开发）
+
+1. 解压 ZIP。可在 PowerShell 中运行 `& '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle/verify-package.ps1' -BundlePath '<解压目录>/JUSTIFIED_specification-reflow-for-AutoCAD.bundle'`，应显示 PACKAGE_VERIFY_OK。此检查确认文件完整性，不代替发布者签名或可信来源核验。
+2. 退出 AutoCAD，把完整 .bundle 文件夹放入当前用户 `%APPDATA%/Autodesk/ApplicationPlugins`。如有旧版，先移动旧版到该目录之外留作回滚，不覆盖正在使用的 DLL。
+3. 其余步骤（加载、诊断命令）与图形化安装相同。
 
 ## 设计人员使用
 

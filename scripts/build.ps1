@@ -55,6 +55,13 @@ try {
         Copy-Item -LiteralPath 'third-party' -Destination $bundle -Recurse
         Copy-Item -LiteralPath 'scripts/verify-package.ps1' -Destination $bundle
         Copy-Item -LiteralPath 'schemas' -Destination $bundle -Recurse
+        $setupBin = "src/Justified.SpecificationReflow.AutoCAD.Setup/bin/$Configuration/net48"
+        $setupFiles = @('Setup.exe', 'Justified.SpecificationReflow.AutoCAD.SetupCore.dll', 'Newtonsoft.Json.dll')
+        foreach ($setupFile in $setupFiles) {
+            $setupPath = Join-Path $setupBin $setupFile
+            if (-not (Test-Path -LiteralPath $setupPath)) { throw "Missing installer file: $setupFile" }
+            Copy-Item -LiteralPath $setupPath -Destination $output
+        }
         $published = Join-Path $contents 'standards/published'
         New-Item -ItemType Directory -Path $published -Force | Out-Null
         Copy-Item -Path 'standards/published/*' -Destination $published -Recurse
@@ -69,7 +76,7 @@ try {
             builtUtc = [DateTime]::UtcNow.ToString('o')
             supportedHost = 'AutoCAD 2021 R24.0 / Windows x64 / .NET Framework 4.8'
             productionReady = $false
-            pending = @('T12 three-paper production assets, external machine, offline run, printing and professional review', 'T14 in-CAD picker and mixed-paper host validation', 'T13 graphical installer and clean-machine acceptance')
+            pending = @('T12 three-paper production assets, external machine, offline run, printing and professional review', 'T14 in-CAD picker and mixed-paper host validation', 'T13 clean-machine graphical install, upgrade, uninstall and rollback acceptance')
         }
         $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $bundle 'BUILD.json') -Encoding UTF8
         $hashes = Get-ChildItem -LiteralPath $bundle -Recurse -File | Get-FileHash -Algorithm SHA256 |
@@ -77,15 +84,20 @@ try {
         $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'SHA256.json') -Encoding UTF8
         & (Join-Path $PSScriptRoot 'verify-package.ps1') -BundlePath $bundle
         $zip = Join-Path $output "JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-$($commit.Substring(0,7)).zip"
-        Compress-Archive -LiteralPath $bundle -DestinationPath $zip
+        $zipItems = @($bundle) + ($setupFiles | ForEach-Object { Join-Path $output $_ })
+        Compress-Archive -LiteralPath $zipItems -DestinationPath $zip
         (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash | Set-Content -LiteralPath "$zip.sha256" -Encoding ASCII
         # Stable, visible handoff location for manual testing; do not change CAD trust settings.
         $handoff = Join-Path $taskRoot ([string][char]0x6D4B + [char]0x8BD5 + [char]0x6587 + [char]0x4EF6)
         $program = Join-Path $handoff ([string][char]0x7A0B + [char]0x5E8F)
         New-Item -ItemType Directory -Path $program -Force | Out-Null
         Get-ChildItem -LiteralPath $contents -Filter *.dll | Copy-Item -Destination $program -Force
+        foreach ($setupFile in $setupFiles) {
+            Copy-Item -LiteralPath (Join-Path $setupBin $setupFile) -Destination $program -Force
+        }
         Copy-Item -LiteralPath $zip -Destination $handoff -Force
         Write-Host "Manual test DLL: $(Join-Path $program 'Justified.SpecificationReflow.AutoCAD.PluginHost.dll')"
+        Write-Host "Graphical installer (double-click to install): $(Join-Path $program 'Setup.exe')"
         Write-Host "Validation candidate package (not production): $zip"
     }
 }
