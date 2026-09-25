@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -121,7 +122,7 @@ internal sealed class InstallService
         log.Report("卸载程序已复制：" + uninstallerRoot);
 
         var setupExe = Path.Combine(uninstallerRoot, "Setup.exe");
-        var uninstallString = "cmd.exe /c \"\"\"" + setupExe + "\" --uninstall && rmdir /s /q \"" + uninstallerRoot + "\"\"\"";
+        var uninstallString = "\"" + setupExe + "\" --uninstall";
         var sizeKb = Directory.EnumerateFiles(plan.TargetBundleRoot, "*", SearchOption.AllDirectories)
             .Sum(file => new FileInfo(file).Length) / 1024;
         RegistryStore.WriteInstall(build.Version, plan.TargetBundleRoot, uninstallString, uninstallerRoot, sizeKb);
@@ -180,6 +181,27 @@ internal sealed class InstallService
             }
         }
         log.Report("卸载完成。图纸中已生成的文字不受影响。");
+        RemoveUninstallerFolderAfterExit(uninstallerRoot);
+    }
+
+    private static void RemoveUninstallerFolderAfterExit(string? uninstallerRoot)
+    {
+        if (uninstallerRoot == null || uninstallerRoot.Trim().Length == 0 || !Directory.Exists(uninstallerRoot)) return;
+        var running = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+        var target = uninstallerRoot.TrimEnd(Path.DirectorySeparatorChar);
+        if (!string.Equals(running, target, StringComparison.OrdinalIgnoreCase)) return;
+        try
+        {
+            var start = new ProcessStartInfo("cmd.exe", "/c timeout /t 2 >nul & rmdir /s /q \"" + target + "\"")
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false
+            };
+            Process.Start(start);
+        }
+        catch (System.Exception error) when (error is System.ComponentModel.Win32Exception || error is InvalidOperationException)
+        {
+        }
     }
 
     private static void CopyDirectory(string source, string target)
