@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Windows.Forms;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Standards;
 using Justified.SpecificationReflow.AutoCAD.Standards;
-using Newtonsoft.Json.Linq;
 
 namespace Justified.SpecificationReflow.AutoCAD.PluginHost;
 
@@ -22,7 +21,6 @@ internal sealed class NotePickerForm : Form
     private readonly TextBox _root = new TextBox();
     private readonly TextBox _docx = new TextBox();
     private readonly TextBox _scale = new TextBox();
-    private readonly ComboBox _template = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Label _status = new Label();
     private readonly Button _continue = new Button();
     private readonly Button _rootButton = new Button();
@@ -36,7 +34,7 @@ internal sealed class NotePickerForm : Form
         _previous = previous;
         Text = "导入说明";
         AutoScaleMode = AutoScaleMode.None;
-        ClientSize = new Size(1000, 766);
+        ClientSize = new Size(1000, 690);
         FormBorderStyle = FormBorderStyle.None;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -83,29 +81,22 @@ internal sealed class NotePickerForm : Form
         }
         Divider(447, 40, 917);
 
-        Section("模板版本", 484);
-        Box(215, 469, 742, 63);
-        _template.SetBounds(231, 484, 706, 40);
-        _template.FlatStyle = FlatStyle.Flat;
-        _template.Font = new Font(Font.FontFamily, 21F, FontStyle.Regular, GraphicsUnit.Pixel);
-        Controls.Add(_template);
-
-        Section("单位比例", 575);
-        Box(215, 558, 534, 64);
-        _scale.SetBounds(232, 575, 496, 37);
+        Section("单位比例", 485);
+        Box(215, 469, 534, 64);
+        _scale.SetBounds(232, 486, 496, 37);
         _scale.BorderStyle = BorderStyle.None;
         _scale.Font = new Font(Font.FontFamily, 21F, FontStyle.Regular, GraphicsUnit.Pixel);
         _scale.Text = previous == null ? string.Empty : previous.UnitScale.ToString("G17", CultureInfo.InvariantCulture);
         Controls.Add(_scale);
-        Label("按图纸单位核对", 772, 575, 184, 31, 19F, false).ForeColor = Muted;
+        Label("按图纸单位核对", 772, 487, 184, 31, 19F, false).ForeColor = Muted;
 
-        _status.SetBounds(215, 623, 535, 21);
+        _status.SetBounds(215, 548, 535, 26);
         _status.ForeColor = Muted;
         _status.Font = new Font(Font.FontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
         Controls.Add(_status);
         _root.Text = previous?.StandardRoot ?? defaultRoot;
         _rootButton.Text = "选择模板目录";
-        _rootButton.SetBounds(776, 619, 181, 27);
+        _rootButton.SetBounds(776, 544, 181, 27);
         _rootButton.FlatStyle = FlatStyle.Flat;
         _rootButton.FlatAppearance.BorderSize = 0;
         _rootButton.ForeColor = Blue;
@@ -114,11 +105,11 @@ internal sealed class NotePickerForm : Form
         _rootButton.Click += (_, _) => BrowseFolder();
         Controls.Add(_rootButton);
 
-        Divider(650);
-        Label("① 选择", 46, 677, 120, 42, 20F, true).ForeColor = Blue;
-        Label("② 点位置", 176, 677, 145, 42, 20F, false).ForeColor = Muted;
+        Divider(584);
+        Label("① 选择", 46, 610, 120, 42, 20F, true).ForeColor = Blue;
+        Label("② 点位置", 176, 610, 145, 42, 20F, false).ForeColor = Muted;
         _continue.Text = "在图纸中点位置";
-        _continue.SetBounds(570, 672, 279, 64);
+        _continue.SetBounds(570, 605, 279, 64);
         _continue.BackColor = Blue;
         _continue.ForeColor = Color.White;
         _continue.Font = new Font(Font.FontFamily, 22F, FontStyle.Bold, GraphicsUnit.Pixel);
@@ -126,7 +117,7 @@ internal sealed class NotePickerForm : Form
         _continue.FlatAppearance.BorderSize = 0;
         _continue.Click += (_, _) => Confirm();
         Controls.Add(_continue);
-        var cancel = AddButton("取消", 868, 672, 100, 64, () => { DialogResult = DialogResult.Cancel; Close(); });
+        var cancel = AddButton("取消", 868, 605, 100, 64, () => { DialogResult = DialogResult.Cancel; Close(); });
         cancel.BackColor = Color.White;
         cancel.ForeColor = Muted;
         CancelButton = cancel;
@@ -138,12 +129,18 @@ internal sealed class NotePickerForm : Form
     public string DocumentPath => _docx.Text.Trim().Trim('"');
     public string? ReportDirectory => _previous?.ReportDirectory;
     public double UnitScale { get; private set; }
-    public TemplateSummary? SelectedTemplate => (_template.SelectedItem as TemplateChoice)?.Template;
+    public TemplateSummary? SelectedTemplate
+    {
+        get
+        {
+            var matches = _available.Where(item => string.Equals(item.PaperCode, _selectedPaper, StringComparison.OrdinalIgnoreCase)).ToList();
+            return matches.Count == 1 ? matches[0] : null;
+        }
+    }
 
     private void RefreshTemplates()
     {
         _available.Clear();
-        _template.Items.Clear();
         _continue.Enabled = false;
         if (!Directory.Exists(StandardRoot))
         {
@@ -172,10 +169,7 @@ internal sealed class NotePickerForm : Form
             _selectedPaper = _available.Any(item => string.Equals(item.PaperCode, savedPaper, StringComparison.OrdinalIgnoreCase))
                 ? savedPaper : _available[0].PaperCode;
             UpdateCards();
-            FillTemplates();
-            _status.Text = "核对图纸单位后，选择在图纸中的放置位置。";
-            _rootButton.Visible = false;
-            _continue.Enabled = true;
+            ValidateCurrentPaper();
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException || error is ArgumentException)
         {
@@ -208,7 +202,7 @@ internal sealed class NotePickerForm : Form
         }
         _selectedPaper = paper;
         UpdateCards();
-        FillTemplates();
+        ValidateCurrentPaper();
     }
 
     private void UpdateCards()
@@ -222,21 +216,19 @@ internal sealed class NotePickerForm : Form
         }
     }
 
-    private void FillTemplates()
+    private void ValidateCurrentPaper()
     {
-        _template.Items.Clear();
-        foreach (var item in _available.Where(item => string.Equals(item.PaperCode, _selectedPaper, StringComparison.OrdinalIgnoreCase)))
-            _template.Items.Add(new TemplateChoice(item));
-        var prior = _previous == null ? -1 : Enumerable.Range(0, _template.Items.Count).Where(index =>
-            _template.Items[index] is TemplateChoice choice
-            && choice.Template.TemplateId == _previous.TemplateId
-            && choice.Template.Version == _previous.TemplateVersion).DefaultIfEmpty(-1).First();
-        if (_template.Items.Count > 0) _template.SelectedIndex = prior >= 0 ? prior : 0;
+        var count = _available.Count(item => string.Equals(item.PaperCode, _selectedPaper, StringComparison.OrdinalIgnoreCase));
+        _continue.Enabled = count == 1;
+        _rootButton.Visible = count != 1;
+        _status.Text = count == 1
+            ? "核对图纸单位后，选择在图纸中的放置位置。"
+            : "该图幅对应多份模板，请管理员保留唯一有效版本。";
     }
 
     private void Confirm()
     {
-        if (SelectedTemplate == null) { _status.Text = "请先选择模板版本。"; return; }
+        if (SelectedTemplate == null) { _status.Text = "模板配置不唯一或不可用，请管理员检查。"; return; }
         if (!double.TryParse(_scale.Text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
             || double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
         {
@@ -300,31 +292,6 @@ internal sealed class NotePickerForm : Form
         button.Click += (_, _) => click();
         Controls.Add(button);
         return button;
-    }
-
-    private sealed class TemplateChoice
-    {
-        private readonly string _source;
-        public TemplateChoice(TemplateSummary template)
-        {
-            Template = template;
-            try
-            {
-                var standard = JObject.Parse(File.ReadAllText(template.FilePath))["standardRef"];
-                var id = standard?["id"]?.ToString() ?? string.Empty;
-                _source = string.IsNullOrWhiteSpace(id) ? string.Empty : id + " v" + (standard?["version"]?.ToString() ?? string.Empty);
-            }
-            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException || error is Newtonsoft.Json.JsonException)
-            { _source = string.Empty; }
-        }
-        public TemplateSummary Template { get; }
-        public override string ToString()
-        {
-            var title = string.Equals(Template.DisciplineCode, "structure", StringComparison.OrdinalIgnoreCase)
-                ? "结构说明" : Template.TemplateId;
-            return title + " · v" + Template.Version
-                + (string.IsNullOrWhiteSpace(_source) ? string.Empty : "  (" + _source + ")");
-        }
     }
 
     private sealed class PaperCard : Panel
