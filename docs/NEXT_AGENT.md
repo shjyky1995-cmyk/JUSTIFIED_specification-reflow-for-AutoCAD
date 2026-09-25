@@ -1,6 +1,10 @@
 # 当前接续状态（所有 Agent 共用）
 
-## 2026-09-25 安装器真实验收通过与界面精简（最新）
+## 2026-09-25 T12/T14 验收材料已备齐（最新）
+
+用户批准继续 T12/T14。本轮完成（提交 `5f9c430`）：①取消时延（CAL-08）埋点——`HostGenerationCancellation` 记录 Esc 时刻，运行报告新增 `Cancelled`/`CancelToFinishMilliseconds`，分析器 `scripts/check-cancel-latency.ps1`（≥20 次取消样本出 P95，provisional 阈值 2000ms）；②断网保证入核心测试（插件程序集禁引用网络 API，164/164）；③新文档 `T12_PRINT.md`（打印清单）、`T12_OFFLINE.md`（断网步骤）、`T12_SIGNOFF.md`（专业签收单）、`T14_SAMPLES.md`（不同 DOCX+点位取消）；④样本包 `artifacts/t14-docx-samples/`（5 份 local-test-only，本地预解析全通过）。**用户待办**：装一次新包（`测试文件/程序/T13验收包-5f9c430/`，取消时延取样必须用新插件；安装即顺便复测升级流程）→ 按 T14_SAMPLES 跑不同 DOCX 与点位取消 → 按 T12_PRINT/T12_OFFLINE 跑打印与断网 → 取消时延 ≥20 次取样 → 回传，Agent 跑 check-cancel-latency/summarize-performance/check-t12-paper-validation 出报告 → T12_SIGNOFF 签收。候选包 candidate-5f9c430（PACKAGE_VERIFY_OK，含随包模板）。T13 全新电脑安装仍 pending。原有测试夹具换行差异及 `测试结果/` 保持未暂存。停止 Google Drive 上传。
+
+## 2026-09-25 安装器真实验收通过与界面精简
 
 用户完成 T13 真实验收（`测试结果/0925/安装过程2/`，安装/升级/卸载均通过），提出三条改进并已全部落地（提交 `4054830`、`6ae35ef`）：①CAD 选择窗缩小为 780×480、圆角窗口+圆角卡片、字级对齐安装器；②CAD 命令行精简——诊断行（含 `DN_NOTE_TIMING_MS`）改由环境变量 `DN_NOTE_TRACE=1` 控制，日常只留一行 `DN_NOTE_OK pages=… objects=… warnings=…`；安装/卸载向导文案同步精简；③项目图标——logo 制成多尺寸 `app.ico` 编入安装器，“应用和功能”条目与窗口标题栏显示。随包模板（A1/A2/A3 各一份）保持固定。当前分支 `task/T13-installer`（未合 main）。验证：0 警告、双框架 161/161、PACKAGE_VERIFY_OK、`test-installer.ps1` 对 candidate-4054830 输出 T13_ACCEPTANCE_OK。**用户待办**：装新包（`测试文件/程序/T13验收包-4054830/`）后在真实 CAD 复测新选择窗外观与圆角、`DN_DIAG`、`DSS` 全流程；`DN_NOTE_TRACE=1` 取计时。T12 打印/断网/专业签收、T14 不同 DOCX/点位取消、全新电脑安装照旧 pending。原有测试夹具换行差异及 `测试结果/` 保持未暂存。停止 Google Drive 上传。
 
