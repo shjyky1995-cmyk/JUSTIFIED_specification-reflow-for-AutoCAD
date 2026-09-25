@@ -25,6 +25,7 @@ sdk/
 *.dwl2
 *.shx
 *.ttf
+!src/Justified.SpecificationReflow.AutoCAD.PluginHost/Assets/fonts/NotoSansSC-VF.ttf
 *.otf
 *.pfx
 *.key

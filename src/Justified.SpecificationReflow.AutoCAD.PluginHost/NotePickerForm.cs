@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -18,10 +19,10 @@ internal sealed class NotePickerForm : Form
     private static readonly Color Muted = Color.FromArgb(99, 111, 133);
     private static readonly Color Blue = Color.FromArgb(19, 101, 230);
     private static readonly Color Line = Color.FromArgb(210, 220, 235);
-    // 本机优先使用开源 Noto Sans SC；其他测试机未安装时保持清晰的系统中文回退。
-    private static readonly FontFamily UiFontFamily = FontFamily.Families.FirstOrDefault(family =>
-        string.Equals(family.Name, "Noto Sans SC", StringComparison.OrdinalIgnoreCase))
-        ?? new FontFamily("Microsoft YaHei UI");
+    // 从插件包加载字体，不依赖使用者电脑是否安装 Noto Sans SC。
+    private static readonly PrivateFontCollection BundledFonts = LoadBundledFonts();
+    private static readonly FontFamily UiFontFamily = BundledFonts.Families.First(family =>
+        string.Equals(family.Name, "Noto Sans SC", StringComparison.Ordinal));
     private readonly string _root;
     private readonly TextBox _docx = new TextBox();
     private readonly TextBox _scale = new TextBox();
@@ -259,6 +260,19 @@ internal sealed class NotePickerForm : Form
         if (stream == null) return null;
         using var original = Image.FromStream(stream);
         return new Bitmap(original);
+    }
+
+    private static PrivateFontCollection LoadBundledFonts()
+    {
+        var directory = Path.GetDirectoryName(typeof(NotePickerForm).Assembly.Location)
+            ?? AppDomain.CurrentDomain.BaseDirectory;
+        var path = Path.Combine(directory, "fonts", "NotoSansSC-VF.ttf");
+        if (!File.Exists(path)) throw new FileNotFoundException("缺少程序界面字体 Noto Sans SC。", path);
+        var fonts = new PrivateFontCollection();
+        fonts.AddFontFile(path);
+        if (!fonts.Families.Any(family => string.Equals(family.Name, "Noto Sans SC", StringComparison.Ordinal)))
+            throw new InvalidDataException("程序界面字体文件不是预期的 Noto Sans SC。");
+        return fonts;
     }
 
     private void EnableDragging(Control target)

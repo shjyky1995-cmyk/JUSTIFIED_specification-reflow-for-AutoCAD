@@ -50,6 +50,7 @@ try {
             if ($_.Name -match '^(AcMgd|AcDbMgd|AcCoreMgd)\.dll$') { throw 'Autodesk DLL must not be packaged.' }
             Copy-Item -LiteralPath $_.FullName -Destination $contents
         }
+        Copy-Item -LiteralPath (Join-Path $binaryDir 'fonts') -Destination $contents -Recurse
         Copy-Item -LiteralPath 'docs/INSTALL.md','docs/THIRD_PARTY.md' -Destination $bundle
         Copy-Item -LiteralPath 'third-party' -Destination $bundle -Recurse
         Copy-Item -LiteralPath 'scripts/verify-package.ps1' -Destination $bundle

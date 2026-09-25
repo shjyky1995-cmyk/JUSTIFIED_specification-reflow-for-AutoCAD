@@ -19,8 +19,11 @@ foreach ($entry in $manifest) {
 foreach ($file in Get-ChildItem -LiteralPath $bundleRoot -Recurse -File) {
     if ($file.FullName -eq (Join-Path $bundleRoot 'SHA256.json')) { continue }
     if (-not $seen.ContainsKey($file.FullName)) { throw "Unexpected package file: $($file.FullName)" }
-    if ($file.Name -match '^(acmgd|acdbmgd|accoremgd)\.dll$' -or $file.Extension -in '.shx','.ttf','.otf') {
-        throw "SDK/font must not be distributed in this package: $($file.Name)"
+    if ($file.Name -match '^(acmgd|acdbmgd|accoremgd)\.dll$' -or $file.Extension -in '.shx','.otf') {
+        throw "SDK/CAD font must not be distributed in this package: $($file.Name)"
+    }
+    if ($file.Extension -eq '.ttf' -and $file.FullName -ne (Join-Path $bundleRoot 'Contents/Windows/fonts/NotoSansSC-VF.ttf')) {
+        throw "Unexpected UI font: $($file.FullName)"
     }
 }
 $required = @('DocumentFormat.OpenXml.dll','DocumentFormat.OpenXml.Framework.dll','Newtonsoft.Json.dll')
@@ -28,6 +31,14 @@ $required += @('Contracts','DocumentCore','DocxAdapter','Standards','LayoutEngin
     ForEach-Object { "Justified.SpecificationReflow.AutoCAD.$_.dll" }
 foreach ($name in $required) {
     if (-not (Test-Path -LiteralPath (Join-Path $bundleRoot "Contents/Windows/$name") -PathType Leaf)) { throw "Missing runtime dependency: $name" }
+}
+$uiFont = Join-Path $bundleRoot 'Contents/Windows/fonts/NotoSansSC-VF.ttf'
+if ((-not (Test-Path -LiteralPath $uiFont -PathType Leaf)) -or
+    ((Get-FileHash -LiteralPath $uiFont -Algorithm SHA256).Hash -ne '763146584CF0710223441356B4395E279021B0806C196614377A7A0174AE074A')) {
+    throw 'Bundled Noto Sans SC font is missing or differs from the approved file.'
+}
+if (-not (Test-Path -LiteralPath (Join-Path $bundleRoot 'third-party/NotoSansSC-OFL.txt') -PathType Leaf)) {
+    throw 'Bundled font license is missing.'
 }
 [xml]$xml = Get-Content -LiteralPath (Join-Path $bundleRoot 'PackageContents.xml') -Raw
 $commands = @($xml.ApplicationPackage.Components.ComponentEntry.Commands.Command | ForEach-Object { $_.Global })
