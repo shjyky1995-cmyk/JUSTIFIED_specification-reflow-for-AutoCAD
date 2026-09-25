@@ -61,11 +61,6 @@ public sealed class NoteRunReport
     public List<string> Errors { get; set; } = new List<string>();
 
     public List<string> TextBounds { get; set; } = new List<string>();
-
-    // 取消时延（CAL-08）：从用户按 Esc 到生成流程确认零残留退出，未取消为 -1。
-    public bool Cancelled { get; set; }
-
-    public double CancelToFinishMilliseconds { get; set; } = -1;
 }
 
 public static class NoteRunReportBuilder

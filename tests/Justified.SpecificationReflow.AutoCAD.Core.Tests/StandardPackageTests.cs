@@ -24,9 +24,9 @@ public class StandardPackageTests
         Assert.That(shipped, Is.EqualTo(new[]
         {
             "standards/jsr-note/1.0.0.json",
-            "templates/jsr-A1-three-column/1.0.0.json",
-            "templates/jsr-A2-three-column/1.0.0.json",
-            "templates/jsr-A3-two-column/1.0.0.json"
+            "templates/jsr-A1-three-column/1.1.0.json",
+            "templates/jsr-A2-three-column/1.1.0.json",
+            "templates/jsr-A3-two-column/1.1.0.json"
         }), "随包默认模板集合变化时必须同步更新本断言（用户 2026-09-25 决定前期固定这套模板）。");
         var catalog = new DirectoryPackageCatalog(published, allowTestFixtures: false);
         var standard = catalog.Load(new StandardRef { Id = "institution-note", Version = "pending" }, CancellationToken.None);

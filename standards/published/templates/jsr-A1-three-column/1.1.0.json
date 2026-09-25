@@ -1,0 +1,60 @@
+﻿{
+    "classification": "production",
+    "templateId": "jsr-A1-three-column",
+    "version": "1.1.0",
+    "disciplineCode": "structure",
+    "paperCode": "A1",
+    "status": "calibrated",
+    "orientation": "landscape",
+    "unit": "mm",
+    "standardRef": {
+        "id": "jsr-note",
+        "version": "1.0.0"
+    },
+    "anchor": {
+        "kind": "note_top_left",
+        "x": 0,
+        "y": 0
+    },
+    "pageBounds": {
+        "left": 0,
+        "right": 841,
+        "top": 0,
+        "bottom": -594
+    },
+    "columns": [
+        {
+            "columnId": "c0",
+            "left": 65.5,
+            "right": 295.5,
+            "top": -60,
+            "bottom": -571.9100000000001,
+            "firstBaselineY": -66.2,
+            "rowCount": 71
+        },
+        {
+            "columnId": "c1",
+            "left": 305.5,
+            "right": 535.5,
+            "top": -60,
+            "bottom": -571.9100000000001,
+            "firstBaselineY": -66.2,
+            "rowCount": 71
+        },
+        {
+            "columnId": "c2",
+            "left": 545.5,
+            "right": 775.5,
+            "top": -60,
+            "bottom": -571.9100000000001,
+            "firstBaselineY": -66.2,
+            "rowCount": 71
+        }
+    ],
+    "pageStep": {
+        "x": 841,
+        "y": 0
+    },
+    "framePolicy": "none",
+    "resolvedRowPitch": 7.2
+}

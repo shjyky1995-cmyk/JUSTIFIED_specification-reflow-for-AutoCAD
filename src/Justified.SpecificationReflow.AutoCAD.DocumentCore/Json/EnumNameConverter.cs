@@ -65,6 +65,7 @@ internal sealed class AnchorKindConverter : EnumNameConverter<AnchorKind>
     public AnchorKindConverter()
         : base(new[]
         {
+            new KeyValuePair<AnchorKind, string>(AnchorKind.NoteTopLeft, "note_top_left"),
             new KeyValuePair<AnchorKind, string>(AnchorKind.NoteTopRight, "note_top_right")
         })
     {

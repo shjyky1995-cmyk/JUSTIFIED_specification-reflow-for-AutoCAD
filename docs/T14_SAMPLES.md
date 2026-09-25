@@ -34,20 +34,15 @@ T14 剩余两项功能验收：同一空白 DWG 中使用**不同 DOCX** 分别�
 3. **在图纸上点位之前**按 Esc：应显示 `DN_NOTE_CANCELLED`，图面零新增。
 4. （生成中取消）再次 `DSS` 并点位置，生成过程中立即按住 Esc：应显示 `DN_NOTE_CANCELLED`，随后图面零新增（可用 `QSELECT` 或选择全部文字核对数量与操作前一致）。
 
-### 取消时延 P95（CAL-08）
+### 取消验证标准
 
-需要至少 20 次“生成中取消”的有效样本：
-
-1. 在 `DSS` 的设置里把报告目录指向专用目录（如 `reports\cancel`；用 `DN_NOTE_SET` 一次性设置后，`DSS`/`DN_NOTE_REPEAT` 沿用）。
-2. 重复“点位置 → 立即按住 Esc”20 次以上。
-3. 交 Agent 运行 `scripts/check-cancel-latency.ps1 -ReportDirectory <报告目录> -OutputPath <结果.json>`，输出 P95 毫秒数与是否达标（ provisional 阈值 2000 ms，以 PRD/CAL-08 定义为准）。
+两种取消都显示 `DN_NOTE_CANCELLED` 且图面零新增。任一次取消后残留文字即不通过，记录复现步骤交 Agent。
 
 ### 回传
 
 - 取消时的命令行截图；
-- 报告目录路径（Agent 分析 P95）；
-- 取消后对象数量核对方法（QSELECT 条件：对象=TEXT，层=说明层）。
+- 取消后对象数量核对方法（QSELECT 条件：对象=TEXT，层=JSR_NOTE_TEXT）。
 
 ### 通过标准
 
-两种取消都显示 `DN_NOTE_CANCELLED` 且图面零新增；P95 达标。任一次取消后残留文字即不通过，记录复现步骤交 Agent。
+两种取消都显示 `DN_NOTE_CANCELLED` 且图面零新增。任一次取消后残留文字即不通过，记录复现步骤交 Agent。

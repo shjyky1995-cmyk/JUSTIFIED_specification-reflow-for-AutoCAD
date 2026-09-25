@@ -74,48 +74,56 @@ internal sealed class NotePickerForm : Form
         Divider(60);
 
         Section("Word 文件", 72);
-        var wordBox = Box(130, 64, 548, 46);
-        var wordIcon = Label("W", 12, 7, 26, 32, 14F, true, wordBox);
+        var wordBox = Box(130, 64, 540, 46);
+        var wordIcon = Label("W", 14, 7, 26, 32, 14F, true, wordBox);
         wordIcon.ForeColor = Color.White;
         wordIcon.BackColor = Color.FromArgb(40, 103, 191);
         wordIcon.TextAlign = ContentAlignment.MiddleCenter;
-        _docx.SetBounds(48, 10, 380, 24);
+        _docx.SetBounds(48, 10, 420, 24);
         _docx.Text = previous?.DocumentPath ?? string.Empty;
         _docx.BorderStyle = BorderStyle.None;
         _docx.Font = new Font(Font.FontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
         wordBox.Controls.Add(_docx);
-        AddButton("更换", 456, 6, 78, 34, BrowseDocx, wordBox);
+        AddButton("更换", 552, 6, 100, 34, BrowseDocx, wordBox);
 
         Section("图幅", 130);
         var papers = new[] { ("A1", "3 列"), ("A2", "3 列"), ("A3", "2 列"), ("更多", "···") };
         for (var i = 0; i < papers.Length; i++)
         {
             var card = new PaperCard(papers[i].Item1, papers[i].Item2)
-                { Left = 176 + i * 117, Top = 120, Width = 105, Height = 94 };
+                { Left = 130 + i * 138, Top = 120, Width = 126, Height = 94 };
             card.Click += (_, _) => SelectPaper(card.Paper);
             _cards.Add(card);
             Controls.Add(card);
         }
-        Divider(230, 22, 656);
+        Divider(230, 22, 648);
 
-        Section("单位比例", 246);
-        var scaleBox = Box(130, 238, 360, 40);
-        _scale.SetBounds(10, 8, 360, 24);
+        Section("单位比例", 240);
+        var scaleBox = Box(130, 232, 260, 40);
+        _scale.SetBounds(14, 8, 230, 24);
         _scale.BorderStyle = BorderStyle.None;
         _scale.Font = new Font(Font.FontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
         _scale.Text = previous == null ? string.Empty : previous.UnitScale.ToString("G17", CultureInfo.InvariantCulture);
         scaleBox.Controls.Add(_scale);
-        Label("按图纸单位核对", 510, 248, 150, 20, 12F, false).ForeColor = Muted;
+        var presets = new[] { "1", "10", "100", "1000" };
+        for (var i = 0; i < presets.Length; i++)
+        {
+            var preset = presets[i];
+            var chip = AddButton(preset + "×", 402 + i * 69, 239, 59, 26, () => _scale.Text = preset);
+            chip.Font = new Font(Font.FontFamily, 12F, FontStyle.Bold, GraphicsUnit.Pixel);
+        }
+        var hint = Label("按图纸单位核对：1:1 填 1，1:100 填 100", 130, 278, 400, 18, 11F, false);
+        hint.ForeColor = Muted;
 
-        _status.SetBounds(130, 286, 420, 18);
+        _status.SetBounds(130, 298, 540, 18);
         _status.ForeColor = Muted;
         _status.Font = new Font(Font.FontFamily, 12F, FontStyle.Regular, GraphicsUnit.Pixel);
         Controls.Add(_status);
-        Divider(318);
-        Label("① 选择", 22, 328, 70, 24, 13F, true).ForeColor = Blue;
-        Label("② 点位置", 104, 328, 90, 24, 13F, false).ForeColor = Muted;
+        Divider(328);
+        Label("① 选择", 22, 338, 70, 24, 13F, true).ForeColor = Blue;
+        Label("② 点位置", 104, 338, 90, 24, 13F, false).ForeColor = Muted;
         _continue.Text = "在图纸中点位置";
-        _continue.SetBounds(370, 322, 200, 40);
+        _continue.SetBounds(380, 332, 200, 40);
         _continue.BackColor = Blue;
         _continue.ForeColor = Color.White;
         _continue.Font = new Font(Font.FontFamily, 14F, FontStyle.Bold, GraphicsUnit.Pixel);
@@ -123,7 +131,7 @@ internal sealed class NotePickerForm : Form
         _continue.FlatAppearance.BorderSize = 0;
         _continue.Click += (_, _) => Confirm();
         Controls.Add(_continue);
-        var cancel = AddButton("取消", 582, 322, 78, 40, () => { DialogResult = DialogResult.Cancel; Close(); });
+        var cancel = AddButton("取消", 592, 332, 78, 40, () => { DialogResult = DialogResult.Cancel; Close(); });
         cancel.BackColor = Color.White;
         cancel.ForeColor = Muted;
         CancelButton = cancel;
@@ -236,9 +244,7 @@ internal sealed class NotePickerForm : Form
     {
         var count = _available.Count(item => string.Equals(item.PaperCode, _selectedPaper, StringComparison.OrdinalIgnoreCase));
         _continue.Enabled = count == 1;
-        _status.Text = count == 1
-            ? "核对图纸单位后，选择在图纸中的放置位置。"
-            : "该图幅对应多份模板，请管理员保留唯一有效版本。";
+        _status.Text = count == 1 ? string.Empty : "该图幅对应多份模板，请管理员保留唯一有效版本。";
     }
 
     private void Confirm()
@@ -358,44 +364,48 @@ internal sealed class NotePickerForm : Form
         public string Detail { get; }
         public bool Selected { get; set; }
         public bool Available { get; set; }
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            // 不铺直角底色，圆角由 OnPaint 的圆角路径填充。
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
-            base.OnPaint(e);
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.Clear(Selected ? Color.FromArgb(242, 248, 255) : Color.White);
-            using var borderPath = Rounded(new Rectangle(1, 1, Width - 3, Height - 3), 8);
+            using var fillPath = Rounded(new Rectangle(0, 0, Width - 1, Height - 1), 8);
+            using (var fill = new SolidBrush(Color.White))
+                g.FillPath(fill, fillPath);
             using (var border = new Pen(Selected ? Blue : Line, Selected ? 2F : 1F))
-                g.DrawPath(border, borderPath);
+                g.DrawPath(border, fillPath);
             var color = Available ? Ink : Muted;
             if (Paper == "更多")
             {
                 using var pen = new Pen(color, 2F);
                 for (var row = 0; row < 2; row++)
                     for (var column = 0; column < 2; column++)
-                        g.DrawRectangle(pen, 36 + column * 17, 10 + row * 17, 13, 13);
+                        g.DrawRectangle(pen, 46 + column * 18, 10 + row * 18, 14, 14);
             }
             else
             {
                 using var pen = new Pen(color, 1.5F);
-                g.DrawRectangle(pen, 34, 12, 38, 32);
+                g.DrawRectangle(pen, 42, 12, 42, 36);
                 var columns = Paper == "A3" ? 2 : 3;
                 for (var i = 1; i < columns; i++)
-                    g.DrawLine(pen, 34 + i * 38 / columns, 16, 34 + i * 38 / columns, 40);
+                    g.DrawLine(pen, 42 + i * 42 / columns, 16, 42 + i * 42 / columns, 44);
                 if (Selected)
                 {
                     using var dot = new SolidBrush(Blue);
-                    g.FillEllipse(dot, 84, 6, 16, 16);
+                    g.FillEllipse(dot, 100, 6, 18, 18);
                     using var tick = new Pen(Color.White, 2F);
-                    g.DrawLines(tick, new[] { new Point(88, 13), new Point(93, 18), new Point(101, 8) });
+                    g.DrawLines(tick, new[] { new Point(104, 13), new Point(109, 18), new Point(117, 8) });
                 }
             }
             using var mainFont = new Font(UiFontFamily, 16F, FontStyle.Bold, GraphicsUnit.Pixel);
             using var detailFont = new Font(UiFontFamily, 11F, FontStyle.Regular, GraphicsUnit.Pixel);
             TextRenderer.DrawText(g, Paper, mainFont,
-                new Rectangle(4, 52, Width - 8, 22), color, TextFormatFlags.HorizontalCenter);
+                new Rectangle(4, 54, Width - 8, 22), color, TextFormatFlags.HorizontalCenter);
             TextRenderer.DrawText(g, Detail, detailFont,
-                new Rectangle(4, 76, Width - 8, 16), Muted, TextFormatFlags.HorizontalCenter);
+                new Rectangle(4, 80, Width - 8, 16), Muted, TextFormatFlags.HorizontalCenter);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -413,11 +423,17 @@ internal sealed class NotePickerForm : Form
     {
         public int Radius { get; set; } = 8;
 
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            // 不铺直角底色，圆角外的四角透出窗体白色。
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
-            base.OnPaint(e);
             if (Width <= 0 || Height <= 0) return;
             using var path = Rounded(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
+            using (var fill = new SolidBrush(BackColor))
+                e.Graphics.FillPath(fill, path);
             using var pen = new Pen(Line, 1f);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             e.Graphics.DrawPath(pen, path);

@@ -7,7 +7,6 @@ using Justified.SpecificationReflow.AutoCAD.Contracts.Geometry;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Layout;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Rendering;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Standards;
-using Justified.SpecificationReflow.AutoCAD.Contracts.Templates;
 using NUnit.Framework;
 
 namespace Justified.SpecificationReflow.AutoCAD.Core.Tests;
@@ -105,22 +104,6 @@ public class NoteRunReportTests
         Assert.That(report.Committed, Is.False);
         Assert.That(report.Objects, Is.Zero);
         Assert.That(report.TextBounds, Is.Empty);
-    }
-
-    [Test]
-    public void SuccessfulRunLeavesCancelFieldsAtDefaults()
-    {
-        var report = NoteRunReportBuilder.Create(
-            @"G:\drawings\a.dwg",
-            Complete(),
-            new InstitutionStandard { StandardId = "jsr-note", Version = "1.0.0" },
-            new LayoutTemplate { TemplateId = "jsr-A1-three-column", Version = "1.0.0" },
-            new NoteGenerationResult(),
-            new RenderReportResult(),
-            DateTimeOffset.Parse("2026-09-25T00:00:00.0000000+00:00"),
-            DateTimeOffset.Parse("2026-09-25T00:00:01.0000000+00:00"));
-        Assert.That(report.Cancelled, Is.False);
-        Assert.That(report.CancelToFinishMilliseconds, Is.EqualTo(-1));
     }
 
     private static NoteSettings Complete()

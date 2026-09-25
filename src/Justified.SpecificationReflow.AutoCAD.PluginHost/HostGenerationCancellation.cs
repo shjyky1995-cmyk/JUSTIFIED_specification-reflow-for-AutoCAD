@@ -14,8 +14,6 @@ internal sealed class HostGenerationCancellation : IDisposable
     private readonly object _gate = new object();
     private bool _disposed;
     private readonly uint _processId = (uint)Process.GetCurrentProcess().Id;
-    private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-    private double _cancelledAfterMilliseconds = -1;
 
     public HostGenerationCancellation()
     {
@@ -24,29 +22,13 @@ internal sealed class HostGenerationCancellation : IDisposable
 
     public CancellationToken Token => _source.Token;
 
-    // 从本次取消监视开始到用户按 Esc 的毫秒数；未取消为 -1。
-    public double CancelledAfterMilliseconds
-    {
-        get
-        {
-            lock (_gate)
-            {
-                return _cancelledAfterMilliseconds;
-            }
-        }
-    }
-
     private void Poll(object? state)
     {
         GetWindowThreadProcessId(GetForegroundWindow(), out var foregroundProcess);
         if (foregroundProcess != _processId || (GetAsyncKeyState(0x1B) & 0x8000) == 0) return;
         lock (_gate)
         {
-            if (!_disposed && _cancelledAfterMilliseconds < 0)
-            {
-                _cancelledAfterMilliseconds = _stopwatch.Elapsed.TotalMilliseconds;
-                _source.Cancel();
-            }
+            if (!_disposed) _source.Cancel();
         }
     }
 

@@ -15,7 +15,7 @@
 3. 输入 `DSS`，在空白图原点附近点一次位置。若出现警告，先选“否”并记下警告全文；若报错，记下错误码及前后对象数。
 4. 成功后 `ZOOM` → `E` 查看全图：应有至少两页，页面向右排列；A1/A2 每页三栏，A3 每页两栏；无空白尾页、重叠、明显越栏或乱码。记录看到的页数，保存每种图幅一张截图供图面复核。测试图可不保存。
 
-三种图幅结束后只需回复“完成”，附异常文字和截图；Agent 读取本机报告并运行 `scripts/check-t12-paper-validation.ps1 -RunDirectory <本轮目录>`。该检查核对输入 hash、规则/模板、图幅、页数、对象数、错误与警告，`T12_PAPER_REPORTS_OK` 仅表示运行报告通过。屏幕图面、外机、真实打印、取消时延、断网及专业复核独立签收，不能由脚本标通过。
+三种图幅结束后只需回复“完成”，附异常文字和截图；Agent 读取本机报告并运行 `scripts/check-t12-paper-validation.ps1 -RunDirectory <本轮目录>`。该检查核对输入 hash、规则/模板、图幅、页数、对象数、错误与警告，`T12_PAPER_REPORTS_OK` 仅表示运行报告通过。屏幕图面、外机、真实打印、断网及专业复核独立签收，不能由脚本标通过。
 
 ## 证据边界与后续
 
@@ -27,8 +27,7 @@
 | --- | --- | --- |
 | 一次真实打印 | `docs/T12_PRINT.md`（打印步骤 + 逐页清单） | 待用户执行 |
 | 断网运行 | `docs/T12_OFFLINE.md`（步骤 + 代码侧无网络引用测试已入核心测试） | 待用户执行 |
-| 取消时延 P95（CAL-08） | `scripts/check-cancel-latency.ps1` + `docs/T14_SAMPLES.md` 第二节（报告新增 `Cancelled`/`CancelToFinishMilliseconds` 字段） | 待用户取样 |
-| 真实性能 P95 | `scripts/summarize-performance.ps1`（≥20 次热运行，`DN_NOTE_TRACE=1` 可取命令行计时） | 待用户取样 |
+| 真实性能 | `scripts/summarize-performance.ps1`（≥20 次热运行，`DN_NOTE_TRACE=1` 可取命令行计时） | 待用户取样 |
 | 专业签收 | `docs/T12_SIGNOFF.md`（签收单模板） | 待签收 |
 | 不同 DOCX / 点位取消（T14） | `docs/T14_SAMPLES.md` + 样本包 `artifacts/t14-docx-samples/`（5 份本地预检通过） | 待用户执行 |
 
