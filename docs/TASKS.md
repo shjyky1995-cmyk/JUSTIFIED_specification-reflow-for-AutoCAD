@@ -2,7 +2,7 @@
 默认按大阶段连续推进：排版引擎（T07+T08）→落图闭环（T09+T10）→完善验收（T06剩余项+T11+T12）。T编号用于内部追踪，不要求用户逐个小步确认。固定交付/验收按 [WORKFLOW](WORKFLOW.md)，唯一下一步读 [NEXT_AGENT](NEXT_AGENT.md)。任务范围不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前任务：阶段3 T12/T14 进行中，工作分支 task/T14-note-picker（依赖未验收的 T12，未合 main）。0925 宿主反馈后已修正 CAD 窗口缩放、嵌入用户图形 logo 并修复平方上标候选；CAD 正运行，待用户退出后部署复测。真实性能与完整流程仍待验，详见 NEXT_AGENT。
+当前任务：阶段3 T12/T14 进行中，工作分支 task/T14-note-picker（依赖未验收的 T12，未合 main）。0925 第二轮同图 A2/A3/A1 均成功，窗口外观获用户认可；新建图纸弹窗仍待查，Noto Sans SC 界面字体候选待部署。真实字形、打印、断网与完整流程仍待验，详见 NEXT_AGENT。
 远程：[GitHub 私有仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)。M0 验收基线标签：m0-foundation；合并、推送结果通过 Git 查看。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |

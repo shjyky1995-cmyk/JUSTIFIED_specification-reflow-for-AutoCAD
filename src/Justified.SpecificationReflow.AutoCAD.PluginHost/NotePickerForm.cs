@@ -18,6 +18,10 @@ internal sealed class NotePickerForm : Form
     private static readonly Color Muted = Color.FromArgb(99, 111, 133);
     private static readonly Color Blue = Color.FromArgb(19, 101, 230);
     private static readonly Color Line = Color.FromArgb(210, 220, 235);
+    // 本机优先使用开源 Noto Sans SC；其他测试机未安装时保持清晰的系统中文回退。
+    private static readonly FontFamily UiFontFamily = FontFamily.Families.FirstOrDefault(family =>
+        string.Equals(family.Name, "Noto Sans SC", StringComparison.OrdinalIgnoreCase))
+        ?? new FontFamily("Microsoft YaHei UI");
     private readonly string _root;
     private readonly TextBox _docx = new TextBox();
     private readonly TextBox _scale = new TextBox();
@@ -42,7 +46,7 @@ internal sealed class NotePickerForm : Form
         MinimizeBox = false;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.CenterScreen;
-        Font = new Font("Microsoft YaHei UI", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+        Font = new Font(UiFontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
         BackColor = Color.White;
         ForeColor = Ink;
         DoubleBuffered = true;
@@ -348,8 +352,8 @@ internal sealed class NotePickerForm : Form
                     g.DrawLines(tick, new[] { new Point(114, 18), new Point(119, 23), new Point(127, 13) });
                 }
             }
-            using var mainFont = new Font("Microsoft YaHei UI", 19F, FontStyle.Bold, GraphicsUnit.Pixel);
-            using var detailFont = new Font("Microsoft YaHei UI", 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+            using var mainFont = new Font(UiFontFamily, 19F, FontStyle.Bold, GraphicsUnit.Pixel);
+            using var detailFont = new Font(UiFontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
             TextRenderer.DrawText(g, Paper, mainFont,
                 new Rectangle(4, 82, Width - 8, 28), color, TextFormatFlags.HorizontalCenter);
             TextRenderer.DrawText(g, Detail, detailFont,
