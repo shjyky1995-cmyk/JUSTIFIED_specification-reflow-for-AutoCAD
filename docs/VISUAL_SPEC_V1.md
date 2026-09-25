@@ -44,4 +44,6 @@
 ## 已落地情况
 
 - CAD 选择窗口（`NotePickerForm`）与安装/卸载向导（`SetupWizard`）均按本规范实现；安装向导的界面字体同样来自随包 Noto Sans SC，缺失时回退系统微软雅黑，不因此阻断安装。
-- 视觉稿与实现的关系：`docs/assets/cad-note-picker-concept-v2.png` 是设计稿；真实外观以 CAD 宿主截图为准，规范随实现演进而更新，不允许实现长期偏离规范。
+- 2026-09-25 用户验收后调整：CAD 选择窗缩小为 780×480，字级向安装器对齐（标题 20、区块 14、正文/输入 14、卡片主字 16、辅助 11–12），窗口与卡片均为圆角（窗口圆角半径 10 px、卡片/输入框 8 px，无标题栏窗口用 Region 实现）。
+- 程序图标：项目 logo（三段式图形）已制成多尺寸 `app.ico` 编译进安装器，“应用和功能”条目、安装器窗口标题栏与任务栏均显示该图标；CAD 选择窗无标题栏，窗内左上角展示同一 logo。
+- 视觉稿与实现的关系：`docs/assets/cad-note-picker-concept-v2.png` 是设计稿；真实外观以 CAD 宿主截图为准（最新离线预览 `docs/assets/cad-note-picker-v5-compact-rounded.png`），规范随实现演进而更新，不允许实现长期偏离规范。
