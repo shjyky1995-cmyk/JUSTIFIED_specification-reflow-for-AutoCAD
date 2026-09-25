@@ -59,7 +59,7 @@ public class LineBreakTests
         AssertToken("钢筋HRB400连接", 7, measure, "钢筋", "HRB400", "连接");
         AssertToken("直径Φ20@200布置", 8, measure, "直径", "Φ20@200", "布置");
         AssertToken("取值0.10g即可", 6, measure, "取值", "0.10g", "即可");
-        AssertToken("荷载20kN/m²标准", 8, measure, "荷载", "20kN/m²", "标准");
+        AssertToken("荷载20kN/m²标准", 8, measure, "荷载", "20kN/m2", "标准");
         AssertToken("厚度35mm即可", 4, measure, "厚度", "35mm", "即可");
         AssertToken("坡度1/1000满足", 7, measure, "坡度", "1/1000", "满足");
         AssertToken("见GB 50010-2010条", 14, measure, "见", "GB 50010-2010", "条");
@@ -280,7 +280,7 @@ public class LineBreakTests
     }
 
     [Test]
-    public void LiteralCubicAndNegativeExponentUseCalibratedSuperscript()
+    public void LiteralSquareCubicAndNegativeExponentUseCalibratedSuperscript()
     {
         var document = LayoutSamples.DocumentOf(LayoutSamples.Runs(0, BlockType.Paragraph, null,
             LayoutSamples.Run("强度 N/mm²；含量 3.0kg/m³；膨胀率 2.5×10⁻⁴")));
@@ -288,10 +288,10 @@ public class LineBreakTests
         LayoutSamples.Ok(result);
         var rendered = LayoutSamples.Rows(result).Where(row => row.Occupancy == Occupancy.Text)
             .SelectMany(row => row.VisualLine!.RenderRuns).ToArray();
+        Assert.That(rendered.Any(run => run.Text == "2" && run.ResolvedStyle.Semantic == RunSemantic.Superscript), Is.True);
         Assert.That(rendered.Any(run => run.Text == "3" && run.ResolvedStyle.Semantic == RunSemantic.Superscript), Is.True);
         Assert.That(rendered.Any(run => run.Text == "-4" && run.ResolvedStyle.Semantic == RunSemantic.Superscript), Is.True);
-        Assert.That(rendered.Any(run => run.Text.Contains('²') && run.ResolvedStyle.Semantic == RunSemantic.Normal), Is.True);
-        Assert.That(rendered.All(run => !run.Text.Contains('³') && !run.Text.Contains('⁻') && !run.Text.Contains('⁴')), Is.True);
+        Assert.That(rendered.All(run => !run.Text.Contains('²') && !run.Text.Contains('³') && !run.Text.Contains('⁻') && !run.Text.Contains('⁴')), Is.True);
 
         var uncalibrated = LayoutSamples.Engine().Layout(document, LayoutSamples.Standard(calibrateScripts: false), LayoutSamples.Columns(200), new FakeMeasure(), CancellationToken.None);
         Assert.That(uncalibrated.Diagnostics.Any(item => item.Code == DiagnosticCodes.ETemplateInvalid), Is.True);

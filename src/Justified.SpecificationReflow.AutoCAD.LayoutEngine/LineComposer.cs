@@ -120,26 +120,36 @@ internal sealed class LineComposer
                 return false;
             }
 
-            foreach (var piece in SplitLiteralScripts(run.Text, run.Semantic))
+            if (!TextTokenizer.TryTokenize(run.Text, out var tokens, out var tokenError))
             {
-                if (!TextTokenizer.TryTokenize(piece.Text, out var tokens, out var tokenError))
-                {
-                    error = Problem(DiagnosticCodes.ENoLegalBreak, tokenError ?? "无法切分文本。", Source(paragraph, index, null));
-                    return false;
-                }
+                error = Problem(DiagnosticCodes.ENoLegalBreak, tokenError ?? "无法切分文本。", Source(paragraph, index, null));
+                return false;
+            }
 
-                foreach (var token in tokens)
+            foreach (var token in tokens)
+            {
+                var pieces = SplitLiteralScripts(token.Text, run.Semantic);
+                for (var pieceIndex = 0; pieceIndex < pieces.Count; pieceIndex++)
                 {
+                    var piece = pieces[pieceIndex];
                     hasBody = true;
+                    if (piece.Semantic == RunSemantic.Superscript && piece.Start == 0 && cursor.Atoms.Count > 0)
+                    {
+                        var previous = cursor.Atoms[cursor.Atoms.Count - 1];
+                        if (previous.RunIndex == index && !previous.CollapsibleSpace
+                            && previous.TextStart + previous.TextLength == token.Start)
+                            previous.StickyWithNext = true;
+                    }
                     cursor.Atoms.Add(new Atom
                     {
-                        Text = token.Text,
+                        Text = piece.Text,
                         CollapsibleSpace = token.CollapsibleSpace,
                         Splittable = token.Splittable,
+                        StickyWithNext = pieceIndex < pieces.Count - 1,
                         ParagraphIndex = paragraph,
                         RunIndex = index,
-                        TextStart = piece.Start + token.Start,
-                        TextLength = token.Text.Length,
+                        TextStart = token.Start + piece.Start,
+                        TextLength = piece.Text.Length,
                         Semantic = piece.Semantic
                     });
                 }
@@ -200,6 +210,7 @@ internal sealed class LineComposer
         // 此组字符在当前 SHX 宿主截图中落成问号；改由已标定的普通字形+上标位置表达。
         switch (character)
         {
+            case '\u00B2': replacement = '2'; return true;
             case '\u00B3': replacement = '3'; return true;
             case '\u207B': replacement = '-'; return true;
             case '\u2074': replacement = '4'; return true;
