@@ -1,16 +1,16 @@
 # 当前接续状态（所有 Agent 共用）
 
-更新：2026-09-26。CAD 阶段 T12/T14/T13 已由用户人工签收并合入 `main`。用户明确免除缺少独立记录的逐页打印清单、≥20 次性能 P95、全新电脑安装与回滚演练作为本阶段关卡；**不得把免除项写成已实测**。
+更新：2026-09-26。CAD v0.1.0 已由用户签收、合入 `main`、推送 GitHub **公开**仓库并上传 ZIP。发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。T12/T13 被用户免除的补充验收数据仍不得写成实测；详见任务日志与 BUILD.json。
 
-## 已交付的 CAD 成品
+## 当前阶段：T15/D0 桌面端方案定稿
 
-- 正式命令 `DSS`：每次选择 DOCX、图幅和单位比例，点一次图面左上角生成 DBText；A1/A2/A3 模板与界面字体随包提供。安装、升级、卸载为图形化入口。
-- 选择窗布局修复后为 760×440，四张卡片文字及圆角无遮蔽；真实 WinForms 预览 `docs/assets/cad-note-picker-v8-balanced.png`。新版窗口未单独取得 CAD 宿主截图，用户确认不再将该截图作为关卡。
-- 构建零警告，net8/net48 各 164/164；`PACKAGE_VERIFY_OK files=28`。发布 ZIP SHA256 为 `48A26292A4AFD966EB82990A8146630F77C2436DD6274AD00F42B55A2053990B`。
-- GitHub 仓库由用户确认**公开**。`main` 和 `v0.1.0` 已推送，GitHub Release [CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0) 已公开；远端回读显示 ZIP 已上传且 SHA256 一致。用户业务 DOCX、截图/PDF 测试结果不入库。
+- 用户已明确选择首批场景“离线导入工作台”，并要求**先定整体技术框架和开发路线，再做桌面功能开发**。用户选择“先比较再定”Electron 与 .NET 方案。
+- 新阶段分支 `task/T15-desktop-prototype`，独立目录 `artifacts/desktop-worktree`，从已验收 `main` 建立。当前只有方案文档改动，无桌面代码、服务或新依赖。
+- 方案草案在 `docs/DESKTOP_WORKBENCH_PRD_DRAFT.md`，从根 PRD、AGENTS、ARCHITECTURE、TASKS 链接。为保留 CAD V1 已签收边界，桌面 PRD 独立记录。推荐 WPF + .NET 10 LTS 直接复用 netstandard2.0 解析核心；Electron 需要额外 .NET 工作进程与进程间通信。此推荐尚待用户确认。
+- 草案建议桌面用版本化本机请求把 DOCX 路径/hash、图幅、比例交给 CAD；CAD `DSS` 显示并确认后才点位。准确页数依赖 CAD 宿主真实字体测量，桌面离线时只显示解析摘要与“页数待 CAD 计算”。这两项属于新交接协议/业务规则，待用户确认。
 
-## 当前大阶段：独立桌面端
+## 唯一下一动作
 
-用户已明确要求继续开发。原 PRD 将桌面工作台列为 V1 之后；Electron 是此前提出的候选技术。已异步向用户询问桌面首批业务场景（导入工作台/项目模块/模板管理）及 Electron 偏好。答复前可做不改变共享协议、模块依赖或正式技术栈的原型与测量；确定关键方案后按 AGENTS 规则记录决策再实施。
+与用户讨论并确认草案末尾三项决定（WPF/Electron、交接方式、页数规则）；按反馈修订并记录最终 ADR/PRD。**确认之前不要编码、引入依赖或预建桌面模块。** 定稿后按 D1→D2→D3 依次实现和验收。用户之前要求工作完成后设置 10 分钟关机；本轮在进行方案讨论，尚未到该执行点。
 
-当前工作目录 `task/T13-installer` 中原有用户资料与测试夹具末行换行差异未暂存、未覆盖。新桌面阶段须从已验收 `main` 建立 `task/T15-desktop-prototype` 独立 worktree，避免同时改原目录。用户先前要求**工作完成后再设置 10 分钟关机**；本次继续开发，最终阶段交付时再执行。
+原工作目录 `task/T13-installer` 的用户业务 DOCX、截图/PDF 结果与测试夹具换行差异保持未暂存；不得带入公开仓库。
