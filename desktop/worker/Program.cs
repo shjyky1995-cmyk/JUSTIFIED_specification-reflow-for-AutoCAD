@@ -19,6 +19,9 @@ namespace DocxWorkbench.Worker;
 internal static class Program
 {
     private const int MaxRequestCharacters = 400_000;
+    private const int MaxSectionCharacters = 100_000;
+    private const int MaxCorrosionCharacters = 20_000;
+    private const int MaxLines = 5_000;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -43,7 +46,7 @@ internal static class Program
         }
         catch (Exception error) when (error is ArgumentException or IOException or UnauthorizedAccessException or JsonException or InvalidDataException or OpenXmlPackageException)
         {
-            Console.Out.Write(JsonSerializer.Serialize(new WorkerResult(false, error.Message, null, 0, Array.Empty<WorkerDiagnostic>()), JsonOptions));
+            Console.Out.Write(JsonSerializer.Serialize(new WorkerResult(false, error.Message, null, 0, Array.Empty<string>(), Array.Empty<WorkerDiagnostic>()), JsonOptions));
             return 1;
         }
     }
@@ -69,22 +72,61 @@ internal static class Program
     {
         var outputPath = FullDocxPath(request.Path);
         if (File.Exists(outputPath)) throw new IOException("文件已存在，请换一个名称；不会覆盖你修改过的 DOCX。");
-        var title = Required(request.Title, "说明标题", 120);
-        var project = Required(request.ProjectName, "工程名称", 120);
-        var discipline = Required(request.Discipline, "专业", 60);
-        var sections = new[]
-        {
-            ("工程概况", request.Overview),
-            ("设计依据", request.Basis),
-            ("设计要求", request.Requirements),
-            ("其他说明", request.Other)
-        };
-        if (sections.All(item => string.IsNullOrWhiteSpace(item.Item2)))
-            throw new ArgumentException("请至少填写一个说明栏目。");
-        foreach (var section in sections)
-            if ((section.Item2?.Length ?? 0) > 100_000) throw new ArgumentException(section.Item1 + "内容过长。");
+        var document = request.Document ?? throw new ArgumentException("说明内容为空。");
+        var title = Required(document.Title, "说明标题", 120);
+        var discipline = Required(document.Discipline, "专业", 60);
+        var project = document.Project ?? new WorkerProject();
+        var projectName = Required(project.Name, "工程名称", 120);
 
-        var bytes = BuildDocx(title, project, discipline, sections);
+        var lines = new List<(string Style, string Text)>
+        {
+            ("Heading1", title),
+            ("Normal", "专业：" + discipline),
+            ("Normal", "工程名称：" + projectName)
+        };
+        AddMeta(lines, "工程编号：", project.Number, 60);
+        AddMeta(lines, "建设单位：", project.Owner, 120);
+        AddMeta(lines, "建设地点：", project.Location, 120);
+
+        if (document.Structural is not null)
+        {
+            var structural = document.Structural;
+            var site = Required(structural.SiteCategory, "结构参数「场地类别」", 20);
+            var grade = Required(structural.SeismicGrade, "结构参数「抗震设防类别」", 20);
+            var safety = Required(structural.SafetyLevel, "结构参数「结构安全等级」", 20);
+            var foundation = Required(structural.FoundationGrade, "结构参数「地基基础设计等级」", 20);
+            var scheme = Required(structural.ProtectionScheme, "结构参数「材料/防腐方案」", 20);
+            var intensity = string.IsNullOrWhiteSpace(structural.SeismicIntensity) ? "待核定" : structural.SeismicIntensity.Trim();
+            var life = structural.DesignLifeYears > 0 ? structural.DesignLifeYears : 50;
+            lines.Add(("Heading2", "结构设计参数"));
+            lines.Add(("Normal", "场地类别：" + site));
+            lines.Add(("Normal", "抗震设防类别：" + grade + "（设防烈度：" + intensity + "）"));
+            lines.Add(("Normal", "结构安全等级：" + safety));
+            lines.Add(("Normal", "地基基础设计等级：" + foundation));
+            lines.Add(("Normal", "设计使用年限：" + life + " 年"));
+            if (!string.IsNullOrWhiteSpace(structural.Corrosion))
+                lines.Add(("Normal", "水土腐蚀性：" + Trim(structural.Corrosion, MaxCorrosionCharacters, "水土腐蚀性")));
+            lines.Add(("Normal", "材料与防腐方案：" + scheme + (string.IsNullOrWhiteSpace(structural.ProtectionExtra) ? string.Empty : "（附加措施：" + Trim(structural.ProtectionExtra, 120, "附加措施") + "）")));
+        }
+
+        var sections = document.Sections ?? new List<WorkerSection>();
+        if (sections.Count == 0) throw new ArgumentException("请至少选择一个章节。");
+        var filled = 0;
+        foreach (var section in sections)
+        {
+            var heading = Required(section.Title, "章节标题", 120);
+            var body = section.Body ?? string.Empty;
+            if (body.Trim().Length == 0) continue;
+            if (body.Length > MaxSectionCharacters) throw new ArgumentException("章节「" + heading + "」内容过长。");
+            filled += 1;
+            lines.Add(("Heading2", heading));
+            var bodyLines = body.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n').Where(line => line.Trim().Length > 0).ToArray();
+            if (bodyLines.Length > MaxLines) throw new ArgumentException("章节「" + heading + "」段落数过多。");
+            foreach (var line in bodyLines) lines.Add(("Normal", line));
+        }
+        if (filled == 0) throw new ArgumentException("所有章节都是空的，请至少填写一个章节正文。");
+
+        var bytes = BuildDocx(lines);
         var parsed = Parse(new DocxBytesSource(Path.GetFileName(outputPath), bytes));
         if (!parsed.Success) return FromParse(parsed, null, "生成的 DOCX 未通过导入检查，文件没有保存。");
 
@@ -101,6 +143,12 @@ internal static class Program
             if (File.Exists(temporary)) File.Delete(temporary);
         }
         return FromParse(parsed, outputPath, "DOCX 已生成，可用 Word/WPS 修改。");
+    }
+
+    private static void AddMeta(List<(string Style, string Text)> lines, string label, string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        lines.Add(("Normal", label + Trim(value, maxLength, label.TrimEnd('：'))));
     }
 
     private static WorkerResult Inspect(string? path)
@@ -128,7 +176,14 @@ internal static class Program
         return result;
     }
 
-    private static byte[] BuildDocx(string title, string project, string discipline, IEnumerable<(string Heading, string? Body)> sections)
+    private static string Trim(string value, int maxLength, string label)
+    {
+        var result = value.Trim();
+        if (result.Length > maxLength) throw new ArgumentException(label + "过长。");
+        return result;
+    }
+
+    private static byte[] BuildDocx(List<(string Style, string Text)> lines)
     {
         using var stream = new MemoryStream();
         using (var word = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document, true))
@@ -141,20 +196,12 @@ internal static class Program
                 MakeStyle("Heading2", "标题 2", false));
             stylesPart.Styles.Save();
             var body = new Body();
-            body.Append(Paragraph("Heading1", title));
-            body.Append(Paragraph("Normal", "工程名称：" + project));
-            body.Append(Paragraph("Normal", "专业：" + discipline));
-            foreach (var (heading, content) in sections)
-            {
-                if (string.IsNullOrWhiteSpace(content)) continue;
-                body.Append(Paragraph("Heading2", heading));
-                foreach (var line in content.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
-                    body.Append(Paragraph("Normal", line));
-            }
+            foreach (var (style, text) in lines)
+                body.Append(Paragraph(style, text));
             body.Append(new SectionProperties());
             main.Document = new DocumentFormat.OpenXml.Wordprocessing.Document(body);
             main.Document.Save();
-            word.PackageProperties.Title = title;
+            word.PackageProperties.Title = lines.Count > 0 ? lines[0].Text : null;
         }
         return stream.ToArray();
     }
@@ -189,23 +236,59 @@ internal static class Program
         return parser.Parse(source, new ParseProfile { Standard = new StandardRef { Id = "jsr-note", Version = "1.0.0" } }, CancellationToken.None);
     }
 
-    private static WorkerResult FromParse(DocumentParseResult parsed, string? path, string message) =>
-        new(parsed.Success, message, path, parsed.Document?.Blocks.Count ?? 0,
+    private static WorkerResult FromParse(DocumentParseResult parsed, string? path, string message)
+    {
+        var headings = parsed.Document?.Blocks
+            .Where(block => block.Type == BlockType.Heading1 || block.Type == BlockType.Heading2)
+            .Select(block => string.Concat(block.Runs.Select(run => run.Text)))
+            .ToArray() ?? Array.Empty<string>();
+        return new WorkerResult(parsed.Success, message, path, parsed.Document?.Blocks.Count ?? 0, headings,
             parsed.Diagnostics.Take(30).Select(item => new WorkerDiagnostic(item.Code, item.Severity.ToString(), item.Message)).ToArray());
+    }
 }
 
 internal sealed class WorkerRequest
 {
     public string Operation { get; set; } = string.Empty;
     public string? Path { get; set; }
-    public string? Title { get; set; }
-    public string? ProjectName { get; set; }
-    public string? Discipline { get; set; }
-    public string? Overview { get; set; }
-    public string? Basis { get; set; }
-    public string? Requirements { get; set; }
-    public string? Other { get; set; }
+    public WorkerDocument? Document { get; set; }
 }
 
-internal sealed record WorkerResult(bool Success, string Message, string? Path, int Blocks, IReadOnlyList<WorkerDiagnostic> Diagnostics);
+internal sealed class WorkerDocument
+{
+    public string? Title { get; set; }
+    public string? Discipline { get; set; }
+    public WorkerProject? Project { get; set; }
+    public WorkerStructural? Structural { get; set; }
+    public List<WorkerSection>? Sections { get; set; }
+}
+
+internal sealed class WorkerProject
+{
+    public string? Name { get; set; }
+    public string? Number { get; set; }
+    public string? Owner { get; set; }
+    public string? Location { get; set; }
+}
+
+internal sealed class WorkerStructural
+{
+    public string? SiteCategory { get; set; }
+    public string? SeismicGrade { get; set; }
+    public string? SafetyLevel { get; set; }
+    public string? FoundationGrade { get; set; }
+    public int DesignLifeYears { get; set; }
+    public string? Corrosion { get; set; }
+    public string? ProtectionScheme { get; set; }
+    public string? ProtectionExtra { get; set; }
+    public string? SeismicIntensity { get; set; }
+}
+
+internal sealed class WorkerSection
+{
+    public string? Title { get; set; }
+    public string? Body { get; set; }
+}
+
+internal sealed record WorkerResult(bool Success, string Message, string? Path, int Blocks, IReadOnlyList<string> Headings, IReadOnlyList<WorkerDiagnostic> Diagnostics);
 internal sealed record WorkerDiagnostic(string Code, string Severity, string Message);
