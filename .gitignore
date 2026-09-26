@@ -4,6 +4,9 @@
 .idea/
 artifacts/
 /测试文件/程序/
+/desktop/app/node_modules/
+/desktop/app/dist/
+/desktop/app/dist-electron/
 /测试文件/*.zip
 /测试文件/*_wps验证.docx
 /说明文件/

@@ -2,7 +2,7 @@
 
 更新：2026-09-26。CAD v0.1.0 已由用户签收、合入 `main`、推送 GitHub **公开**仓库并上传 ZIP。发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。T12/T13 被用户免除的补充验收数据仍不得写成实测；详见任务日志与 BUILD.json。
 
-## 当前阶段：T15/D0 已定稿，进入 D1
+## 当前阶段：T15/D0 已定稿，T16/D1 已开始
 
 - 用户已明确选择固定模板生成 DOCX 的独立桌面工作台，并要求**先定整体技术框架和开发路线，再做桌面功能开发**。此路线已定稿。
 - D0 文档在 `task/T15-desktop-prototype`、独立目录 `artifacts/desktop-worktree` 编写；D0 合入 main 后从 main 建 D1 任务分支。D0 只有方案文档，无桌面代码、服务或新依赖。
@@ -12,6 +12,6 @@
 
 ## 唯一下一动作
 
-用户安排新版 CAD 打印后自行反馈，当前不等打印结果。D0 已定稿；下一步从已验收 `main` 进入 D1，先实现固定模板生成 DOCX 的可运行桌面闭环，再依次推进 D2、D3。用户之前要求全部工作完成后设置 10 分钟关机；当前仍在开发，不执行。
+用户安排新版 CAD 打印后自行反馈，当前不等打印结果。T16/D1 分支 `task/T16-desktop-authoring` 在 `artifacts/desktop-worktree` 已开始；工作进程可生成并检查 DOCX，自动集成脚本通过，前端构建通过，真实 Electron 窗口及按钮流程待验证。用户要求尽快推送并讨论整体后续计划和最终成品目标；先完成该讨论，再接续 D1→D2→D3。D1 checkpoint 与已知边界见 `docs/devlog/T16.md`，不得合入 main 或当成完整产品。用户之前要求全部工作完成后设置 10 分钟关机；当前仍在开发，不执行。
 
 原工作目录 `task/T13-installer` 的用户业务 DOCX、截图/PDF 结果与测试夹具换行差异保持未暂存；不得带入公开仓库。
