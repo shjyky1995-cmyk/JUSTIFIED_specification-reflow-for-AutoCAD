@@ -2,8 +2,8 @@
 默认按大阶段连续推进：排版引擎（T07+T08）→落图闭环（T09+T10）→完善验收（T06剩余项+T11+T12）。T编号用于内部追踪，不要求用户逐个小步确认。固定交付/验收按 [WORKFLOW](WORKFLOW.md)，唯一下一步读 [NEXT_AGENT](NEXT_AGENT.md)。任务范围不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前任务：阶段3 T12/T14/T13 由用户于 2026-09-26 人工签收，本轮进行界面收尾、最终包核验、顺序合并和 GitHub 私有仓库备份。真实宿主、安装与打印的已有记录见任务日志；用户免除未取得的逐页打印清单、性能 P95、全新电脑安装等补充材料作为本阶段关卡，不得倒写成实测通过。最新状态见 NEXT_AGENT。
-远程：[GitHub 私有仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)。M0 验收基线标签：m0-foundation；合并、推送结果通过 Git 查看。
+当前任务：CAD 阶段 T12/T14/T13 于 2026-09-26 由用户人工签收，已合入 main；发布包与 v0.1.0 标签已上传 GitHub。下一大阶段为桌面端，状态见 NEXT_AGENT。用户免除的补充测量不倒写成实测通过。
+远程：[GitHub 公开仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)（用户 2026-09-26 确认公开）；发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。业务源文件、测试结果不入库。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |

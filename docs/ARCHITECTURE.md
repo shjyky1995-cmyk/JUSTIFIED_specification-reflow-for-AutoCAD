@@ -9,7 +9,7 @@
 - Open XML SDK 解析 DOCX；Newtonsoft.Json 处理 JSON；不使用 Word COM。
 - NUnit 独立测试同时运行 net8.0 与 net48，后者验证实际 Framework 兼容性。
 - CAD 原生命令和点选；必要 UI 使用 WinForms；本阶段无 UI 框架依赖。
-- PowerShell 构建入口；离线 .bundle 发布；本地 Git + 阶段 GitHub 私有备份。
+- PowerShell 构建入口；离线 .bundle 发布；本地 Git + 阶段 GitHub 公开仓库备份（2026-09-26 用户确认）。
 - 具体包版本在 Directory.Packages.props 与各项目 packages.lock.json 固定；升级必须说明原因和兼容性验证。
 - JSON Schema 正式契约及校验实现在 T03 完成；不把序列化成功等同于 Schema 验证。
 
