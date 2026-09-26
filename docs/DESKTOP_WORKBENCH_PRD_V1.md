@@ -1,6 +1,6 @@
 # 桌面说明编制工作台 PRD V1
 
-状态：**D0 路线已确定；D1 可以启动。** 日期：2026-09-26。用户确认业务流程，并将 UI 技术判断交由 Agent；按视觉表现优先的要求选定 Electron。
+状态：**D0 历史基线，桌面业务主流程已由 2026-09-27 的 [设计说明 PRD 评审稿](PRD.md) 与 [实施计划](IMPLEMENTATION_PLAN.md) 提议更新；不得按本文固定栏目方案直接继续开发。** 日期：2026-09-26。用户确认业务流程，并将 UI 技术判断交由 Agent；按视觉表现优先的要求选定 Electron。
 
 本文件单独记录 CAD V1 之后的桌面端。已签收的 CAD 功能与边界仍以根目录 `CAD_DesignNote_PRD_V1.0.md` 为准；两端共同遵守 `docs/ARCHITECTURE.md` 的依赖方向和 `docs/VISUAL_SPEC_V1.md` 的视觉语言。新 Agent 从根 PRD、`docs/TASKS.md`、`docs/NEXT_AGENT.md` 可找到本文和当前决策状态。
 
