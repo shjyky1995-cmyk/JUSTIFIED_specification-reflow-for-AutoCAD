@@ -1,0 +1,501 @@
+// 设计说明桌面端共享领域模型：专业、结构参数、章节库、模板、当前说明、校验与导出映射。
+// 约束：仅使用可擦除语法（无枚举/命名空间/参数属性），供 Electron 主进程、渲染进程与 Node 测试共同引用。
+
+export const LIBRARY_VERSION = '1.0.0'
+
+export type DisciplineCode = 'architecture' | 'structural' | 'plumbing' | 'electrical' | 'hvac' | 'other'
+
+export type Discipline = { code: DisciplineCode; label: string }
+
+export const DISCIPLINES: Discipline[] = [
+  { code: 'architecture', label: '建筑' },
+  { code: 'structural', label: '结构' },
+  { code: 'plumbing', label: '给排水' },
+  { code: 'electrical', label: '电气' },
+  { code: 'hvac', label: '暖通' },
+  { code: 'other', label: '其他' },
+]
+
+export const DISCIPLINE_CODES: DisciplineCode[] = DISCIPLINES.map(item => item.code)
+
+export function disciplineLabel(code: string): string {
+  return DISCIPLINES.find(item => item.code === code)?.label ?? code
+}
+
+export function isDisciplineCode(value: unknown): value is DisciplineCode {
+  return typeof value === 'string' && DISCIPLINE_CODES.includes(value as DisciplineCode)
+}
+
+export type Project = { name: string; number: string; owner: string; location: string }
+
+export function emptyProject(): Project {
+  return { name: '', number: '', owner: '', location: '' }
+}
+
+export function projectFilled(project: Project): number {
+  return [project.name, project.number, project.owner, project.location].filter(value => value.trim().length > 0).length
+}
+
+export const SEISMIC_INTENSITY_PENDING = '待核定'
+
+export type StructuralParams = {
+  siteCategory: string
+  seismicGrade: string
+  safetyLevel: string
+  foundationGrade: string
+  designLifeYears: number
+  corrosion: string
+  protectionScheme: string
+  protectionExtra: string
+  seismicIntensity: string
+}
+
+export function defaultStructuralParams(): StructuralParams {
+  return {
+    siteCategory: '',
+    seismicGrade: '',
+    safetyLevel: '',
+    foundationGrade: '',
+    designLifeYears: 50,
+    corrosion: '',
+    protectionScheme: '',
+    protectionExtra: '',
+    seismicIntensity: SEISMIC_INTENSITY_PENDING,
+  }
+}
+
+export const SITE_CATEGORIES = ['I0', 'I1', 'II', 'III', 'IV']
+export const SEISMIC_GRADES = ['甲', '乙', '丙', '丁']
+export const SAFETY_LEVELS = ['一级', '二级', '三级']
+export const FOUNDATION_GRADES = ['甲级', '乙级', '丙级']
+export const PROTECTION_SCHEMES = ['弱', '中', '强']
+
+export const STRUCTURAL_REQUIRED_FIELDS: { key: keyof StructuralParams; label: string }[] = [
+  { key: 'siteCategory', label: '场地类别' },
+  { key: 'seismicGrade', label: '抗震设防类别' },
+  { key: 'safetyLevel', label: '结构安全等级' },
+  { key: 'foundationGrade', label: '地基基础设计等级' },
+  { key: 'protectionScheme', label: '材料/防腐方案' },
+]
+
+export type SectionDefinition = {
+  id: string
+  title: string
+  body: string
+  disciplines: DisciplineCode[]
+  applicability: string
+}
+
+export type TemplateDefinition = {
+  id: string
+  name: string
+  discipline: DisciplineCode
+  custom: boolean
+  sectionIds: string[]
+}
+
+const COMMON_SECTIONS: SectionDefinition[] = [
+  { id: 'sec-overview', title: '工程概况', body: '概述工程用途、建设地点、规模与主要设计标准。', disciplines: DISCIPLINE_CODES, applicability: '所有专业' },
+  { id: 'sec-basis', title: '设计依据', body: '列出本说明引用的设计依据，如设计任务书、勘察报告与主要标准规范。', disciplines: DISCIPLINE_CODES, applicability: '所有专业' },
+  { id: 'sec-general-requirements', title: '通用设计要求', body: '说明本专业需要遵循的总体设计原则与主要技术要求。', disciplines: DISCIPLINE_CODES, applicability: '所有专业' },
+  { id: 'sec-other', title: '其他说明', body: '补充上述章节未覆盖、但需要保留在说明中的内容。', disciplines: DISCIPLINE_CODES, applicability: '所有专业' },
+]
+
+const DISCIPLINE_SECTIONS: Record<Exclude<DisciplineCode, 'structural'>, SectionDefinition[]> = {
+  architecture: [
+    { id: 'sec-arch-overall', title: '建筑设计总体', body: '说明总体布局、功能分区、交通组织与竖向设计。', disciplines: ['architecture'], applicability: '建筑专业' },
+    { id: 'sec-arch-fire', title: '防火与安全', body: '说明防火分区、疏散设计与建筑耐火等级。', disciplines: ['architecture'], applicability: '建筑专业' },
+    { id: 'sec-arch-detail', title: '建筑构造', body: '说明墙体、屋面、门窗与主要部位构造做法。', disciplines: ['architecture'], applicability: '建筑专业' },
+  ],
+  plumbing: [
+    { id: 'sec-plumb-supply', title: '给水设计', body: '说明给水系统形式、用水定额与管网布置。', disciplines: ['plumbing'], applicability: '给排水专业' },
+    { id: 'sec-plumb-drainage', title: '排水设计', body: '说明排水体制、管网布置与污水处理途径。', disciplines: ['plumbing'], applicability: '给排水专业' },
+    { id: 'sec-plumb-equipment', title: '设备与管材', body: '说明主要设备选型与管材选用。', disciplines: ['plumbing'], applicability: '给排水专业' },
+  ],
+  electrical: [
+    { id: 'sec-elec-supply', title: '供配电', body: '说明负荷等级、供电电源与配电系统形式。', disciplines: ['electrical'], applicability: '电气专业' },
+    { id: 'sec-elec-lighting', title: '照明', body: '说明照明标准、光源选择与应急照明。', disciplines: ['electrical'], applicability: '电气专业' },
+    { id: 'sec-elec-protection', title: '防雷与接地', body: '说明防雷类别、接地系统与电气安全措施。', disciplines: ['electrical'], applicability: '电气专业' },
+  ],
+  hvac: [
+    { id: 'sec-hvac-design', title: '暖通空调设计', body: '说明空调系统形式、冷热源与风系统布置。', disciplines: ['hvac'], applicability: '暖通专业' },
+    { id: 'sec-hvac-ventilation', title: '通风与防排烟', body: '说明通风系统、防排烟设计与补风措施。', disciplines: ['hvac'], applicability: '暖通专业' },
+    { id: 'sec-hvac-energy', title: '节能措施', body: '说明节能设计措施与能耗控制要求。', disciplines: ['hvac'], applicability: '暖通专业' },
+  ],
+  other: [],
+}
+
+const STRUCTURAL_SECTIONS: SectionDefinition[] = [
+  { id: 'sec-struct-system', title: '结构体系与布置', body: '说明结构体系选型、主要构件布置与抗震缝、伸缩缝设置。', disciplines: ['structural'], applicability: '结构专业' },
+  { id: 'sec-struct-foundation', title: '地基与基础', body: '说明地基处理方案、基础形式与主要设计参数。', disciplines: ['structural'], applicability: '结构专业' },
+  { id: 'sec-struct-material', title: '主要结构材料', body: '说明混凝土、钢筋、钢材等主要材料的强度等级与性能要求。', disciplines: ['structural'], applicability: '结构专业' },
+  { id: 'sec-struct-calculation', title: '结构计算', body: '说明主要计算内容、计算软件与荷载取值原则。', disciplines: ['structural'], applicability: '结构专业' },
+  { id: 'sec-struct-detail', title: '构造要求', body: '说明构件最小尺寸、配筋构造与连接构造要求。', disciplines: ['structural'], applicability: '结构专业' },
+  { id: 'sec-struct-pool', title: '池体结构', body: '说明水池结构形式、抗渗抗浮与变形缝构造。', disciplines: ['structural'], applicability: '含水池工程' },
+  { id: 'sec-struct-frame', title: '框架结构', body: '说明框架结构布置、梁柱截面与节点构造。', disciplines: ['structural'], applicability: '含框架工程' },
+  { id: 'sec-struct-steel', title: '钢结构设计', body: '说明钢结构形式、构件截面与连接节点设计。', disciplines: ['structural'], applicability: '钢结构工程' },
+  { id: 'sec-struct-protection', title: '防腐与防火', body: '结合水土腐蚀性结论，说明材料选择与防腐、防火措施。', disciplines: ['structural'], applicability: '腐蚀环境或钢结构' },
+]
+
+export const SECTION_LIBRARY: SectionDefinition[] = [...COMMON_SECTIONS, ...DISCIPLINE_SECTIONS.architecture, ...DISCIPLINE_SECTIONS.plumbing, ...DISCIPLINE_SECTIONS.electrical, ...DISCIPLINE_SECTIONS.hvac, ...STRUCTURAL_SECTIONS]
+
+export function librarySections(discipline: DisciplineCode): SectionDefinition[] {
+  return SECTION_LIBRARY.filter(section => section.disciplines.includes(discipline))
+}
+
+export function findSectionDefinition(id: string): SectionDefinition | undefined {
+  return SECTION_LIBRARY.find(section => section.id === id)
+}
+
+export function sectionTitle(id: string): string {
+  return findSectionDefinition(id)?.title ?? id
+}
+
+export const TEMPLATES: TemplateDefinition[] = [
+  { id: 'tpl-struct-frame', name: '框架结构', discipline: 'structural', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-struct-system', 'sec-struct-foundation', 'sec-struct-material', 'sec-struct-calculation', 'sec-struct-detail', 'sec-other'] },
+  { id: 'tpl-struct-pool', name: '水池结构', discipline: 'structural', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-struct-system', 'sec-struct-foundation', 'sec-struct-material', 'sec-struct-pool', 'sec-struct-detail', 'sec-other'] },
+  { id: 'tpl-struct-pool-frame', name: '水池＋框架', discipline: 'structural', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-struct-system', 'sec-struct-foundation', 'sec-struct-material', 'sec-struct-pool', 'sec-struct-frame', 'sec-struct-detail', 'sec-other'] },
+  { id: 'tpl-struct-steel', name: '钢结构', discipline: 'structural', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-struct-system', 'sec-struct-material', 'sec-struct-steel', 'sec-struct-protection', 'sec-struct-calculation', 'sec-struct-detail', 'sec-other'] },
+  { id: 'tpl-arch-standard', name: '建筑专业组合', discipline: 'architecture', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-arch-overall', 'sec-arch-fire', 'sec-arch-detail', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-plumb-standard', name: '给排水专业组合', discipline: 'plumbing', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-plumb-supply', 'sec-plumb-drainage', 'sec-plumb-equipment', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-elec-standard', name: '电气专业组合', discipline: 'electrical', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-elec-supply', 'sec-elec-lighting', 'sec-elec-protection', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-hvac-standard', name: '暖通专业组合', discipline: 'hvac', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-hvac-design', 'sec-hvac-ventilation', 'sec-hvac-energy', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-other-standard', name: '通用组合', discipline: 'other', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-general-requirements', 'sec-other'] },
+]
+
+export function templatesFor(discipline: DisciplineCode): TemplateDefinition[] {
+  const presets = TEMPLATES.filter(template => template.discipline === discipline && !template.custom)
+  const custom: TemplateDefinition = { id: `tpl-${discipline}-custom`, name: '自定义组合', discipline, custom: true, sectionIds: [] }
+  return [...presets, custom]
+}
+
+export function customTemplateId(discipline: DisciplineCode): string {
+  return `tpl-${discipline}-custom`
+}
+
+export type NoteSection = { id: string; title: string; body: string; custom: boolean }
+
+export type Note = {
+  id: string
+  title: string
+  discipline: DisciplineCode
+  project: Project
+  structural: StructuralParams | null
+  templateId: string
+  templateVersion: string
+  sections: NoteSection[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type NoteSummary = {
+  id: string
+  title: string
+  discipline: DisciplineCode
+  templateId: string
+  sectionCount: number
+  filledCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type NoteIssue = { level: 'error' | 'warning'; field?: string; sectionId?: string; message: string }
+
+export function newId(): string {
+  const cryptoRef = globalThis.crypto
+  if (cryptoRef && typeof cryptoRef.randomUUID === 'function') return cryptoRef.randomUUID()
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10)
+}
+
+export function nowIso(): string {
+  return new Date().toISOString()
+}
+
+export function defaultTitle(discipline: DisciplineCode): string {
+  return disciplineLabel(discipline) + '设计说明'
+}
+
+export function createNote(discipline: DisciplineCode, templateId: string, project: Project, title?: string): Note {
+  const template = TEMPLATES.find(item => item.id === templateId)
+  const sectionIds = template && !template.custom ? template.sectionIds : []
+  const stamp = nowIso()
+  return {
+    id: newId(),
+    title: title && title.trim().length > 0 ? title.trim() : defaultTitle(discipline),
+    discipline,
+    project: { ...project },
+    structural: discipline === 'structural' ? defaultStructuralParams() : null,
+    templateId,
+    templateVersion: LIBRARY_VERSION,
+    sections: sectionIds.map(sectionId => {
+      const definition = findSectionDefinition(sectionId)
+      return { id: definition ? definition.id : sectionId, title: definition ? definition.title : sectionId, body: definition ? definition.body : '', custom: false }
+    }),
+    createdAt: stamp,
+    updatedAt: stamp,
+  }
+}
+
+export function rebuildSections(note: Note, templateId: string): NoteSection[] {
+  const template = TEMPLATES.find(item => item.id === templateId)
+  const sectionIds = template && !template.custom ? template.sectionIds : []
+  return sectionIds.map(sectionId => {
+    const definition = findSectionDefinition(sectionId)
+    return { id: definition ? definition.id : sectionId, title: definition ? definition.title : sectionId, body: definition ? definition.body : '', custom: false }
+  })
+}
+
+export function resetSectionBody(section: NoteSection): string {
+  const definition = findSectionDefinition(section.id)
+  return definition ? definition.body : ''
+}
+
+export function isSectionEmpty(section: NoteSection): boolean {
+  return section.body.trim().length === 0
+}
+
+export function sectionFilledCount(note: Note): number {
+  return note.sections.filter(section => !isSectionEmpty(section)).length
+}
+
+export function summarizeNote(note: Note): NoteSummary {
+  return {
+    id: note.id,
+    title: note.title,
+    discipline: note.discipline,
+    templateId: note.templateId,
+    sectionCount: note.sections.length,
+    filledCount: sectionFilledCount(note),
+    createdAt: note.createdAt,
+    updatedAt: note.updatedAt,
+  }
+}
+
+export function findIssues(note: Note): NoteIssue[] {
+  const issues: NoteIssue[] = []
+  if (note.title.trim().length === 0) issues.push({ level: 'error', field: 'title', message: '请填写说明标题。' })
+  if (note.project.name.trim().length === 0) issues.push({ level: 'error', field: 'project.name', message: '请填写工程名称。' })
+  if (note.discipline === 'structural') {
+    const structural = note.structural ?? defaultStructuralParams()
+    for (const required of STRUCTURAL_REQUIRED_FIELDS) {
+      if (String(structural[required.key] ?? '').trim().length === 0) {
+        issues.push({ level: 'error', field: `structural.${required.key}`, message: `结构参数缺少「${required.label}」，请回到 01 步补齐。` })
+      }
+    }
+  }
+  if (note.sections.length === 0) {
+    issues.push({ level: 'error', message: '还没有选择任何章节，请回到 02A 选择模板或自定义组合。' })
+  }
+  const filled = note.sections.filter(section => !isSectionEmpty(section))
+  if (note.sections.length > 0 && filled.length === 0) {
+    issues.push({ level: 'error', message: '所有章节都是空的，请至少填写一个章节正文。' })
+  }
+  for (const section of note.sections) {
+    if (isSectionEmpty(section)) {
+      issues.push({ level: 'warning', sectionId: section.id, message: `章节「${section.title}」为空，导出时不会写入。` })
+    }
+  }
+  return issues
+}
+
+export function hasBlockingIssue(note: Note): boolean {
+  return findIssues(note).some(issue => issue.level === 'error')
+}
+
+export type DocumentBlock =
+  | { kind: 'title'; text: string }
+  | { kind: 'meta'; text: string }
+  | { kind: 'heading'; text: string }
+  | { kind: 'paragraph'; text: string }
+
+export type BuiltDocument = { blocks: DocumentBlock[]; notices: string[] }
+
+export function buildDocument(note: Note): BuiltDocument {
+  const blocks: DocumentBlock[] = []
+  const notices: string[] = []
+  blocks.push({ kind: 'title', text: note.title.trim() })
+  blocks.push({ kind: 'meta', text: '专业：' + disciplineLabel(note.discipline) })
+  const project = note.project
+  if (project.name.trim().length > 0) blocks.push({ kind: 'meta', text: '工程名称：' + project.name.trim() })
+  if (project.number.trim().length > 0) blocks.push({ kind: 'meta', text: '工程编号：' + project.number.trim() })
+  if (project.owner.trim().length > 0) blocks.push({ kind: 'meta', text: '建设单位：' + project.owner.trim() })
+  if (project.location.trim().length > 0) blocks.push({ kind: 'meta', text: '建设地点：' + project.location.trim() })
+  if (note.discipline === 'structural' && note.structural) {
+    const structural = note.structural
+    blocks.push({ kind: 'heading', text: '结构设计参数' })
+    blocks.push({ kind: 'paragraph', text: '场地类别：' + structural.siteCategory.trim() })
+    blocks.push({ kind: 'paragraph', text: '抗震设防类别：' + structural.seismicGrade.trim() + '（设防烈度：' + (structural.seismicIntensity.trim() || SEISMIC_INTENSITY_PENDING) + '）' })
+    blocks.push({ kind: 'paragraph', text: '结构安全等级：' + structural.safetyLevel.trim() })
+    blocks.push({ kind: 'paragraph', text: '地基基础设计等级：' + structural.foundationGrade.trim() })
+    blocks.push({ kind: 'paragraph', text: '设计使用年限：' + String(structural.designLifeYears || 50) + ' 年' })
+    if (structural.corrosion.trim().length > 0) blocks.push({ kind: 'paragraph', text: '水土腐蚀性：' + structural.corrosion.trim() })
+    const scheme = structural.protectionScheme.trim()
+    const extra = structural.protectionExtra.trim()
+    blocks.push({ kind: 'paragraph', text: '材料与防腐方案：' + scheme + (extra.length > 0 ? '（附加措施：' + extra + '）' : '') })
+  }
+  for (const section of note.sections) {
+    if (isSectionEmpty(section)) {
+      notices.push(`章节「${section.title}」为空，未写入文档。`)
+      continue
+    }
+    blocks.push({ kind: 'heading', text: section.title.trim() })
+    const lines = section.body.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim().length > 0)
+    for (const line of lines) blocks.push({ kind: 'paragraph', text: line })
+  }
+  return { blocks, notices }
+}
+
+export type ExportRequest = {
+  operation: 'generate'
+  path: string
+  document: {
+    title: string
+    discipline: string
+    project: { name: string; number: string; owner: string; location: string }
+    structural: {
+      siteCategory: string
+      seismicGrade: string
+      safetyLevel: string
+      foundationGrade: string
+      designLifeYears: number
+      corrosion: string
+      protectionScheme: string
+      protectionExtra: string
+      seismicIntensity: string
+    } | null
+    sections: { title: string; body: string }[]
+  }
+}
+
+export function toExportRequest(note: Note, path: string): ExportRequest {
+  const document = buildDocument(note)
+  const sections: { title: string; body: string }[] = []
+  for (const block of document.blocks) {
+    if (block.kind !== 'heading') continue
+    if (block.text === '结构设计参数') continue
+    const index = document.blocks.indexOf(block)
+    const body: string[] = []
+    for (let cursor = index + 1; cursor < document.blocks.length; cursor += 1) {
+      const next = document.blocks[cursor]
+      if (next.kind === 'heading' || next.kind === 'title') break
+      if (next.kind === 'paragraph') body.push(next.text)
+    }
+    sections.push({ title: block.text, body: body.join('\n') })
+  }
+  return {
+    operation: 'generate',
+    path,
+    document: {
+      title: note.title.trim(),
+      discipline: note.discipline,
+      project: {
+        name: note.project.name.trim(),
+        number: note.project.number.trim(),
+        owner: note.project.owner.trim(),
+        location: note.project.location.trim(),
+      },
+      structural: note.discipline === 'structural' && note.structural
+        ? {
+            siteCategory: note.structural.siteCategory.trim(),
+            seismicGrade: note.structural.seismicGrade.trim(),
+            safetyLevel: note.structural.safetyLevel.trim(),
+            foundationGrade: note.structural.foundationGrade.trim(),
+            designLifeYears: note.structural.designLifeYears || 50,
+            corrosion: note.structural.corrosion.trim(),
+            protectionScheme: note.structural.protectionScheme.trim(),
+            protectionExtra: note.structural.protectionExtra.trim(),
+            seismicIntensity: note.structural.seismicIntensity.trim() || SEISMIC_INTENSITY_PENDING,
+          }
+        : null,
+      sections,
+    },
+  }
+}
+
+function asString(value: unknown, fallback: string): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function asNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+export function parseNote(value: unknown): Note {
+  if (!value || typeof value !== 'object') throw new Error('说明数据为空或格式不正确。')
+  const raw = value as Record<string, unknown>
+  const discipline = raw.discipline
+  if (!isDisciplineCode(discipline)) throw new Error('说明数据的专业无效。')
+  const projectRaw = (raw.project ?? {}) as Record<string, unknown>
+  const sectionsRaw = Array.isArray(raw.sections) ? raw.sections : []
+  const sections: NoteSection[] = sectionsRaw.map(item => {
+    const section = (item ?? {}) as Record<string, unknown>
+    return {
+      id: asString(section.id, newId()),
+      title: asString(section.title, '未命名章节'),
+      body: asString(section.body, ''),
+      custom: section.custom === true,
+    }
+  })
+  let structural: StructuralParams | null = null
+  if (discipline === 'structural') {
+    const base = defaultStructuralParams()
+    const rawStructural = (raw.structural ?? {}) as Record<string, unknown>
+    structural = {
+      siteCategory: asString(rawStructural.siteCategory, base.siteCategory),
+      seismicGrade: asString(rawStructural.seismicGrade, base.seismicGrade),
+      safetyLevel: asString(rawStructural.safetyLevel, base.safetyLevel),
+      foundationGrade: asString(rawStructural.foundationGrade, base.foundationGrade),
+      designLifeYears: asNumber(rawStructural.designLifeYears, base.designLifeYears),
+      corrosion: asString(rawStructural.corrosion, base.corrosion),
+      protectionScheme: asString(rawStructural.protectionScheme, base.protectionScheme),
+      protectionExtra: asString(rawStructural.protectionExtra, base.protectionExtra),
+      seismicIntensity: asString(rawStructural.seismicIntensity, base.seismicIntensity),
+    }
+  }
+  return {
+    id: asString(raw.id, newId()),
+    title: asString(raw.title, ''),
+    discipline,
+    project: {
+      name: asString(projectRaw.name, ''),
+      number: asString(projectRaw.number, ''),
+      owner: asString(projectRaw.owner, ''),
+      location: asString(projectRaw.location, ''),
+    },
+    structural,
+    templateId: asString(raw.templateId, ''),
+    templateVersion: asString(raw.templateVersion, LIBRARY_VERSION),
+    sections,
+    createdAt: asString(raw.createdAt, nowIso()),
+    updatedAt: asString(raw.updatedAt, nowIso()),
+  }
+}
+
+export function serializeNote(note: Note): string {
+  return JSON.stringify(note, null, 2)
+}
+
+export function deserializeNote(json: string): Note {
+  let value: unknown
+  try {
+    value = JSON.parse(json)
+  } catch {
+    throw new Error('说明文件不是有效的 JSON。')
+  }
+  return parseNote(value)
+}
+
+export type StoredProject = Project & { id: string; updatedAt: string }
+
+export function parseProject(value: unknown): StoredProject {
+  if (!value || typeof value !== 'object') throw new Error('项目数据为空或格式不正确。')
+  const raw = value as Record<string, unknown>
+  return {
+    id: asString(raw.id, newId()),
+    name: asString(raw.name, ''),
+    number: asString(raw.number, ''),
+    owner: asString(raw.owner, ''),
+    location: asString(raw.location, ''),
+    updatedAt: asString(raw.updatedAt, nowIso()),
+  }
+}
