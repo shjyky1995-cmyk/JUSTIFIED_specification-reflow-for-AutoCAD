@@ -5,7 +5,7 @@
 ## 当前阶段：T15/D0 桌面端方案定稿
 
 - 用户已明确选择首批场景“离线导入工作台”，并要求**先定整体技术框架和开发路线，再做桌面功能开发**。用户选择“先比较再定”Electron 与 .NET 方案。
-- 新阶段分支 `task/T15-desktop-prototype`，独立目录 `artifacts/desktop-worktree`，从已验收 `main` 建立。当前只有方案文档改动，无桌面代码、服务或新依赖。
+- 新阶段分支 `task/T15-desktop-prototype`，独立目录 `artifacts/desktop-worktree`，从已验收 `main` 建立；草案提交 `a5d73af` 已推送同名 GitHub 分支，尚未合入 main。当前只有方案文档，无桌面代码、服务或新依赖。
 - 方案草案在 `docs/DESKTOP_WORKBENCH_PRD_DRAFT.md`，从根 PRD、AGENTS、ARCHITECTURE、TASKS 链接。为保留 CAD V1 已签收边界，桌面 PRD 独立记录。推荐 WPF + .NET 10 LTS 直接复用 netstandard2.0 解析核心；Electron 需要额外 .NET 工作进程与进程间通信。此推荐尚待用户确认。
 - 草案建议桌面用版本化本机请求把 DOCX 路径/hash、图幅、比例交给 CAD；CAD `DSS` 显示并确认后才点位。准确页数依赖 CAD 宿主真实字体测量，桌面离线时只显示解析摘要与“页数待 CAD 计算”。这两项属于新交接协议/业务规则，待用户确认。
 
