@@ -10,6 +10,7 @@
 - 用户说“继续下一步/开始下一步”：按 NEXT_AGENT 下一大阶段或中断位置直接接续；有失败先修、有 checkpoint 先恢复；具体验收语义见 WORKFLOW，不虚构未做的检查。
 - 内部任务切换、阶段交付或中断时更新 NEXT_AGENT 的状态、用户待办、失败/延期项和下一阶段/恢复动作；日志追加历史，换 Agent 不依赖聊天记忆。
 - 默认串行接续；并行必须使用独立分支和 worktree，不同时修改同一工作目录。
+- 项目工作树、构建产物和安装候选包均放在 `G:\JUSTIFIED_specification reflow for AutoCAD` 内；Codex 默认的 C 盘 worktree 路径不用于本项目。交付前从 G 盘最终 ZIP 全新解压校验；应用自身的系统缓存不算项目产物。
 - 任务分支使用 task/<编号>-<简称>；main 只接收已通过该任务检查的结果。
 - 遵守架构依赖方向；AutoCAD API 仅允许在 AutoCadAdapter、PluginHost 中出现。
 - 共享协议、模块依赖、技术栈变更：先记录原因、影响及方案，由用户确认后实施。
