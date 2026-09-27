@@ -1,7 +1,7 @@
 // 设计说明桌面端共享领域模型：专业、结构参数、章节库、模板、当前说明、校验与导出映射。
 // 约束：仅使用可擦除语法（无枚举/命名空间/参数属性），供 Electron 主进程、渲染进程与 Node 测试共同引用。
 
-export const LIBRARY_VERSION = '1.0.0'
+export const LIBRARY_VERSION = '1.0.1'
 
 export type DisciplineCode = 'architecture' | 'structural' | 'plumbing' | 'electrical' | 'hvac' | 'other'
 
@@ -83,7 +83,7 @@ export const STRUCTURAL_REQUIRED_FIELDS: { key: keyof StructuralParams; label: s
 export type SectionDefinition = {
   id: string
   title: string
-  body: string
+  body: string // 仅作为编辑提示；未核定的专业正文不预填到说明中。
   disciplines: DisciplineCode[]
   applicability: string
 }
@@ -231,7 +231,7 @@ export function createNote(discipline: DisciplineCode, templateId: string, proje
     templateVersion: LIBRARY_VERSION,
     sections: sectionIds.map(sectionId => {
       const definition = findSectionDefinition(sectionId)
-      return { id: definition ? definition.id : sectionId, title: definition ? definition.title : sectionId, body: definition ? definition.body : '', custom: false }
+      return { id: definition ? definition.id : sectionId, title: definition ? definition.title : sectionId, body: '', custom: false }
     }),
     createdAt: stamp,
     updatedAt: stamp,
@@ -243,17 +243,18 @@ export function rebuildSections(note: Note, templateId: string): NoteSection[] {
   const sectionIds = template && !template.custom ? template.sectionIds : []
   return sectionIds.map(sectionId => {
     const definition = findSectionDefinition(sectionId)
-    return { id: definition ? definition.id : sectionId, title: definition ? definition.title : sectionId, body: definition ? definition.body : '', custom: false }
+    return { id: definition ? definition.id : sectionId, title: definition ? definition.title : sectionId, body: '', custom: false }
   })
 }
 
 export function resetSectionBody(section: NoteSection): string {
-  const definition = findSectionDefinition(section.id)
-  return definition ? definition.body : ''
+  return ''
 }
 
 export function isSectionEmpty(section: NoteSection): boolean {
-  return section.body.trim().length === 0
+  const body = section.body.trim()
+  // 旧版草稿把提示文案预填到了正文；精确匹配时按空章处理，避免误导出。
+  return body.length === 0 || (!section.custom && body === findSectionDefinition(section.id)?.body.trim())
 }
 
 export function sectionFilledCount(note: Note): number {
@@ -431,12 +432,14 @@ export function parseNote(value: unknown): Note {
   const sectionsRaw = Array.isArray(raw.sections) ? raw.sections : []
   const sections: NoteSection[] = sectionsRaw.map(item => {
     const section = (item ?? {}) as Record<string, unknown>
-    return {
+    const parsed: NoteSection = {
       id: asString(section.id, newId()),
       title: asString(section.title, '未命名章节'),
       body: asString(section.body, ''),
       custom: section.custom === true,
     }
+    if (isSectionEmpty(parsed)) parsed.body = ''
+    return parsed
   })
   let structural: StructuralParams | null = null
   if (discipline === 'structural') {

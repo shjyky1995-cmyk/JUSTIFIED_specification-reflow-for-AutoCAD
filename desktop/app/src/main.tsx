@@ -10,6 +10,7 @@ import {
   defaultTitle,
   disciplineLabel,
   DISCIPLINES,
+  findSectionDefinition,
   findIssues,
   FOUNDATION_GRADES,
   isSectionEmpty,
@@ -530,7 +531,7 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
   function addStandardSection(id: string) {
     const definition = librarySections(note.discipline).find(section => section.id === id)
     if (!definition) return
-    onUpdate(currentNote => currentNote ? { ...currentNote, sections: [...currentNote.sections, { id: definition.id, title: definition.title, body: definition.body, custom: false }] } : currentNote)
+    onUpdate(currentNote => currentNote ? { ...currentNote, sections: [...currentNote.sections, { id: definition.id, title: definition.title, body: '', custom: false }] } : currentNote)
     setSelectedSectionId(definition.id)
   }
 
@@ -567,11 +568,11 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
 
       <section className="editor-panel panel">
         {selected ? <div className="editor-body">
-          <div className="editor-utility"><span className={'save-state ' + save.status}>{saveStatusText(save)}</span>{!selected.custom && <button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: resetSectionBody(section) } : section) } : currentNote)}>恢复本章默认内容</button>}</div>
+          <div className="editor-utility"><span className={'save-state ' + save.status}>{saveStatusText(save)}</span>{!selected.custom && <button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: resetSectionBody(section) } : section) } : currentNote)}>清空本章正文</button>}</div>
           <div className="editor-head">
             <div><h2>{selected.title}</h2><p>{selected.custom ? '当前说明专用章节，不写回标准库' : '标准章节 · 可改为本说明正文'}</p></div>
           </div>
-          <textarea className="section-editor" value={selected.body} maxLength={100000} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: event.target.value } : section) } : currentNote)} placeholder="逐章填写纯文本正文；换行会保留为独立段落。" />
+          <textarea className="section-editor" value={selected.body} maxLength={100000} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: event.target.value } : section) } : currentNote)} placeholder={findSectionDefinition(selected.id)?.body ?? '逐章填写纯文本正文；换行会保留为独立段落。'} />
           <div className="editor-foot">
             <span className="char-count">{selected.body.length} 字</span>
           </div>

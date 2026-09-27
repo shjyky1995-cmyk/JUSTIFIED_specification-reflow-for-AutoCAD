@@ -24,7 +24,7 @@ CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 
 | T15/D0 | 桌面 DOCX 编制工作台 → 技术框架与开发路线定稿 | CAD v0.1.0 已签收；新版打印待用户复核 | 桌面 PRD V1、架构比较、分阶段路线、ADR-013 | 桌面 PRD D0 | 固定模板生成 DOCX、Word/WPS 修改、用户在 CAD 重新选择文件；独立程序与技术边界已确定 | 完成（2026-09-26；用户委托技术判断后选 Electron + React/TypeScript、.NET 10；D1 可启动） |
 | T16/D1 | 桌面初版实现 checkpoint | T15/D0 | `task/T16-desktop-authoring` | 旧 D0 路线 | 工作进程生成/检查通过，界面构建通过；实际窗口待验 | 进行中（433ec3a 已推分支；新 PRD 评审前不继续固定栏目主流程，不合 main） |
 | T17/P0 | 设计说明新业务流程与大阶段计划 | 用户新讨论、Figma 初稿、现有代码 | `docs/PRD.md`、`docs/IMPLEMENTATION_PLAN.md`、设计参考与抗震来源记录 | 桌面 PRD 更新 | 六专业共用编制/导出流程，非结构跳过结构参数；桌面交付到 DOCX；先框架后内容；大阶段验收 | 完成（2026-09-27 用户认可，dea84f2 合入 main；用户提供的 Make ZIP 与五张截图已核对；云端后续变更仍需另行核对） |
-| T18/A | 桌面通用编制框架：首页导航、六专业与条件结构参数、项目/草稿、章节模板与自定义组合、纯文本编辑与自动保存、连续预览、导出 DOCX | T17/P0；T16 checkpoint 技术基础 | desktop/app、desktop/worker、scripts/test-desktop-*.mjs、文档 | PRD 第 1–4 章；实施计划 A 阶段 | 逐专业自动化走通新建→编辑→关闭重开→预览→导出→解析器读回；非结构无结构字段；UI 无遮挡；Agent 自测修复后交一次集中验收 | 待验收（2026-09-27 Figma 视觉重做、01 可继续、手选烈度；六专业 worker/flow、CAD All 双框架各 164/164、1280/900 Electron 截图无横向溢出；用户视觉及 Word/WPS 复核 pending） |
+| T18/A | 桌面通用编制框架：首页导航、六专业与条件结构参数、项目/草稿、章节模板与自定义组合、纯文本编辑与自动保存、连续预览、导出 DOCX | T17/P0；T16 checkpoint 技术基础 | desktop/app、desktop/worker、scripts/test-desktop-*.mjs、文档 | PRD 第 1–4 章；实施计划 A 阶段 | 逐专业自动化走通新建→编辑→关闭重开→预览→导出→解析器读回；非结构无结构字段；UI 无遮挡；Agent 自测修复后交一次集中验收 | 待验收（2026-09-27 Figma 视觉重做、01 可继续、手选烈度；六专业 worker/flow、CAD All 双框架各 164/164、1280/900 Electron 截图无横向溢出；库提示不会当正式正文；用户视觉及 Word/WPS 复核 pending） |
 | T19/P0 | 更新 Agent 长期规则与阶段入口 | T17 已确认 | `AGENTS.md`、`docs/WORKFLOW.md`、`docs/TASKS.md` | 当前桌面 PRD、计划与接续一致 | 新 Agent 不再从旧 CAD 或 D0 目标起步；保留 CAD 历史边界 | 完成（文档检查与提交见 T19 日志；已由 T18 分支在安全时点纳入） |
 
 ## 双端与界面顺序（2026-09-24，规划，不扩大 V1）

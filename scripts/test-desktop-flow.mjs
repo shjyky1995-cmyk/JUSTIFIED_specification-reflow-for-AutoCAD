@@ -15,6 +15,7 @@ import {
   emptyProject,
   findIssues,
   librarySections,
+  parseNote,
   rebuildSections,
   resetSectionBody,
   SECTION_LIBRARY,
@@ -74,6 +75,7 @@ try {
     // 新建：选择专业与模板，填写项目资料
     const note = createNote(discipline.code, template.id, { ...emptyProject(), name: `${label}测试工程`, number: `NO-${index}`, owner: '建设单位', location: '测试地点' }, `${label}设计说明`)
     assert.equal(note.sections.length, template.sectionIds.length, `${label} 章节数量`)
+    assert.ok(note.sections.every(section => section.body === ''), `${label} 未核定的专业正文不得预填`)
     assert.equal(note.structural === null, discipline.code !== 'structural', `${label} 结构参数显隐`)
 
     // 编辑：逐章填写纯文本正文（含换行）；结构专业补齐必填参数
@@ -123,7 +125,7 @@ try {
   const structuralNote = createNote('structural', customTemplateId('structural'), { ...emptyProject(), name: '自定义工程' }, '自定义组合说明')
   assert.equal(structuralNote.sections.length, 0, '自定义组合初始无章节')
   const libraryBefore = SECTION_LIBRARY.length
-  const added = librarySections('structural').slice(0, 2).map(section => ({ id: section.id, title: section.title, body: section.body, custom: false }))
+  const added = librarySections('structural').slice(0, 2).map(section => ({ id: section.id, title: section.title, body: `已编辑：${section.title}。`, custom: false }))
   const custom = {
     ...structuralNote,
     structural: { ...structuralNote.structural, siteCategory: 'II', seismicGrade: '乙', safetyLevel: '二级', foundationGrade: '乙级', protectionScheme: '中', seismicIntensity: '7度（0.15g）' },
@@ -149,10 +151,14 @@ try {
   assert.equal(customExported.success, true, `自定义组合导出失败: ${JSON.stringify(customExported)}`)
   assert.deepEqual(customExported.headings.filter(text => text !== '结构设计参数'), [reorderedReopened.title, ...reorderedReopened.sections.map(section => section.title)], '自定义组合章节顺序')
 
-  // 恢复默认：重置后正文回到模板引导文字
+  // 清空正文；旧草稿中的未改动提示文案按空章处理，不进入 DOCX
   const resetBody = resetSectionBody(reorderedReopened.sections[0])
-  assert.ok(resetBody.length > 0, '恢复默认应有引导文字')
-  assert.equal(resetBody, SECTION_LIBRARY.find(section => section.id === reorderedReopened.sections[0].id).body, '恢复默认内容')
+  assert.equal(resetBody, '', '清空后不应恢复未核定的示例正文')
+  const legacyDefinition = SECTION_LIBRARY.find(section => section.id === reorderedReopened.sections[0].id)
+  const legacy = { ...reorderedReopened, sections: [{ ...reorderedReopened.sections[0], body: legacyDefinition.body }] }
+  assert.ok(findIssues(legacy).some(issue => issue.level === 'error' && issue.message.includes('所有章节都是空的')), '旧版提示文案不算已填写正文')
+  assert.ok(!buildDocument(legacy).blocks.some(block => block.text === legacyDefinition.body), '旧版提示文案不得进入预览或导出')
+  assert.equal(parseNote(legacy).sections[0].body, '', '旧版草稿读取后应在编辑器中显示空正文')
 
   // 空章节告警不阻断，但缺必要参数/空正文必须报错
   const emptyBodies = { ...reorderedReopened, sections: reorderedReopened.sections.map(section => ({ ...section, body: '' })) }
