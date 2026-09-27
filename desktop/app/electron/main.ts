@@ -110,6 +110,14 @@ app.whenReady().then(() => {
     return store.saveProject(project as StoredProject)
   })
 
+  ipcMain.handle('catalog-load', () => store.loadCatalog())
+
+  ipcMain.handle('catalog-import', async () => {
+    const result = await dialog.showOpenDialog({ title: '导入设计说明资料库', properties: ['openFile'], filters: [{ name: '内容包 JSON', extensions: ['json'] }] })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return store.importCatalog(result.filePaths[0])
+  })
+
   ipcMain.handle('choose-save', async () => {
     const result = await dialog.showSaveDialog({ title: '导出说明 DOCX', defaultPath: '设计说明.docx', filters: [{ name: 'Word 文档', extensions: ['docx'] }] })
     if (result.canceled || !result.filePath) return null

@@ -1330,3 +1330,31 @@ textarea:focus-visible {
 .preview-side .primary-button {
   min-height: 34px;
 }
+.content-import { padding: 12px 18px; border-bottom: 1px solid #e5e7eb; }
+.content-import p { margin: 0 0 10px; color: #626b7a; font-size: 13px; }
+.content-import .error-text { color: #b42318; margin-top: 8px; }
+.content-modules { padding: 0 2px 16px; }
+.content-guidance { color: #6b7280; font-size: 12px; line-height: 1.6; margin: 8px 0 14px; }
+.content-module { border: 1px solid #d9e2f1; background: #f8fbff; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+.content-module-head { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #667085; }
+.content-module-head strong { color: #1d4ed8; }
+.content-module-head button { margin-left: auto; }
+.content-module p { line-height: 1.65; margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.content-module small { display: block; color: #667085; line-height: 1.5; overflow-wrap: anywhere; margin-bottom: 8px; }
+.content-confirm { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #344054; }
+.content-edit { margin: 8px 0; border-top: 1px solid #e3e9f3; padding-top: 8px; }
+.content-edit summary { cursor: pointer; color: #1d4ed8; font-size: 12px; }
+.content-edit textarea { width: 100%; min-height: 96px; margin: 8px 0; padding: 8px; box-sizing: border-box; resize: vertical; }
+.content-confirm input { flex: none; }
+.content-field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin: 14px 0; }
+.content-candidates-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 14px; }
+.content-candidates-head input { max-width: 250px; min-width: 120px; }
+.content-candidates { max-height: 330px; overflow: auto; margin: 10px 0; border: 1px solid #e5e7eb; border-radius: 8px; }
+.content-candidate { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 11px; border-bottom: 1px solid #edf0f4; }
+.content-candidate:last-child { border-bottom: 0; }
+.content-candidate div { min-width: 0; }
+.content-candidate strong { margin-right: 9px; color: #1d4ed8; }
+.content-candidate span, .content-candidate small { color: #667085; font-size: 12px; }
+.content-candidate p { margin: 6px 0; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.content-candidate .content-note { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+.content-candidate button { flex: none; }

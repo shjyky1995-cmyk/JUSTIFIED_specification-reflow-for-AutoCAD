@@ -1,5 +1,6 @@
 // 设计说明桌面端共享领域模型：专业、结构参数、章节库、模板、当前说明、校验与导出映射。
 // 约束：仅使用可擦除语法（无枚举/命名空间/参数属性），供 Electron 主进程、渲染进程与 Node 测试共同引用。
+import { renderModule, type SelectedModule } from './content.ts'
 
 export const LIBRARY_VERSION = '1.0.1'
 
@@ -175,7 +176,7 @@ export function customTemplateId(discipline: DisciplineCode): string {
   return `tpl-${discipline}-custom`
 }
 
-export type NoteSection = { id: string; title: string; body: string; custom: boolean }
+export type NoteSection = { id: string; title: string; body: string; custom: boolean; modules?: SelectedModule[] }
 
 export type Note = {
   id: string
@@ -186,6 +187,8 @@ export type Note = {
   templateId: string
   templateVersion: string
   sections: NoteSection[]
+  fieldValues: Record<string, string>
+  fieldDefinitions: Record<string, { label: string; unit: string }>
   createdAt: string
   updatedAt: string
 }
@@ -233,6 +236,8 @@ export function createNote(discipline: DisciplineCode, templateId: string, proje
       const definition = findSectionDefinition(sectionId)
       return { id: definition ? definition.id : sectionId, title: definition ? definition.title : sectionId, body: '', custom: false }
     }),
+    fieldValues: {},
+    fieldDefinitions: {},
     createdAt: stamp,
     updatedAt: stamp,
   }
@@ -251,7 +256,43 @@ export function resetSectionBody(section: NoteSection): string {
   return ''
 }
 
+export function setFieldValue(note: Note, fieldId: string, value: string): Note {
+  return {
+    ...note,
+    fieldValues: { ...note.fieldValues, [fieldId]: value },
+    sections: note.sections.map(section => ({
+      ...section,
+      modules: section.modules?.map(module => module.fieldIds.includes(fieldId) ? { ...module, confirmedForNote: false } : module),
+    })),
+  }
+}
+
+export function effectiveFieldValues(note: Note): Record<string, string> {
+  return {
+    ...note.fieldValues,
+    project_name: note.project.name,
+    project_location: note.project.location,
+  }
+}
+
+export function setModuleTemplate(note: Note, sectionId: string, moduleId: string, template: string): Note {
+  return {
+    ...note,
+    sections: note.sections.map(section => section.id !== sectionId ? section : {
+      ...section,
+      modules: section.modules?.map(module => module.id !== moduleId ? module : {
+        ...module,
+        template,
+        fieldIds: [...new Set([...template.matchAll(/\{([a-z][a-z0-9_]*)\}/g)].map(match => match[1]))],
+        edited: template !== module.baseTemplate,
+        confirmedForNote: false,
+      }),
+    }),
+  }
+}
+
 export function isSectionEmpty(section: NoteSection): boolean {
+  if ((section.modules?.length ?? 0) > 0) return false
   const body = section.body.trim()
   // 旧版草稿把提示文案预填到了正文；精确匹配时按空章处理，避免误导出。
   return body.length === 0 || (!section.custom && body === findSectionDefinition(section.id)?.body.trim())
@@ -294,6 +335,21 @@ export function findIssues(note: Note): NoteIssue[] {
     issues.push({ level: 'error', message: '所有章节都是空的，请至少填写一个章节正文。' })
   }
   for (const section of note.sections) {
+    for (const module of section.modules ?? []) {
+      if (module.reviewStatus !== 'approved') issues.push({ level: 'warning', sectionId: section.id, message: `条款 ${module.clauseId} 来自旧资料候选，尚未批准为全局标准。` })
+      if (module.template.trim().length === 0) issues.push({ level: 'error', sectionId: section.id, message: `条款 ${module.clauseId} 的文字为空。` })
+      for (const fieldId of module.fieldIds) {
+        if (!note.fieldDefinitions?.[fieldId]) issues.push({ level: 'error', sectionId: section.id, message: `条款 ${module.clauseId} 使用了未定义的占位符「${fieldId}」。` })
+      }
+      if (!module.confirmedForNote) {
+        issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」条款 ${module.clauseId} 尚未确认适用于本工程。` })
+      }
+      const labels = Object.fromEntries(Object.entries(note.fieldDefinitions ?? {}).map(([id, definition]) => [id, definition.label]))
+      const rendered = renderModule(module, effectiveFieldValues(note), labels)
+      for (const fieldId of rendered.missing) {
+        issues.push({ level: 'error', sectionId: section.id, field: fieldId, message: `章节「${section.title}」缺少「${note.fieldDefinitions?.[fieldId]?.label ?? fieldId}」。` })
+      }
+    }
     if (isSectionEmpty(section)) {
       issues.push({ level: 'warning', sectionId: section.id, message: `章节「${section.title}」为空，导出时不会写入。` })
     }
@@ -342,6 +398,11 @@ export function buildDocument(note: Note): BuiltDocument {
       continue
     }
     blocks.push({ kind: 'heading', text: section.title.trim() })
+    const labels = Object.fromEntries(Object.entries(note.fieldDefinitions ?? {}).map(([id, definition]) => [id, definition.label]))
+    for (const module of section.modules ?? []) {
+      const rendered = renderModule(module, effectiveFieldValues(note), labels)
+      blocks.push({ kind: 'paragraph', text: rendered.text })
+    }
     const lines = section.body.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim().length > 0)
     for (const line of lines) blocks.push({ kind: 'paragraph', text: line })
   }
@@ -371,6 +432,10 @@ export type ExportRequest = {
 }
 
 export function toExportRequest(note: Note, path: string): ExportRequest {
+  if (note.sections.some(section => (section.modules?.length ?? 0) > 0)) {
+    const blocking = findIssues(note).filter(issue => issue.level === 'error')
+    if (blocking.length > 0) throw new Error(blocking[0].message)
+  }
   const document = buildDocument(note)
   const sections: { title: string; body: string }[] = []
   for (const block of document.blocks) {
@@ -437,6 +502,23 @@ export function parseNote(value: unknown): Note {
       title: asString(section.title, '未命名章节'),
       body: asString(section.body, ''),
       custom: section.custom === true,
+      ...(Array.isArray(section.modules) ? { modules: section.modules.map(value => {
+        const module = (value ?? {}) as Record<string, unknown>
+        return {
+          id: asString(module.id, newId()),
+          clauseId: asString(module.clauseId, ''),
+          packageId: asString(module.packageId, ''),
+          template: asString(module.template, ''),
+          baseTemplate: asString(module.baseTemplate, asString(module.template, '')),
+          edited: module.edited === true,
+          fieldIds: Array.isArray(module.fieldIds) ? module.fieldIds.filter((id): id is string => typeof id === 'string') : [],
+          sourceRefs: Array.isArray(module.sourceRefs) ? module.sourceRefs.filter((source): source is { sourceId: string; para: number; file?: string } => !!source && typeof source === 'object' && typeof source.sourceId === 'string' && Number.isInteger(source.para)).map(source => ({ sourceId: source.sourceId, para: source.para, file: typeof source.file === 'string' ? source.file : undefined })) : [],
+          refs: Array.isArray(module.refs) ? module.refs.filter((ref): ref is string => typeof ref === 'string') : [],
+          flags: Array.isArray(module.flags) ? module.flags.filter((flag): flag is string => typeof flag === 'string') : [],
+          reviewStatus: asString(module.reviewStatus, 'pending'),
+          confirmedForNote: module.confirmedForNote === true,
+        }
+      }) } : {}),
     }
     if (isSectionEmpty(parsed)) parsed.body = ''
     return parsed
@@ -471,9 +553,27 @@ export function parseNote(value: unknown): Note {
     templateId: asString(raw.templateId, ''),
     templateVersion: asString(raw.templateVersion, LIBRARY_VERSION),
     sections,
+    fieldValues: stringRecord(raw.fieldValues),
+    fieldDefinitions: definitionRecord(raw.fieldDefinitions),
     createdAt: asString(raw.createdAt, nowIso()),
     updatedAt: asString(raw.updatedAt, nowIso()),
   }
+}
+
+function stringRecord(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return Object.fromEntries(Object.entries(value).filter(([key, item]) => /^[a-z][a-z0-9_]*$/.test(key) && typeof item === 'string')) as Record<string, string>
+}
+
+function definitionRecord(value: unknown): Record<string, { label: string; unit: string }> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const result: Record<string, { label: string; unit: string }> = {}
+  for (const [key, item] of Object.entries(value)) {
+    if (!/^[a-z][a-z0-9_]*$/.test(key) || !item || typeof item !== 'object') continue
+    const definition = item as Record<string, unknown>
+    result[key] = { label: asString(definition.label, key), unit: asString(definition.unit, '') }
+  }
+  return result
 }
 
 export function serializeNote(note: Note): string {

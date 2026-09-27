@@ -1,6 +1,7 @@
 // 本机 JSON 存储：项目资料与说明草稿。供 Electron 主进程与 Node 自动化测试共用。
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { parseContentCatalog, type ContentCatalog } from './content.ts'
 import {
   deserializeNote,
   parseNote,
@@ -22,6 +23,8 @@ export type DesktopStore = {
   deleteNote: (id: string) => void
   listProjects: () => StoredProject[]
   saveProject: (project: StoredProject) => StoredProject[]
+  loadCatalog: () => ContentCatalog | null
+  importCatalog: (path: string) => ContentCatalog
 }
 
 function ensureDir(path: string): void {
@@ -41,6 +44,8 @@ function readJsonFile(path: string): string {
 export function createStore(root: string): DesktopStore {
   const notesDir = join(root, 'notes')
   const projectsFile = join(root, 'projects.json')
+  const catalogDir = join(root, 'content-library')
+  const catalogFile = join(catalogDir, 'catalog.json')
 
   function ensureRoot(): void {
     ensureDir(root)
@@ -126,6 +131,20 @@ export function createStore(root: string): DesktopStore {
       } catch (error) {
         throw error instanceof Error ? error : new Error('保存项目资料失败。')
       }
+    },
+
+    loadCatalog() {
+      if (!existsSync(catalogFile)) return null
+      return parseContentCatalog(JSON.parse(readJsonFile(catalogFile)))
+    },
+
+    importCatalog(path) {
+      const json = readJsonFile(path)
+      if (json.length > 12_000_000) throw new Error('资料库文件过大。')
+      const catalog = parseContentCatalog(JSON.parse(json))
+      ensureDir(catalogDir)
+      writeJsonAtomic(catalogFile, JSON.stringify(catalog))
+      return catalog
     },
   }
 }

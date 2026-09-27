@@ -9,7 +9,8 @@
     "start": "electron .",
     "preview": "vite --host 127.0.0.1",
     "test:worker": "node ../../scripts/test-desktop-worker.mjs",
-    "test:flow": "node ../../scripts/test-desktop-flow.mjs"
+    "test:flow": "node ../../scripts/test-desktop-flow.mjs",
+    "test:content": "node ../../scripts/test-content-library.mjs"
   },
   "dependencies": {
     "lucide-react": "1.48.0",
