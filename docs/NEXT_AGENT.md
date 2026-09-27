@@ -12,10 +12,10 @@
 ## 2026-09-27 T20：用户新 Figma CAD 窗口改版
 
 - 新任务优先于原接续 T18；独立分支 `task/T20-cad-figma-ui`，基于已发布的 `main`，worktree 为 `C:/Users/Administrator/.codex/worktrees/cad-ui-figma/JUSTIFIED_specification reflow for AutoCAD`。不把尚未验收的 T18 桌面分支带入 CAD。用户 Figma Make、本地 ZIP 和截图来源、实现差异与检查见 [T20 日志](devlog/T20.md) 和 [视觉规范](VISUAL_SPEC_V1.md)。
-- T20 代码与 100%/模拟 150% 离线预览已完成；候选 ZIP 为 `artifacts/packages/20260927-111304-859/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-a1aec1f.zip`（SHA256 见 T20 日志）。包内明确 `productionReady=false`。此前已验收的 T17/T19 主线提交已推公开 `origin/main`（8f2563e）；T20 已推分支、建 [草稿 PR #2](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/pull/2)，尚未合并或发布。真实 AutoCAD 2021 宿主视觉/交互待用户方便时核对；工作目录原有 `tests/.../Fixtures/test-note-standard.json` 换行差异不是本任务改动，不暂存。用户业务文件与测试结果不入库。
+- T20 代码与 100%/模拟 150% 离线预览已完成。用户安装截图暴露 `测试文件/程序/Setup.exe` 缺同目录 bundle，已在 `6119db9` 修复；本机交付目录和解压 ZIP 均经校验。最新候选 ZIP 为 `artifacts/packages/20260927-163557-500/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-6119db9.zip`（SHA256 见 T20 日志），包内 `productionReady=false`。此前已验收的 T17/T19 主线提交已推公开 `origin/main`（8f2563e）；T20 已推分支、建 [草稿 PR #2](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/pull/2)，尚未合并或发布。真实 AutoCAD 2021 宿主视觉/交互待用户方便时核对；工作目录原有 `tests/.../Fixtures/test-note-standard.json` 换行差异不是本任务改动，不暂存。用户业务文件与测试结果不入库。
 
 ## 唯一下一动作
 
-交付 T20 候选包供用户按 [T20 宿主检查](T20_HOST_CHECK.md) 在 CAD 2021 中运行 `DSS`：核对窗口与 Figma 参考的比例、无遮挡、logo、选 DOCX、切换 A1/A2/A3 与比例、取消后无落图；异常给一张截图和 F2 文本。确认后把 T20 合入 `main` 并推送公开 GitHub，再接续 T18/A 阶段通用编制框架。T18 分支 `task/T18-desktop-framework`（worktree `artifacts/t18-worktree`）仍独立进行；抗震地点数据先留「待核定」。新版 CAD 打印由用户方便时反馈，不阻断。用户要求**全部工作完成后**设置 10 分钟关机；当前仍在开发，不执行。
+交付 T20 修复后的本机 `测试文件/程序/Setup.exe` 或最新 ZIP，供用户按 [T20 宿主检查](T20_HOST_CHECK.md) 先退出 CAD 再安装、运行 `DSS`：核对窗口与 Figma 参考的比例、无遮挡、logo、选 DOCX、切换 A1/A2/A3 与比例、取消后无落图；异常给新截图和 F2 文本。确认后把 T20 合入 `main` 并推送公开 GitHub，再接续 T18/A 阶段通用编制框架；后续 A/B/C 任务顺序见 [实施计划](IMPLEMENTATION_PLAN.md)，不安排日历工期。T18 分支 `task/T18-desktop-framework`（worktree `artifacts/t18-worktree`）仍独立进行；抗震地点数据先留「待核定」。新版 CAD 打印由用户方便时反馈，不阻断。用户要求**全部工作完成后**设置 10 分钟关机；当前仍在开发，不执行。
 
 原工作目录的用户业务 DOCX、截图/PDF 结果与测试夹具换行差异保持未暂存；不得带入公开仓库。

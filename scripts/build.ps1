@@ -103,6 +103,11 @@ try {
         $program = Join-Path $handoff ([string][char]0x7A0B + [char]0x5E8F)
         New-Item -ItemType Directory -Path $program -Force | Out-Null
         # The visible handoff must be installable too: Setup.exe resolves the bundle beside itself.
+        foreach ($directory in @($taskRoot, $handoff, $program)) {
+            if ((Get-Item -LiteralPath $directory -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                throw 'Install handoff path must not traverse a junction or symbolic link.'
+            }
+        }
         $resolvedRoot = (Resolve-Path -LiteralPath $taskRoot).ProviderPath.TrimEnd('\', '/')
         $resolvedProgram = (Resolve-Path -LiteralPath $program).ProviderPath.TrimEnd('\', '/')
         if (-not $resolvedProgram.StartsWith($resolvedRoot + [IO.Path]::DirectorySeparatorChar,
