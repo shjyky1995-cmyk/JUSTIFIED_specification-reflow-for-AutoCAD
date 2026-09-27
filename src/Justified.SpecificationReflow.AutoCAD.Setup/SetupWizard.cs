@@ -135,22 +135,25 @@ internal sealed class SetupWizard : Form
 
     private void ShowInstallStart()
     {
+        var hasBundle = _service.BundleLooksComplete;
         var build = _service.LoadBuildInfo();
-        _versionLine.Text = "版本 " + build.Version + " · 源码提交 " + Short(build.SourceCommit) + " · 构建于 " + build.BuiltUtc;
+        _versionLine.Text = hasBundle
+            ? "版本 " + build.Version + " · 源码提交 " + Short(build.SourceCommit) + " · 构建于 " + build.BuiltUtc
+            : "安装内容不完整";
         _welcomePage.Controls.Clear();
         _welcomePage.Controls.Add(Label("欢迎使用", 0, 8, 748, 32, 20, true));
         _welcomePage.Controls.Add(Body(
-            _service.BundleLooksComplete
+            hasBundle
                 ? "本程序用于安装 Word 设计说明工具（AutoCAD 插件）。\n\n" +
                   "安装前请先保存图纸并退出 AutoCAD。\n\n" +
                   "支持环境：AutoCAD 2021（R24.0）；后续版本将适配 AutoCAD 2014–2021 全系。"
-                : "未找到随本程序的安装内容（.bundle 文件夹）。\n\n" +
-                  "请把发布 ZIP 完整解压到一个文件夹，保持 Setup.exe 与 JUSTIFIED_specification-reflow-for-AutoCAD.bundle 文件夹在同一目录，再重新运行本程序。\n\n" +
-                  "不要单独拷贝 Setup.exe 到其他位置运行。"));        ShowPage(_welcomePage);
+                : "安装文件夹缺少程序数据，当前无法继续。\n\n" +
+                  "请重新完整解压候选 ZIP，再运行解压目录中的 Setup.exe。"));
+        ShowPage(_welcomePage);
         _steps.Text = "① 欢迎 → ② 环境检查 → ③ 安装 → ④ 完成";
         _page = 0;
         _primary.Text = "下一步";
-        _primary.Enabled = _service.BundleLooksComplete;
+        _primary.Enabled = hasBundle;
         _cancel.Text = "取消";
         _cancel.Enabled = true;
     }

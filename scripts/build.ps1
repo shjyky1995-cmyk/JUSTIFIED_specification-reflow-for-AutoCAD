@@ -102,13 +102,30 @@ try {
         $handoff = Join-Path $taskRoot ([string][char]0x6D4B + [char]0x8BD5 + [char]0x6587 + [char]0x4EF6)
         $program = Join-Path $handoff ([string][char]0x7A0B + [char]0x5E8F)
         New-Item -ItemType Directory -Path $program -Force | Out-Null
+        # The visible handoff must be installable too: Setup.exe resolves the bundle beside itself.
+        $resolvedRoot = (Resolve-Path -LiteralPath $taskRoot).ProviderPath.TrimEnd('\', '/')
+        $resolvedProgram = (Resolve-Path -LiteralPath $program).ProviderPath.TrimEnd('\', '/')
+        if (-not $resolvedProgram.StartsWith($resolvedRoot + [IO.Path]::DirectorySeparatorChar,
+            [StringComparison]::OrdinalIgnoreCase)) { throw 'Install handoff escaped the workspace.' }
+        $programBundle = Join-Path $resolvedProgram 'JUSTIFIED_specification-reflow-for-AutoCAD.bundle'
+        if (Test-Path -LiteralPath $programBundle) {
+            $resolvedBundle = (Resolve-Path -LiteralPath $programBundle).ProviderPath
+            $bundleItem = Get-Item -LiteralPath $programBundle -Force
+            if (-not [string]::Equals($resolvedBundle, $programBundle, [StringComparison]::OrdinalIgnoreCase) -or
+                ($bundleItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                throw 'Existing install handoff bundle is not a regular workspace directory.'
+            }
+            Remove-Item -LiteralPath $programBundle -Recurse -Force
+        }
+        Copy-Item -LiteralPath $bundle -Destination $programBundle -Recurse
+        & (Join-Path $PSScriptRoot 'verify-package.ps1') -BundlePath $programBundle
         Get-ChildItem -LiteralPath $contents -Filter *.dll | Copy-Item -Destination $program -Force
         foreach ($setupFile in $setupFiles) {
             Copy-Item -LiteralPath (Join-Path $setupBin $setupFile) -Destination $program -Force
         }
         Copy-Item -LiteralPath $zip -Destination $handoff -Force
         Write-Host "Manual test DLL: $(Join-Path $program 'Justified.SpecificationReflow.AutoCAD.PluginHost.dll')"
-        Write-Host "Graphical installer (double-click to install): $(Join-Path $program 'Setup.exe')"
+        Write-Host "Graphical installer with adjacent verified bundle: $(Join-Path $program 'Setup.exe')"
         Write-Host "Package ($packageKind): $zip"
     }
 }
