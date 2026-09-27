@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createStore, type DesktopStore, type SaveResult } from '../src/shared/store.ts'
@@ -60,13 +60,16 @@ function docxPath(value: unknown): string {
 }
 
 function makeWindow(): void {
+  const assetDirectory = join(appRoot, 'dist/assets')
+  const iconFile = existsSync(assetDirectory) ? readdirSync(assetDirectory).find(name => name.startsWith('product-icon-') && name.endsWith('.png')) : undefined
   const window = new BrowserWindow({
     width: 1280,
     height: 820,
-    minWidth: 1050,
+    minWidth: 900,
     minHeight: 680,
-    backgroundColor: '#eef3fa',
-    title: '设计说明工作台',
+    backgroundColor: '#f9f9fb',
+    title: 'EngiSpace · 设计说明',
+    ...(iconFile ? { icon: join(assetDirectory, iconFile) } : {}),
     show: false,
     webPreferences: {
       preload: join(appRoot, 'electron/preload.cjs'),

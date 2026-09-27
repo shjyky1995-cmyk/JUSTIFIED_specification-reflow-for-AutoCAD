@@ -96,7 +96,10 @@ internal static class Program
             var safety = Required(structural.SafetyLevel, "结构参数「结构安全等级」", 20);
             var foundation = Required(structural.FoundationGrade, "结构参数「地基基础设计等级」", 20);
             var scheme = Required(structural.ProtectionScheme, "结构参数「材料/防腐方案」", 20);
-            var intensity = string.IsNullOrWhiteSpace(structural.SeismicIntensity) ? "待核定" : structural.SeismicIntensity.Trim();
+            var intensity = Required(structural.SeismicIntensity, "结构参数「抗震设防烈度」", 24);
+            if (intensity == "待核定") throw new ArgumentException("请手工选择抗震设防烈度，不导出待核定值。");
+            if (!new[] { "6度（0.05g）", "7度（0.10g）", "7度（0.15g）", "8度（0.20g）", "8度（0.30g）", "9度（0.40g）" }.Contains(intensity))
+                throw new ArgumentException("抗震设防烈度不在可选范围内，请重新选择。");
             var life = structural.DesignLifeYears > 0 ? structural.DesignLifeYears : 50;
             lines.Add(("Heading2", "结构设计参数"));
             lines.Add(("Normal", "场地类别：" + site));

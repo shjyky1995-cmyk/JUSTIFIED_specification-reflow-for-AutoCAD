@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, FileText, FolderOpen, MoreHorizontal, PieChart, Plus, Search, Sparkles, X } from 'lucide-react'
+import productIcon from '../../../branding/product-icon.png'
 import {
   buildDocument,
   createNote,
@@ -19,10 +21,10 @@ import {
   resetSectionBody,
   SAFETY_LEVELS,
   SEISMIC_GRADES,
+  SEISMIC_INTENSITIES,
   SEISMIC_INTENSITY_PENDING,
   sectionTitle,
   SITE_CATEGORIES,
-  STRUCTURAL_REQUIRED_FIELDS,
   templatesFor,
   toExportRequest,
   type DisciplineCode,
@@ -44,8 +46,8 @@ type ConfirmState = { title: string; message: string; confirmLabel: string; dang
 
 const STEP_LABELS: { route: Route; label: string }[] = [
   { route: 'step01', label: '01 参数设置' },
-  { route: 'step02b', label: '02 章节编制' },
-  { route: 'step03', label: '03 生成导出' },
+  { route: 'step02b', label: '02 模板与章节' },
+  { route: 'step03', label: '03 生成说明' },
 ]
 
 function formatTime(iso: string): string {
@@ -92,6 +94,16 @@ function App() {
   }
 
   useEffect(() => { refreshHome() }, [])
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if (route === 'home' && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        document.querySelector<HTMLInputElement>('.home-search')?.focus()
+      }
+    }
+    window.addEventListener('keydown', focusSearch)
+    return () => window.removeEventListener('keydown', focusSearch)
+  }, [route])
 
   function scheduleSave() {
     setSave({ status: 'dirty', message: '有未保存更改' })
@@ -168,17 +180,21 @@ function App() {
   const blocking = issues.some(issue => issue.level === 'error')
 
   return <div className="app-shell">
+    <header className="global-header">
+      <button className="global-brand" onClick={() => { setRoute('home'); refreshHome() }} aria-label="返回首页"><img src={productIcon} alt="产品图标" /><span>EngiSpace</span></button>
+      <div className="global-account"><span>离线工作台</span><span className="global-avatar">设</span></div>
+    </header>
     {route !== 'home' && <StepNav route={route} note={note} onNavigate={target => {
       if (target === 'home') { setRoute('home'); refreshHome(); return }
       if (!note) return
       setRoute(target)
     }} />}
     <main className={'main-area route-' + route}>
-      {route === 'home' && <HomePage notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={startNew} onContinue={id => void openNote(id)} onDelete={id => void deleteNote(id)} />}
+      {route === 'home' && <HomePage notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={startNew} onContinue={id => void openNote(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
       {route === 'step01' && <Step01 note={note} projects={projects} linkedProjectId={linkedProjectId} setLinkedProjectId={setLinkedProjectId} onUpdate={updateNote} onConfirm={askConfirm} onDone={async () => {
-        if (!noteRef.current) return
+        if (!noteRef.current) setWorkingNote(createNote('structural', customTemplateId('structural'), { name: '', number: '', owner: '', location: '' }, defaultTitle('structural')))
         if (!(await commitSave())) return
-        await rememberProject(noteRef.current, projects, setProjects)
+        if (noteRef.current) await rememberProject(noteRef.current, projects, setProjects)
         setRoute('step02a')
       }} />}
       {route === 'step02a' && note && <Step02A note={note} onBack={() => setRoute('step01')} onSelect={templateId => {
@@ -235,14 +251,12 @@ async function rememberProject(note: Note, projects: StoredProject[], setProject
 function StepNav({ route, note, onNavigate }: { route: Route; note: Note | null; onNavigate: (target: Route) => void }) {
   return <header className="topbar">
     <div className="topbar-left">
-      <button className="home-link" onClick={() => onNavigate('home')}>‹ 首页</button>
+      <button className="home-link" onClick={() => onNavigate('home')} aria-label="退出编制"><X size={16} /></button>
+      <strong className="workflow-title">新建设计说明</strong>
+    </div>
       <nav className="step-nav">
-        {STEP_LABELS.map(step => <button key={step.route} className={route === step.route || (step.route === 'step02b' && route === 'step02a') ? 'active' : ''} disabled={!note} onClick={() => onNavigate(step.route)}>{step.label}</button>)}
+        {STEP_LABELS.map((step, index) => <React.Fragment key={step.route}><button className={route === step.route || (step.route === 'step02b' && route === 'step02a') ? 'active' : ''} disabled={!note} onClick={() => onNavigate(step.route)}><span className="step-number">0{index + 1}</span>{step.label.slice(3)}</button>{index < 2 && <span className="step-divider">—</span>}</React.Fragment>)}
       </nav>
-    </div>
-    <div className="topbar-right">
-      <span className="topbar-tag"><span></span> 离线工作台 · 导出 DOCX</span>
-    </div>
   </header>
 }
 
@@ -257,48 +271,40 @@ function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onDele
 }) {
   const keyword = search.trim().toLowerCase()
   const recent = keyword.length === 0 ? notes : notes.filter(item => item.title.toLowerCase().includes(keyword) || disciplineLabel(item.discipline).includes(keyword))
-  const currentProject = projects[0]?.name ?? ''
-
   return <div className="home">
-    <header className="home-header">
-      <div className="brand">
-        <div className="brand-mark"><span></span><span></span><span></span></div>
-        <div><strong>设计说明工作台</strong><small>各专业设计说明编制 · 导出可编辑 DOCX</small></div>
-      </div>
-      <input className="home-search" value={search} onChange={event => onSearch(event.target.value)} placeholder="搜索最近说明（按标题或专业）" />
-    </header>
+    <div className="home-search-wrap"><Search size={16} /><input className="home-search" value={search} onChange={event => onSearch(event.target.value)} placeholder="搜索项目、文档或功能..." /><kbd>Ctrl K</kbd></div>
 
     <section className="entry-grid">
       <button className="entry-card active" onClick={onNew}>
-        <span className="entry-icon">✦</span>
+        <span className="entry-icon"><FileText size={18} /></span>
         <strong>设计说明</strong>
-        <small>六专业共用流程，编制并导出 DOCX</small>
-        <span className="entry-action">新建 / 继续 ›</span>
+        <small>起草并管理技术设计说明</small>
       </button>
-      {['可研报告', '招标文件', '项目管理', 'AI 工程助手'].map(name => <div className="entry-card" key={name}>
-        <span className="entry-icon">{name === 'AI 工程助手' ? '✧' : name === '项目管理' ? '▦' : '▤'}</span>
+      {['可研报告', '投标文件', '项目管理', 'AI 工程助手'].map(name => <div className="entry-card" key={name}>
+        <span className="entry-icon">{name === 'AI 工程助手' ? <Sparkles size={18} /> : name === '项目管理' ? <FolderOpen size={18} /> : name === '可研报告' ? <PieChart size={18} /> : <BriefcaseBusiness size={18} />}</span>
         <strong>{name}</strong>
-        <small>后续阶段提供</small>
-        <span className="entry-badge">未开放</span>
+        <small>{name === '可研报告' ? '独立起草可行性研究报告' : name === '投标文件' ? '准备和管理项目招投标文件' : name === '项目管理' ? '组织与管理全局项目信息' : '自动化文档校审与检查'}</small>
       </div>)}
     </section>
 
     <section className="home-columns">
       <div className="home-panel">
-        <div className="panel-head"><span className="panel-index">◇</span><div><h2>当前项目</h2><p>最近一次编制关联的项目资料</p></div></div>
-        <p className="current-project">{currentProject || '暂无项目，新建说明时填写'}</p>
+        <div className="panel-head"><div><h2>当前项目</h2></div></div>
+        {projects.length === 0 ? <p className="empty-hint">暂无项目，新建说明时填写</p> : <ul className="recent-list">{projects.slice(0, 4).map(item => <li key={item.id}><span className="list-icon"><FolderOpen size={15} /></span><div className="recent-info"><strong>{item.name}</strong><small>{item.number || '未填写编号'} · {item.owner || '未填写建设单位'}</small></div></li>)}</ul>}
       </div>
       <div className="home-panel wide">
-        <div className="panel-head"><span className="panel-index">☰</span><div><h2>最近工作</h2><p>关闭后重新打开可恢复最后一次保存的内容</p></div><span className="panel-count">{recent.length} 份</span></div>
+        <div className="panel-head"><div><h2>最近工作</h2></div><span className="panel-count">{recent.length} 份</span></div>
         {recent.length === 0 ? <p className="empty-hint">{notes.length === 0 ? '还没有说明。点击「设计说明」开始新建。' : '没有匹配的说明。'}</p> : <ul className="recent-list">
           {recent.map(item => <li key={item.id}>
+            <span className="list-icon"><FileText size={15} /></span>
             <div className="recent-info">
               <strong>{item.title}</strong>
-              <small>{disciplineLabel(item.discipline)} · {item.filledCount}/{item.sectionCount} 章已填写 · {formatDateTime(item.updatedAt)}</small>
+              <small>设计说明 · {disciplineLabel(item.discipline)} · {item.filledCount}/{item.sectionCount} 章已填写</small>
             </div>
+            <span className="recent-time">{formatDateTime(item.updatedAt)}</span>
             <div className="recent-actions">
-              <button className="secondary-button" onClick={() => onContinue(item.id)}>继续</button>
-              <button className="text-danger" onClick={() => onDelete(item.id)}>删除</button>
+              <button className="icon-button" title="继续" onClick={() => onContinue(item.id)}><ArrowRight size={16} /></button>
+              <button className="icon-button" title="删除" onClick={() => onDelete(item.id)}><X size={15} /></button>
             </div>
           </li>)}
         </ul>}
@@ -393,26 +399,20 @@ function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate,
     applyLink()
   }
 
-  const structuralReady = discipline !== 'structural' || STRUCTURAL_REQUIRED_FIELDS.every(field => String(structural?.[field.key] ?? '').trim().length > 0)
-  const ready = title.trim().length > 0 && project.name.trim().length > 0 && structuralReady
-
   return <div className="workspace narrow">
-    <div className="page-heading"><div><span className="eyebrow">STEP 01 · 参数设置</span><h1>选择专业，填写项目资料。</h1><p>非结构专业不显示结构参数；结构专业的抗震设防烈度在获得经核验数据前显示「待核定」。</p></div><div className="heading-deco">01<span>/ 03</span></div></div>
-
-    <section className="panel">
-      <div className="panel-head"><span className="panel-index">01</span><div><h2>专业</h2><p>六个专业都可完成编制与导出</p></div></div>
+    <section className="panel discipline-panel">
+      <div className="panel-head"><div><h2>专业</h2></div></div>
       <div className="discipline-grid">
         {DISCIPLINES.map(item => <button key={item.code} className={discipline === item.code ? 'discipline-card active' : 'discipline-card'} onClick={() => changeDiscipline(item.code)}>
           <strong>{item.label}</strong>
-          <small>{item.code === 'structural' ? '含结构专属参数' : item.code === 'other' ? '通用章节组合' : '专业章节组合'}</small>
         </button>)}
       </div>
     </section>
 
-    <section className="panel">
-      <div className="panel-head"><span className="panel-index">02</span><div><h2>说明与项目资料</h2><p>可关联已有项目带出资料，也可以直接手填</p></div></div>
+    <section className="panel project-panel">
+      <div className="panel-head"><div><h2>关联项目 <span className="optional">(可选)</span></h2></div></div>
       <div className="form-grid">
-        <label className="field wide"><span>说明标题 <b>*</b></span><input value={title} maxLength={120} onChange={event => onUpdate(current => {
+        <label className="field wide"><span>说明标题</span><input value={title} maxLength={120} onChange={event => onUpdate(current => {
           const base = current ?? createNote(discipline, customTemplateId(discipline), project, title)
           return { ...base, title: event.target.value }
         })} placeholder="如：结构设计说明" /></label>
@@ -422,16 +422,17 @@ function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate,
             {projects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>
-        <label className="field"><span>工程名称 <b>*</b></span><input value={project.name} maxLength={120} onChange={event => changeProject({ name: event.target.value })} placeholder="填写工程名称" /></label>
+        <label className="field"><span>项目名称</span><input value={project.name} maxLength={120} onChange={event => changeProject({ name: event.target.value })} placeholder="如果不关联项目，请在此输入..." /></label>
         <label className="field"><span>工程编号</span><input value={project.number} maxLength={60} onChange={event => changeProject({ number: event.target.value })} placeholder="选填" /></label>
         <label className="field"><span>建设单位</span><input value={project.owner} maxLength={120} onChange={event => changeProject({ owner: event.target.value })} placeholder="选填" /></label>
         <label className="field"><span>建设地点</span><input value={project.location} maxLength={120} onChange={event => changeProject({ location: event.target.value })} placeholder="选填" /></label>
       </div>
     </section>
 
-    {discipline === 'structural' && <section className="panel">
-      <div className="panel-head"><span className="panel-index">03</span><div><h2>结构参数</h2><p>仅结构专业显示；设计使用年限默认 50 年</p></div></div>
-      <div className="form-grid">
+    {discipline === 'structural' && <section className="panel structural-panel">
+      <div className="panel-head"><div><h2>结构专业参数</h2></div></div>
+      <p className="group-label">基本设计参数</p>
+      <div className="form-grid structural-grid">
         <label className="field"><span>场地类别 <b>*</b></span>
           <select value={structural?.siteCategory ?? ''} onChange={event => changeStructural({ siteCategory: event.target.value })}>
             <option value="">请选择</option>
@@ -456,44 +457,32 @@ function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate,
             {FOUNDATION_GRADES.map(item => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
+        <label className="field"><span>抗震设防烈度</span><select value={structural?.seismicIntensity === SEISMIC_INTENSITY_PENDING ? '' : structural?.seismicIntensity ?? ''} onChange={event => changeStructural({ seismicIntensity: event.target.value })}><option value="">请选择当地取值</option>{SEISMIC_INTENSITIES.map(item => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="field"><span>设计使用年限</span><input value="50 年" readOnly /></label>
-        <label className="field"><span>抗震设防烈度</span><input value={SEISMIC_INTENSITY_PENDING} readOnly /><small className="field-hint">尚无经核验的地点映射数据，不猜值</small></label>
-        <label className="field"><span>材料/防腐方案 <b>*</b></span>
-          <select value={structural?.protectionScheme ?? ''} onChange={event => changeStructural({ protectionScheme: event.target.value })}>
-            <option value="">请选择</option>
-            {PROTECTION_SCHEMES.map(item => <option key={item} value={item}>{item}</option>)}
-          </select>
-        </label>
-        <label className="field"><span>附加措施</span><input value={structural?.protectionExtra ?? ''} maxLength={120} onChange={event => changeStructural({ protectionExtra: event.target.value })} placeholder="选填" /></label>
-        <label className="field wide"><span>水土腐蚀性</span><textarea value={structural?.corrosion ?? ''} maxLength={4000} onChange={event => changeStructural({ corrosion: event.target.value })} placeholder="可粘贴勘察报告中的腐蚀性结论（长文本）" rows={3} /></label>
       </div>
+      <div className="structural-subsection"><p className="group-label">水土腐蚀性</p><textarea value={structural?.corrosion ?? ''} maxLength={4000} onChange={event => changeStructural({ corrosion: event.target.value })} placeholder="请粘贴地勘报告中的水土腐蚀性结论……" rows={3} /></div>
+      <div className="structural-subsection"><p className="group-label">材料与防腐方案</p><div className="corrosion-options">{PROTECTION_SCHEMES.map(item => <button type="button" key={item} className={'corrosion-option ' + (structural?.protectionScheme === item ? 'active' : '')} onClick={() => changeStructural({ protectionScheme: item })}><span className="radio-dot" />{item}腐蚀</button>)}</div><label className="field extra-field"><span>附加防腐措施 (可选)</span><input value={structural?.protectionExtra ?? ''} maxLength={120} onChange={event => changeStructural({ protectionExtra: event.target.value })} placeholder="按工程实际填写" /></label></div>
     </section>}
 
     <div className="action-bar">
-      <div className="status"><span className="status-light"></span><div><strong>{discipline === 'structural' ? '结构参数已展开' : '非结构专业，无结构参数'}</strong><small>下一步选择章节模板与自定义组合</small></div></div>
       <div className="action-buttons">
-        <button className="primary-button" disabled={!ready} onClick={onDone}>下一步：章节模板 <span>›</span></button>
+        <button className="primary-button" onClick={onDone}>下一步：选择模板 <ArrowRight size={15} /></button>
       </div>
     </div>
-    {!ready && <p className="form-hint">请填写说明标题、工程名称{discipline === 'structural' ? '与全部结构参数' : ''}后继续。</p>}
   </div>
 }
 
 function Step02A({ note, onBack, onSelect }: { note: Note; onBack: () => void; onSelect: (templateId: string) => void }) {
   const templates = templatesFor(note.discipline)
   return <div className="workspace">
-    <div className="page-heading"><div><span className="eyebrow">STEP 02A · 模板选择</span><h1>选择章节组合。</h1><p>预设模板只是默认组合；之后仍可添加、移除、排序，或从可用章节库自定义。</p></div><div className="heading-deco">02<span>/ 03</span></div></div>
+    <button className="back-link" onClick={onBack}><ArrowLeft size={14} /> 返回参数设置</button>
+    <div className="page-heading"><div><h1>选择说明模板</h1><p>模板提供默认章节结构；下一步可以添加、移除或修改章节。</p></div></div>
     <div className="template-grid">
       {templates.map(template => <button key={template.id} className={note.templateId === template.id && note.sections.length > 0 ? 'template-card active' : 'template-card'} onClick={() => onSelect(template.id)}>
+        <span className="template-icon"><FileText size={18} /></span>
         <strong>{template.name}</strong>
-        <small>{template.custom ? '从可用章节库逐章选取' : template.sectionIds.length + ' 个章节'}</small>
-        {!template.custom && <span className="template-preview">{template.sectionIds.map(id => sectionTitle(id)).join(' · ')}</span>}
-        <span className="entry-action">{template.custom ? '开始自定义 ›' : '选择 ›'}</span>
+        <small>{template.custom ? '从空白开始，自由组合标准章节。' : template.sectionIds.map(id => sectionTitle(id)).slice(0, 3).join('、') + '等章节。'}</small>
       </button>)}
-    </div>
-    <div className="action-bar">
-      <div className="status"><span className="status-light"></span><div><strong>{disciplineLabel(note.discipline)}专业</strong><small>当前标题：{note.title}</small></div></div>
-      <div className="action-buttons"><button className="secondary-button" onClick={onBack}>‹ 上一步</button></div>
     </div>
   </div>
 }
@@ -555,10 +544,12 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
   }
 
   return <div className="workspace editor-workspace">
-    <div className="page-heading"><div><span className="eyebrow">STEP 02B · 章节工作区</span><h1>调整章节，逐章改写正文。</h1><p>正文为纯文本，自动保存；「恢复默认」只影响本说明的当前章节。</p></div><div className="heading-deco">02<span>/ 03</span></div></div>
+    <div className="editor-shell">
+    <div className="editor-toolbar"><button className="back-link" onClick={onBack}><ArrowLeft size={14} /> 模板选择</button><button className="primary-button" disabled={note.sections.length === 0} onClick={onGenerate}>生成说明 <ArrowRight size={14} /></button></div>
     <div className="editor-grid">
       <aside className="section-panel panel">
-        <div className="panel-head"><span className="panel-index">☰</span><div><h2>章节目录</h2><p>{note.sections.length} 章 · 已填 {filled} 章</p></div></div>
+        <div className="panel-head"><div><h2>章节目录</h2><p>{note.sections.length} 章 · 已填 {filled} 章</p></div></div>
+        <button className="secondary-button add-section" onClick={() => setLibraryOpen(true)}><Plus size={14} /> 添加章节</button>
         <ul className="section-list">
           {note.sections.map((section, index) => <li key={section.id} className={selected && selected.id === section.id ? 'active' : ''} draggable onDragStart={event => { event.dataTransfer.setData('text/plain', String(index)) }} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); moveSection(Number(event.dataTransfer.getData('text/plain')), index) }} onClick={() => setSelectedSectionId(section.id)}>
             <span className="drag-handle">⠿</span>
@@ -572,33 +563,25 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
           </li>)}
         </ul>
         {note.sections.length === 0 && <p className="empty-hint">还没有章节。点击下方「添加章节」从标准章节库选取，或新建当前说明专用章节。</p>}
-        <button className="secondary-button add-section" onClick={() => setLibraryOpen(true)}>＋ 添加章节</button>
       </aside>
 
       <section className="editor-panel panel">
         {selected ? <div className="editor-body">
+          <div className="editor-utility"><span className={'save-state ' + save.status}>{saveStatusText(save)}</span>{!selected.custom && <button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: resetSectionBody(section) } : section) } : currentNote)}>恢复本章默认内容</button>}</div>
           <div className="editor-head">
             <div><h2>{selected.title}</h2><p>{selected.custom ? '当前说明专用章节，不写回标准库' : '标准章节 · 可改为本说明正文'}</p></div>
-            {!selected.custom && <button className="secondary-button" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: resetSectionBody(section) } : section) } : currentNote)}>恢复默认</button>}
           </div>
           <textarea className="section-editor" value={selected.body} maxLength={100000} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: event.target.value } : section) } : currentNote)} placeholder="逐章填写纯文本正文；换行会保留为独立段落。" />
           <div className="editor-foot">
-            <span className={'save-state ' + save.status}>{saveStatusText(save)}</span>
             <span className="char-count">{selected.body.length} 字</span>
           </div>
         </div> : <div className="editor-empty"><p>从左侧选择章节开始编辑，或添加新章节。</p></div>}
       </section>
     </div>
+    </div>
 
     {libraryOpen && <AddSectionModal available={available} onAddStandard={addStandardSection} onAddCustom={addCustomSection} onClose={() => setLibraryOpen(false)} />}
 
-    <div className="action-bar">
-      <div className="status"><span className="status-light"></span><div><strong>{save.status === 'error' ? '保存失败' : '自动保存已开启'}</strong><small>{save.message || '停止输入约 1 秒后自动保存到本机'}</small></div></div>
-      <div className="action-buttons">
-        <button className="secondary-button" onClick={onBack}>‹ 模板选择</button>
-        <button className="primary-button" disabled={note.sections.length === 0} onClick={onGenerate}>生成说明 <span>›</span></button>
-      </div>
-    </div>
   </div>
 }
 
@@ -676,10 +659,8 @@ function Step03({ note, issues, blocking, exportState, setExportState, onReconfi
   }
 
   return <div className="workspace preview-workspace">
-    <div className="page-heading"><div><span className="eyebrow">STEP 03 · 生成说明</span><h1>连续预览并导出 DOCX。</h1><p>预览顺序与导出一致；导出的文件可用 Word/WPS 编辑，再到 CAD 中选择导入。</p></div><div className="heading-deco">03<span>/ 03</span></div></div>
     <div className="preview-layout">
       <section className="paper-panel panel">
-        <div className="paper-head">连续预览 · 只读</div>
         <div className="paper">
           {document.blocks.map((block, index) => block.kind === 'title'
             ? <h1 key={index} className="paper-title">{block.text}</h1>
@@ -691,15 +672,14 @@ function Step03({ note, issues, blocking, exportState, setExportState, onReconfi
         </div>
       </section>
       <aside className="preview-side">
-        <section className="panel side-block">
-          <div className="panel-head"><span className="panel-index">✓</span><div><h2>导出前检查</h2><p>问题会明确定位，不会静默导出</p></div></div>
+        <details className={'panel side-block issue-disclosure ' + (errors.length > 0 ? 'has-errors' : '')}>
+          <summary>{errors.length > 0 ? `导出前检查：${errors.length} 项待补齐` : warnings.length > 0 ? `导出前检查：${warnings.length} 项提示` : '导出前检查：已通过'}</summary>
           {errors.length === 0 && warnings.length === 0 && <p className="ok-hint">没有发现问题，可以导出。</p>}
           {errors.length > 0 && <ul className="issue-list errors">{errors.map((issue, index) => <li key={index}>{issue.message}</li>)}</ul>}
           {warnings.length > 0 && <ul className="issue-list warnings">{warnings.map((issue, index) => <li key={index}>{issue.message}</li>)}</ul>}
-        </section>
+        </details>
         <section className="panel side-block">
-          <div className="panel-head"><span className="panel-index">↗</span><div><h2>导出 Word</h2><p>生成可编辑 DOCX，不覆盖已有文件</p></div></div>
-          <button className="primary-button wide" disabled={blocking || exportState.busy} onClick={() => void exportDocx()}>{exportState.busy ? '正在导出…' : '导出 DOCX'} <span>↗</span></button>
+          <button className="primary-button wide" disabled={blocking || exportState.busy} onClick={() => void exportDocx()}>{exportState.busy ? '正在导出…' : '导出 Word'} <span>↗</span></button>
           {exportState.error && <p className="error-hint">{exportState.error}</p>}
           {exportState.result && !exportState.result.success && <div className="export-result failed"><strong>导出未完成</strong><p>{exportState.result.message}</p>{exportState.result.diagnostics.length > 0 && <ul>{exportState.result.diagnostics.map((item, index) => <li key={index}>{item.message}</li>)}</ul>}</div>}
           {exportState.result?.success && <div className="export-result passed"><strong>导出成功</strong><p>{exportState.result.message} 读回检查识别到 {exportState.result.blocks} 个内容块。</p><button className="secondary-button" onClick={() => { if (exportState.result?.path) void window.workbench.openDocx(exportState.result.path) }}>打开这份 DOCX</button></div>}

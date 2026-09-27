@@ -37,6 +37,7 @@ export function projectFilled(project: Project): number {
 }
 
 export const SEISMIC_INTENSITY_PENDING = '待核定'
+export const SEISMIC_INTENSITIES = ['6度（0.05g）', '7度（0.10g）', '7度（0.15g）', '8度（0.20g）', '8度（0.30g）', '9度（0.40g）']
 
 export type StructuralParams = {
   siteCategory: string
@@ -60,7 +61,7 @@ export function defaultStructuralParams(): StructuralParams {
     corrosion: '',
     protectionScheme: '',
     protectionExtra: '',
-    seismicIntensity: SEISMIC_INTENSITY_PENDING,
+    seismicIntensity: '',
   }
 }
 
@@ -76,6 +77,7 @@ export const STRUCTURAL_REQUIRED_FIELDS: { key: keyof StructuralParams; label: s
   { key: 'safetyLevel', label: '结构安全等级' },
   { key: 'foundationGrade', label: '地基基础设计等级' },
   { key: 'protectionScheme', label: '材料/防腐方案' },
+  { key: 'seismicIntensity', label: '抗震设防烈度' },
 ]
 
 export type SectionDefinition = {
@@ -278,7 +280,7 @@ export function findIssues(note: Note): NoteIssue[] {
   if (note.discipline === 'structural') {
     const structural = note.structural ?? defaultStructuralParams()
     for (const required of STRUCTURAL_REQUIRED_FIELDS) {
-      if (String(structural[required.key] ?? '').trim().length === 0) {
+      if (String(structural[required.key] ?? '').trim().length === 0 || (required.key === 'seismicIntensity' && structural.seismicIntensity === SEISMIC_INTENSITY_PENDING)) {
         issues.push({ level: 'error', field: `structural.${required.key}`, message: `结构参数缺少「${required.label}」，请回到 01 步补齐。` })
       }
     }

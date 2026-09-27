@@ -79,7 +79,7 @@ try {
     // 编辑：逐章填写纯文本正文（含换行）；结构专业补齐必填参数
     const sections = note.sections.map((section, order) => ({ ...section, body: `${label}第${order}章正文第一行。\n第二行。` }))
     const structural = note.structural
-      ? { ...note.structural, siteCategory: 'II', seismicGrade: '乙', safetyLevel: '二级', foundationGrade: '乙级', protectionScheme: '中', corrosion: '微腐蚀性。' }
+      ? { ...note.structural, siteCategory: 'II', seismicGrade: '乙', safetyLevel: '二级', foundationGrade: '乙级', protectionScheme: '中', seismicIntensity: '7度（0.15g）', corrosion: '微腐蚀性。' }
       : null
     const edited = { ...note, sections, structural }
     const saved = store.saveNote(edited)
@@ -101,7 +101,7 @@ try {
     assert.deepEqual(headingBlocks.map(block => block.text).filter(text => text !== '结构设计参数'), sections.map(section => section.title), `${label} 预览章节顺序`)
     if (discipline.code === 'structural') {
       assert.ok(headingBlocks.some(block => block.text === '结构设计参数'), `${label} 结构参数标题`)
-      assert.ok(document.blocks.some(block => block.text.includes('设防烈度：待核定')), `${label} 烈度待核定`)
+      assert.ok(document.blocks.some(block => block.text.includes('设防烈度：7度（0.15g）')), `${label} 烈度人工选择`)
     } else {
       assert.ok(!headingBlocks.some(block => block.text === '结构设计参数'), `${label} 不得出现结构参数`)
       assert.equal(toExportRequest(reopened, 'x.docx').document.structural, null, `${label} 导出请求无结构参数`)
@@ -126,7 +126,7 @@ try {
   const added = librarySections('structural').slice(0, 2).map(section => ({ id: section.id, title: section.title, body: section.body, custom: false }))
   const custom = {
     ...structuralNote,
-    structural: { ...structuralNote.structural, siteCategory: 'II', seismicGrade: '乙', safetyLevel: '二级', foundationGrade: '乙级', protectionScheme: '中' },
+    structural: { ...structuralNote.structural, siteCategory: 'II', seismicGrade: '乙', safetyLevel: '二级', foundationGrade: '乙级', protectionScheme: '中', seismicIntensity: '7度（0.15g）' },
     sections: [...added, { id: 'custom-test', title: '深基坑支护', body: '基坑等级与支护形式。', custom: true }],
   }
   assert.equal(store.saveNote(custom).ok, true, '自定义组合保存')

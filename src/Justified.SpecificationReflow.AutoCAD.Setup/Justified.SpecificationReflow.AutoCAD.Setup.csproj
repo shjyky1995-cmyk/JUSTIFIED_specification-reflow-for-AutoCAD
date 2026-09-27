@@ -11,6 +11,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
     <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.SetupCore/Justified.SpecificationReflow.AutoCAD.SetupCore.csproj" />
-    <EmbeddedResource Include="../Justified.SpecificationReflow.AutoCAD.PluginHost/Assets/note-logo.png" Link="Assets/note-logo.png" />
+    <EmbeddedResource Include="../../branding/product-icon.png" LogicalName="Justified.SpecificationReflow.AutoCAD.Setup.Assets.note-logo.png" />
   </ItemGroup>
 </Project>

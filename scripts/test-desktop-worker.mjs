@@ -66,7 +66,7 @@ function makeNote(discipline, index) {
           corrosion: '地下水位以下土对混凝土结构具微腐蚀性。',
           protectionScheme: '中',
           protectionExtra: '预留防腐厚度',
-          seismicIntensity: '待核定',
+          seismicIntensity: '7度（0.15g）',
         }
       : null,
     templateId: template.id,
@@ -94,7 +94,7 @@ try {
     assert.deepEqual(created.headings, expectedHeadings, `${discipline.label} 标题轮廓不符: ${JSON.stringify(created)}`)
     if (discipline.code === 'structural') {
       assert.ok(created.headings.includes('结构设计参数'), '结构专业应包含结构设计参数标题')
-      assert.ok(document.blocks.some(block => block.text.includes('设防烈度：待核定')), '烈度应为待核定')
+      assert.ok(document.blocks.some(block => block.text.includes('设防烈度：7度（0.15g）')), '烈度应为人工选择值')
     } else {
       assert.ok(!created.headings.includes('结构设计参数'), `${discipline.label} 不应包含结构参数标题`)
     }
@@ -115,6 +115,11 @@ try {
       const blocked = await call(toExportRequest(missing, join(directory, '缺参数.docx')))
       assert.equal(blocked.success, false, '缺少结构参数必须阻断')
       assert.match(blocked.message, /场地类别/)
+      const noIntensity = structuredClone(note)
+      noIntensity.structural.seismicIntensity = '待核定'
+      const intensityBlocked = await call(toExportRequest(noIntensity, join(directory, '缺烈度.docx')))
+      assert.equal(intensityBlocked.success, false, '未选择抗震设防烈度必须阻断')
+      assert.match(intensityBlocked.message, /手工选择抗震设防烈度/)
     }
   }
 
@@ -128,7 +133,7 @@ try {
   const noTitleResult = await call(toExportRequest(noTitle, join(directory, '无标题.docx')))
   assert.equal(noTitleResult.success, false, 'missing title must be rejected')
 
-  console.log(`DESKTOP_WORKER_OK disciplines=${generated} generated=${generated} inspected=${inspected} overwriteBlocked=${generated} structuralBlocked=1 emptyBlocked=1 titleBlocked=1`)
+  console.log(`DESKTOP_WORKER_OK disciplines=${generated} generated=${generated} inspected=${inspected} overwriteBlocked=${generated} structuralBlocked=1 intensityBlocked=1 emptyBlocked=1 titleBlocked=1`)
 } finally {
   await rm(directory, { recursive: true, force: true })
 }
