@@ -85,7 +85,7 @@ try {
             supportedHost = 'AutoCAD 2021 R24.0 / Windows x64 / .NET Framework 4.8'
             productionReady = -not $isCandidate
             acceptanceBasis = 'T12/T13 user signoff on 2026-09-26; T14 host flow and offline UI layout verified; new UI acceptance is tracked separately'
-            waivedChecks = @('20-run host performance P95', 'per-page signed print checklist for template 1.1.0', 'clean-machine install and rollback exercise')
+            waivedChecks = @('20-run host performance P95', 'per-page signed print checklist for published template 1.1.1', 'clean-machine install and rollback exercise')
             pending = $pendingChecks
         }
         $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $bundle 'BUILD.json') -Encoding UTF8

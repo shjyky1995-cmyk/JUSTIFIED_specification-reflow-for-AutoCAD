@@ -324,7 +324,7 @@ public class NoteCommands
                 generated.Diagnostics.AddRange(loaded.Diagnostics);
                 foreach (var diagnostic in loaded.Diagnostics.Where(item => item.Severity == Severity.Error))
                     editor.WriteMessage("\nDN_NOTE_FAILED " + diagnostic.Code + " " + diagnostic.Message);
-                editor.WriteMessage("\nDN_NOTE_FAILED 内置模板已变化。请联系管理员检查后重新执行 DN_NOTE。\n");
+                editor.WriteMessage("\nDN_NOTE_FAILED 内置模板已更新。请执行 DSS 重新选择说明、图幅和单位比例；仍失败请联系管理员。\n");
                 if (TraceEnabled) editor.WriteMessage("\nDN_NOTE_ENTITIES before=" + before + " after=" + Count(database) + "\n");
                 return;
             }
