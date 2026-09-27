@@ -25,6 +25,7 @@ CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 
 | T16/D1 | 桌面初版实现 checkpoint | T15/D0 | `task/T16-desktop-authoring` | 旧 D0 路线 | 工作进程生成/检查通过，界面构建通过；实际窗口待验 | 进行中（433ec3a 已推分支；新 PRD 评审前不继续固定栏目主流程，不合 main） |
 | T17/P0 | 设计说明新业务流程与大阶段计划 | 用户新讨论、Figma 初稿、现有代码 | `docs/PRD.md`、`docs/IMPLEMENTATION_PLAN.md`、设计参考与抗震来源记录 | 桌面 PRD 更新 | 六专业共用编制/导出流程，非结构跳过结构参数；桌面交付到 DOCX；先框架后内容；大阶段验收 | 完成（2026-09-27 用户认可，dea84f2 合入 main；用户提供的 Make ZIP 与五张截图已核对；云端后续变更仍需另行核对） |
 | T19/P0 | 更新 Agent 长期规则与阶段入口 | T17 已确认 | `AGENTS.md`、`docs/WORKFLOW.md`、`docs/TASKS.md` | 当前桌面 PRD、计划与接续一致 | 新 Agent 不再从旧 CAD 或 D0 目标起步；保留 CAD 历史边界 | 完成（文档检查与提交见 T19 日志；T18 开发分支需在安全时点纳入本更新） |
+| T21/支持 | Figma Make 文件反复无法读取 → 定位连接环节与可用读取路径 | Make 链接、用户提供的源码 ZIP | `docs/FIGMA_DESIGN_REFERENCE.md`、T21 日志 | 不把源码链接误当正文，不把示例项目误当真实数据 | 账号/连接器/浏览器/ZIP 逐步复测 | 完成（2026-09-27；云端源码资源读取仍受连接器限制，本地 ZIP + 在线预览可用） |
 
 ## 双端与界面顺序（2026-09-24，规划，不扩大 V1）
 
