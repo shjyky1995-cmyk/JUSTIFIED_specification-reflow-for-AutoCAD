@@ -189,6 +189,8 @@ export type Note = {
   sections: NoteSection[]
   fieldValues: Record<string, string>
   fieldDefinitions: Record<string, { label: string; unit: string }>
+  assemblyPackageId?: string
+  assemblyReviewConfirmed?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -238,6 +240,8 @@ export function createNote(discipline: DisciplineCode, templateId: string, proje
     }),
     fieldValues: {},
     fieldDefinitions: {},
+    assemblyPackageId: '',
+    assemblyReviewConfirmed: false,
     createdAt: stamp,
     updatedAt: stamp,
   }
@@ -260,6 +264,7 @@ export function setFieldValue(note: Note, fieldId: string, value: string): Note 
   return {
     ...note,
     fieldValues: { ...note.fieldValues, [fieldId]: value },
+    assemblyReviewConfirmed: false,
     sections: note.sections.map(section => ({
       ...section,
       modules: section.modules?.map(module => module.fieldIds.includes(fieldId) ? { ...module, confirmedForNote: false } : module),
@@ -272,12 +277,21 @@ export function effectiveFieldValues(note: Note): Record<string, string> {
     ...note.fieldValues,
     project_name: note.project.name,
     project_location: note.project.location,
+    ...(note.structural ? {
+      structural_safety_level: note.structural.safetyLevel,
+      foundation_design_grade: note.structural.foundationGrade,
+      seismic_intensity: note.structural.seismicIntensity,
+      site_class: note.structural.siteCategory,
+      design_life: `${note.structural.designLifeYears}年`,
+      seismic_fortification_category: note.structural.seismicGrade,
+    } : {}),
   }
 }
 
 export function setModuleTemplate(note: Note, sectionId: string, moduleId: string, template: string): Note {
   return {
     ...note,
+    assemblyReviewConfirmed: false,
     sections: note.sections.map(section => section.id !== sectionId ? section : {
       ...section,
       modules: section.modules?.map(module => module.id !== moduleId ? module : {
@@ -317,6 +331,9 @@ export function summarizeNote(note: Note): NoteSummary {
 
 export function findIssues(note: Note): NoteIssue[] {
   const issues: NoteIssue[] = []
+  const assembled = Boolean(note.assemblyPackageId)
+  if (assembled && !note.assemblyReviewConfirmed) issues.push({ level: 'error', message: '请核对自动生成的整篇说明及规范引用，再确认适用于本工程。' })
+  if (assembled) issues.push({ level: 'warning', message: '自动初稿来自旧工程候选资料；规范版本与适用条件尚未逐项核定。' })
   if (note.title.trim().length === 0) issues.push({ level: 'error', field: 'title', message: '请填写说明标题。' })
   if (note.project.name.trim().length === 0) issues.push({ level: 'error', field: 'project.name', message: '请填写工程名称。' })
   if (note.discipline === 'structural') {
@@ -336,12 +353,12 @@ export function findIssues(note: Note): NoteIssue[] {
   }
   for (const section of note.sections) {
     for (const module of section.modules ?? []) {
-      if (module.reviewStatus !== 'approved') issues.push({ level: 'warning', sectionId: section.id, message: `条款 ${module.clauseId} 来自旧资料候选，尚未批准为全局标准。` })
+      if (module.reviewStatus !== 'approved' && !assembled) issues.push({ level: 'warning', sectionId: section.id, message: `条款 ${module.clauseId} 来自旧资料候选，尚未批准为全局标准。` })
       if (module.template.trim().length === 0) issues.push({ level: 'error', sectionId: section.id, message: `条款 ${module.clauseId} 的文字为空。` })
       for (const fieldId of module.fieldIds) {
         if (!note.fieldDefinitions?.[fieldId]) issues.push({ level: 'error', sectionId: section.id, message: `条款 ${module.clauseId} 使用了未定义的占位符「${fieldId}」。` })
       }
-      if (!module.confirmedForNote) {
+      if (!module.confirmedForNote && !assembled) {
         issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」条款 ${module.clauseId} 尚未确认适用于本工程。` })
       }
       const labels = Object.fromEntries(Object.entries(note.fieldDefinitions ?? {}).map(([id, definition]) => [id, definition.label]))
@@ -373,6 +390,7 @@ export function buildDocument(note: Note): BuiltDocument {
   const blocks: DocumentBlock[] = []
   const notices: string[] = []
   blocks.push({ kind: 'title', text: note.title.trim() })
+  if (note.assemblyPackageId) blocks.push({ kind: 'meta', text: '资料状态：旧工程候选初稿，规范版本与适用性待核定' })
   blocks.push({ kind: 'meta', text: '专业：' + disciplineLabel(note.discipline) })
   const project = note.project
   if (project.name.trim().length > 0) blocks.push({ kind: 'meta', text: '工程名称：' + project.name.trim() })
@@ -555,6 +573,8 @@ export function parseNote(value: unknown): Note {
     sections,
     fieldValues: stringRecord(raw.fieldValues),
     fieldDefinitions: definitionRecord(raw.fieldDefinitions),
+    assemblyPackageId: asString(raw.assemblyPackageId, ''),
+    assemblyReviewConfirmed: raw.assemblyReviewConfirmed === true,
     createdAt: asString(raw.createdAt, nowIso()),
     updatedAt: asString(raw.updatedAt, nowIso()),
   }

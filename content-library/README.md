@@ -7,12 +7,13 @@
 | 路径 | 作用 |
 | --- | --- |
 | `build_catalog.py` | 读取本机 `artifacts/content-handoff/`，规范化字段、检查交接包，生成应用可导入的内容包 |
+| `ASSEMBLY_RULES.md` | 模板、来源版本、自动装配与暂缓插入规则 |
 | `catalog_schema.md` | 内容包、章节、条款与工程字段的格式和审核规则 |
-| `private/catalog.json` | 私有内容包；在桌面端通过“导入资料库”选择此文件 |
+| `private/catalog.json` | 私有内容包；桌面端从项目文件夹自动读取，用户不需要导入或选条款 |
 | `private/audit.json` | 本次整理的数量、来源校验和需要人工复核的条目 |
 
-生成：在项目根目录运行 `python content-library/build_catalog.py --input artifacts/content-handoff --output content-library/private`。输入与输出都只留在本机。导入后应用把内容包复制到本机用户数据目录下的 `data/content-library/`，工作草稿保留所选条款快照与本工程填写值；以后更换内容包不覆盖已写的说明。
+本次私有内容包的正式位置是 `G:\JUSTIFIED_specification reflow for AutoCAD\content-library\private\`。后续在项目根目录运行 `python content-library/build_catalog.py --input artifacts/content-handoff --output content-library/private` 可重新生成；输入与输出都只留在本项目文件夹。桌面端启动时自动查找这个位置，**不会把资料包复制到 C 盘用户数据目录**。工作草稿保留自动装配条款的快照与本工程填写值；以后更新内容包不覆盖已写的说明。
 
-旧资料全部是**候选**，不是平台已批准的标准正文。导入后按专业和章节查看，选中条款后需为本份说明确认适用性，填写缺少的工程数值，才能导出。规范引用、条件句、表格和有疑点的条目须按审核报告复核；表格暂不进入当前纯文本正文。
+旧资料全部是**候选**，不是平台已批准的标准正文。用户选模板后，`assembly.ts` 按来源版本自动形成有序章节与正文初稿；用户无需在资料库再次挑选。当前预设只自动装入通用文字、待核定规范引用和少量有明确占位符的工程事实；条件句、表格、来源备注、旧项目残留以及已发现的地区/工艺特定说法先排除。预览前填写本工程数值、核对整篇说明，导出的 DOCX 明示“旧工程候选初稿、待核定”。
 
-`CH01–CH25` 是资料的主题分类，原桌面端 `sec-*` 是编制框架章节，二者保留各自稳定 ID。内容库中的 `CH` 章节可按需加入本份说明，不替换旧草稿的 `sec-*` 章节。
+`CH01–CH25` 是资料主题分类；自动生成的新说明按有内容的 `CH` 章节编排。原桌面端 `sec-*` 仍用于空白和自定义组合，旧草稿照旧恢复。钢结构与“其他”目前缺对应已整理的来源，只生成空框架并提示缺资料，不伪造正文。

@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowLeft, ArrowRight, BriefcaseBusiness, FileText, FolderOpen, MoreHorizontal, PieChart, Plus, Search, Sparkles, X } from 'lucide-react'
 import productIcon from '../../../branding/product-icon.png'
-import { availableChapters, clausesFor, renderModule, selectedModule, type ContentCatalog, type ContentClause } from './shared/content'
+import { renderModule, type ContentCatalog } from './shared/content'
+import { assembleNote } from './shared/assembly'
 import {
   buildDocument,
   createNote,
@@ -20,7 +21,6 @@ import {
   newId,
   nowIso,
   PROTECTION_SCHEMES,
-  rebuildSections,
   resetSectionBody,
   setFieldValue,
   setModuleTemplate,
@@ -55,13 +55,7 @@ const STEP_LABELS: { route: Route; label: string }[] = [
   { route: 'step03', label: '03 生成说明' },
 ]
 
-const CONTENT_FLAG_LABELS: Record<string, string> = {
-  reference: '规范引用', condition: '适用条件', table: '表格', source_note: '来源备注',
-  possible_project_literal: '疑似旧项目名称', field_alias_normalized: '字段同义名已统一', suspect_reference: '可疑规范编号',
-  corrected_reference: '编号已按官方目录修正，仍需核对适用性',
-}
-
-function contentFlagLabel(flag: string): string { return CONTENT_FLAG_LABELS[flag] ?? flag }
+const LINKED_FIELD_IDS = new Set(['project_name', 'project_location', 'structural_safety_level', 'foundation_design_grade', 'seismic_intensity', 'site_class', 'design_life', 'seismic_fortification_category'])
 
 function formatTime(iso: string): string {
   if (!iso) return ''
@@ -113,15 +107,6 @@ function App() {
     if (window.workbench) void window.workbench.catalogLoad().then(setCatalog).catch(error => setCatalogError(error instanceof Error ? error.message : '资料库读取失败。'))
   }, [])
 
-  async function importCatalog() {
-    if (!window.workbench) return
-    try {
-      const loaded = await window.workbench.catalogImport()
-      if (loaded) { setCatalog(loaded); setCatalogError('') }
-    } catch (error) {
-      setCatalogError(error instanceof Error ? error.message : '资料库导入失败。')
-    }
-  }
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
       if (route === 'home' && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -158,8 +143,10 @@ function App() {
   }
 
   function updateNote(mutate: NoteMutation) {
-    const next = mutate(noteRef.current)
+    const previous = noteRef.current
+    const next = mutate(previous)
     if (!next) return
+    if (previous?.assemblyReviewConfirmed && next.assemblyReviewConfirmed) next.assemblyReviewConfirmed = false
     next.updatedAt = nowIso()
     noteRef.current = next
     setNote(next)
@@ -225,13 +212,18 @@ function App() {
         if (noteRef.current) await rememberProject(noteRef.current, projects, setProjects)
         setRoute('step02a')
       }} />}
-      {route === 'step02a' && note && <Step02A note={note} onBack={() => setRoute('step01')} onSelect={templateId => {
+      {route === 'step02a' && note && <Step02A note={note} catalogReady={Boolean(catalog)} catalogError={catalogError} onBack={() => setRoute('step01')} onSelect={templateId => {
         const current = noteRef.current
         if (!current) return
-        const hasEdits = current.sections.some(section => section.custom || (section.modules?.length ?? 0) > 0 || section.body.trim() !== resetSectionBody(section).trim())
+        const hasEdits = Object.keys(current.fieldValues).length > 0 || current.sections.some(section => section.custom || section.modules?.some(module => module.edited) || section.body.trim() !== resetSectionBody(section).trim())
         const apply = () => {
-          const sections = rebuildSections(current, templateId)
-          const next: Note = { ...current, templateId, sections }
+          const assembled = assembleNote(current, templateId, catalog)
+          if (catalog && !assembled.sourceFile && !templateId.endsWith('-custom') && !['tpl-struct-steel', 'tpl-other-standard'].includes(templateId)) {
+            setCatalogError('资料库缺少此模板对应的来源文件，无法自动装配。')
+            return
+          }
+          const next = assembled.note
+          const sections = next.sections
           noteRef.current = next
           setNote(next)
           setSelectedSectionId(sections[0]?.id ?? null)
@@ -251,12 +243,12 @@ function App() {
         }
         apply()
       }} />}
-      {route === 'step02b' && note && <Step02B note={note} catalog={catalog} catalogError={catalogError} onImportCatalog={() => void importCatalog()} save={save} selectedSectionId={selectedSectionId} setSelectedSectionId={setSelectedSectionId} libraryOpen={libraryOpen} setLibraryOpen={setLibraryOpen} onUpdate={updateNote} onBack={() => setRoute('step02a')} onConfirm={askConfirm} onGenerate={async () => {
+      {route === 'step02b' && note && <Step02B note={note} save={save} selectedSectionId={selectedSectionId} setSelectedSectionId={setSelectedSectionId} libraryOpen={libraryOpen} setLibraryOpen={setLibraryOpen} onUpdate={updateNote} onBack={() => setRoute('step02a')} onConfirm={askConfirm} onGenerate={async () => {
         if (!(await commitSave())) return
         setExportState({ busy: false, result: null, error: null })
         setRoute('step03')
       }} />}
-      {route === 'step03' && note && <Step03 note={note} issues={issues} blocking={blocking} exportState={exportState} setExportState={setExportState} onReconfigure={() => setRoute('step01')} onBackToEdit={() => setRoute('step02b')} onConfirm={askConfirm} onExported={() => refreshHome()} />}
+      {route === 'step03' && note && <Step03 note={note} issues={issues} blocking={blocking} exportState={exportState} setExportState={setExportState} onUpdate={updateNote} onReconfigure={() => setRoute('step01')} onBackToEdit={() => setRoute('step02b')} onConfirm={askConfirm} onExported={() => refreshHome()} />}
     </main>
     {!canUseDesktop && route !== 'home' && <p className="browser-note">网页预览只展示界面；请从桌面程序中保存与导出文件。</p>}
     {confirm && <ConfirmDialog state={confirm} onCancel={() => setConfirm(null)} />}
@@ -502,13 +494,13 @@ function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate,
   </div>
 }
 
-function Step02A({ note, onBack, onSelect }: { note: Note; onBack: () => void; onSelect: (templateId: string) => void }) {
+function Step02A({ note, catalogReady, catalogError, onBack, onSelect }: { note: Note; catalogReady: boolean; catalogError: string; onBack: () => void; onSelect: (templateId: string) => void }) {
   const templates = templatesFor(note.discipline)
   return <div className="workspace">
     <button className="back-link" onClick={onBack}><ArrowLeft size={14} /> 返回参数设置</button>
-    <div className="page-heading"><div><h1>选择说明模板</h1><p>模板提供默认章节结构；下一步可以添加、移除或修改章节。</p></div></div>
+    <div className="page-heading"><div><h1>选择说明模板</h1><p>选定后自动装配对应来源的章节与正文，下一步直接核对并填写工程取值。</p>{!catalogReady && <p className="error-text">{catalogError || 'G 盘项目内未找到资料库；预设模板暂时只能生成空章节。'}</p>}</div></div>
     <div className="template-grid">
-      {templates.map(template => <button key={template.id} className={note.templateId === template.id && note.sections.length > 0 ? 'template-card active' : 'template-card'} onClick={() => onSelect(template.id)}>
+      {templates.map(template => <button key={template.id} disabled={!catalogReady && !template.custom && !['tpl-struct-steel', 'tpl-other-standard'].includes(template.id)} className={note.templateId === template.id && note.sections.length > 0 ? 'template-card active' : 'template-card'} onClick={() => onSelect(template.id)}>
         <span className="template-icon"><FileText size={18} /></span>
         <strong>{template.name}</strong>
         <small>{template.custom ? '从空白开始，自由组合标准章节。' : template.sectionIds.map(id => sectionTitle(id)).slice(0, 3).join('、') + '等章节。'}</small>
@@ -517,11 +509,8 @@ function Step02A({ note, onBack, onSelect }: { note: Note; onBack: () => void; o
   </div>
 }
 
-function Step02B({ note, catalog, catalogError, onImportCatalog, save, selectedSectionId, setSelectedSectionId, libraryOpen, setLibraryOpen, onUpdate, onBack, onConfirm, onGenerate }: {
+function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryOpen, setLibraryOpen, onUpdate, onBack, onConfirm, onGenerate }: {
   note: Note
-  catalog: ContentCatalog | null
-  catalogError: string
-  onImportCatalog: () => void
   save: { status: SaveStatus; message: string }
   selectedSectionId: string | null
   setSelectedSectionId: (id: string | null) => void
@@ -532,8 +521,6 @@ function Step02B({ note, catalog, catalogError, onImportCatalog, save, selectedS
   onConfirm: (state: NonNullable<ConfirmState>) => void
   onGenerate: () => void
 }) {
-  const [contentOpen, setContentOpen] = useState(false)
-  const [contentSearch, setContentSearch] = useState('')
   const selected = note.sections.find(section => section.id === selectedSectionId) ?? null
   const available = librarySections(note.discipline).filter(section => !note.sections.some(item => item.id === section.id))
   const filled = note.sections.filter(section => !isSectionEmpty(section)).length
@@ -578,40 +565,7 @@ function Step02B({ note, catalog, catalogError, onImportCatalog, save, selectedS
     setLibraryOpen(false)
   }
 
-  function addContentChapter(chapterId: string) {
-    if (!catalog) return
-    const chapter = catalog.chapters.find(item => item.id === chapterId)
-    if (!chapter) return
-    const sectionId = 'lib-' + chapterId
-    if (!note.sections.some(section => section.id === sectionId)) {
-      onUpdate(currentNote => currentNote ? { ...currentNote, sections: [...currentNote.sections, { id: sectionId, title: chapter.title, body: '', custom: false, modules: [] }] } : currentNote)
-    }
-    setSelectedSectionId(sectionId)
-    setContentOpen(false)
-  }
-
-  function addContentClause(clause: ContentClause) {
-    if (!catalog || !selected || !clause.usableAsText) return
-    onUpdate(currentNote => {
-      if (!currentNote) return currentNote
-      const definitions = { ...currentNote.fieldDefinitions }
-      for (const fieldId of clause.fieldIds) {
-        const definition = catalog.fields.find(field => field.id === fieldId)
-        if (definition) definitions[fieldId] = { label: definition.label, unit: definition.unit }
-      }
-      return {
-        ...currentNote,
-        fieldDefinitions: definitions,
-        sections: currentNote.sections.map(section => section.id === selected.id
-          ? { ...section, modules: [...(section.modules ?? []), selectedModule(clause, catalog)] }
-          : section),
-      }
-    })
-  }
-
   const chapterId = selected?.id.startsWith('lib-CH') ? selected.id.slice(4) : ''
-  const candidates = catalog && chapterId ? clausesFor(catalog, note.discipline, chapterId) : []
-  const shownCandidates = candidates.filter(clause => !contentSearch.trim() || (clause.id + clause.template + clause.kind).includes(contentSearch.trim())).slice(0, 60)
   const usedFields = [...new Set((selected?.modules ?? []).flatMap(module => module.fieldIds))]
 
   return <div className="workspace editor-workspace">
@@ -621,7 +575,6 @@ function Step02B({ note, catalog, catalogError, onImportCatalog, save, selectedS
       <aside className="section-panel panel">
         <div className="panel-head"><div><h2>章节目录</h2><p>{note.sections.length} 章 · 已填 {filled} 章</p></div></div>
         <button className="secondary-button add-section" onClick={() => setLibraryOpen(true)}><Plus size={14} /> 添加章节</button>
-        <button className="secondary-button add-section" onClick={() => setContentOpen(true)}><Plus size={14} /> 资料库章节</button>
         <ul className="section-list">
           {note.sections.map((section, index) => <li key={section.id} className={selected && selected.id === section.id ? 'active' : ''} draggable onDragStart={event => { event.dataTransfer.setData('text/plain', String(index)) }} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); moveSection(Number(event.dataTransfer.getData('text/plain')), index) }} onClick={() => setSelectedSectionId(section.id)}>
             <span className="drag-handle">⠿</span>
@@ -644,20 +597,15 @@ function Step02B({ note, catalog, catalogError, onImportCatalog, save, selectedS
             <div><h2>{selected.title}</h2><p>{selected.custom ? '当前说明专用章节，不写回标准库' : '标准章节 · 可改为本说明正文'}</p></div>
           </div>
           {chapterId && <div className="content-modules">
-            <p className="content-guidance">旧工程资料仅作为候选。按本工程需要选取条款，核对适用性与规范引用，再填写本工程数值。</p>
+            <p className="content-guidance">本章已按模板自动装配。请核对文字、规范引用与适用性，并填写本工程取值；有疑问的条款可移除或修改。</p>
             {(selected.modules ?? []).map(module => <div key={module.id} className="content-module">
               <div className="content-module-head"><strong>{module.clauseId}</strong><span>{module.edited ? '本份文字已改写' : module.refs.length > 0 ? '规范引用待核对' : '来源待核定'}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).filter(item => item.id !== module.id) } : section) } : currentNote)}>移除</button></div>
               <p>{renderModule(module, effectiveFieldValues(note), Object.fromEntries(Object.entries(note.fieldDefinitions).map(([id, definition]) => [id, definition.label]))).text}</p>
               <small>来源：{module.sourceRefs.map(source => `${source.file ?? source.sourceId} 第 ${source.para} 段`).join('；')}{module.refs.length > 0 ? ` · 引用 ${module.refs.join('、')}` : ''}</small>
               <details className="content-edit"><summary>修改这份说明中的条款文字</summary><textarea value={module.template} maxLength={10000} onChange={event => onUpdate(currentNote => currentNote ? setModuleTemplate(currentNote, selected.id, module.id, event.target.value) : currentNote)} /><small>修改后需重新确认；来源只用于追溯原候选，不代表改写文字已经全局核定。</small><button className="text-link" disabled={!module.edited} onClick={() => onUpdate(currentNote => currentNote ? setModuleTemplate(currentNote, selected.id, module.id, module.baseTemplate) : currentNote)}>恢复选入时文字</button></details>
-              <label className="content-confirm"><input type="checkbox" checked={module.confirmedForNote} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).map(item => item.id === module.id ? { ...item, confirmedForNote: event.target.checked } : item) } : section) } : currentNote)} /> 已核对本条适用于当前工程（不等于批准为全局标准）</label>
+              {!note.assemblyPackageId && <label className="content-confirm"><input type="checkbox" checked={module.confirmedForNote} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).map(item => item.id === module.id ? { ...item, confirmedForNote: event.target.checked } : item) } : section) } : currentNote)} /> 已核对本条适用于当前工程</label>}
             </div>)}
-            {usedFields.length > 0 && <div className="content-field-grid">{usedFields.map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={effectiveFieldValues(note)[fieldId] ?? ''} readOnly={fieldId === 'project_name' || fieldId === 'project_location'} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={fieldId === 'project_name' || fieldId === 'project_location' ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
-            <div className="content-candidates-head"><strong>本章候选条款（{candidates.length}）</strong><input value={contentSearch} onChange={event => setContentSearch(event.target.value)} placeholder="按编号或文字筛选" /></div>
-            <div className="content-candidates">{shownCandidates.map(clause => {
-              const alreadyAdded = (selected.modules ?? []).some(module => module.clauseId === clause.id)
-              return <div className="content-candidate" key={clause.id}><div><strong>{clause.id}</strong><span>{clause.kind}{clause.disciplines.includes('process') ? ' · 水处理工艺来源' : ''}</span><p>{clause.template}</p>{clause.flags.length > 0 && <small>待核对：{clause.flags.map(contentFlagLabel).join('、')}</small>}{clause.note && <small className="content-note">整理备注：{clause.note}</small>}<small className="content-note">来源：{clause.sources.map(source => `${catalog?.sourceDigest.find(item => item.id === source.sourceId)?.file ?? source.sourceId} 第 ${source.para} 段`).join('；')}</small></div><button className="secondary-button" disabled={alreadyAdded || !clause.usableAsText} onClick={() => addContentClause(clause)}>{alreadyAdded ? '已选' : clause.usableAsText ? '选入' : '待核对'}</button></div>
-            })}{shownCandidates.length < candidates.length && <p className="empty-hint">只显示前 60 条，请输入关键词筛选。</p>}</div>
+            {usedFields.length > 0 && <div className="content-field-grid">{usedFields.map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={effectiveFieldValues(note)[fieldId] ?? ''} readOnly={LINKED_FIELD_IDS.has(fieldId)} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={LINKED_FIELD_IDS.has(fieldId) ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
           </div>}
           <textarea className="section-editor" value={selected.body} maxLength={100000} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: event.target.value } : section) } : currentNote)} placeholder={findSectionDefinition(selected.id)?.body ?? '可在这里补充或改写本章的纯文本正文。'} />
           <div className="editor-foot">
@@ -669,7 +617,6 @@ function Step02B({ note, catalog, catalogError, onImportCatalog, save, selectedS
     </div>
 
     {libraryOpen && <AddSectionModal available={available} onAddStandard={addStandardSection} onAddCustom={addCustomSection} onClose={() => setLibraryOpen(false)} />}
-    {contentOpen && <div className="modal-mask" onClick={() => setContentOpen(false)}><div className="modal" onClick={event => event.stopPropagation()}><div className="modal-head"><strong>资料库章节</strong><button className="modal-close" onClick={() => setContentOpen(false)}>×</button></div><div className="content-import"><p>资料库保存在本机，旧工程条款均待核定。</p><button className="secondary-button" onClick={onImportCatalog}>{catalog ? '更换本机资料库' : '导入资料库 JSON'}</button>{catalogError && <p className="error-text">{catalogError}</p>}</div>{catalog && <ul className="library-list">{availableChapters(catalog, note.discipline).map(chapter => <li key={chapter.id}><div className="library-info"><strong>{chapter.id} · {chapter.title}</strong><small>{clausesFor(catalog, note.discipline, chapter.id).length} 条候选</small></div><button className="secondary-button" onClick={() => addContentChapter(chapter.id)}>选择</button></li>)}{note.discipline === 'other' && <li className="empty-hint">当前资料没有“其他”专业来源，可继续使用通用编制章节。</li>}</ul>}</div></div>}
 
   </div>
 }
@@ -717,12 +664,13 @@ function AddSectionModal({ available, onAddStandard, onAddCustom, onClose }: {
   </div>
 }
 
-function Step03({ note, issues, blocking, exportState, setExportState, onReconfigure, onBackToEdit, onConfirm, onExported }: {
+function Step03({ note, issues, blocking, exportState, setExportState, onUpdate, onReconfigure, onBackToEdit, onConfirm, onExported }: {
   note: Note
   issues: NoteIssue[]
   blocking: boolean
   exportState: { busy: boolean; result: WorkResult | null; error: string | null }
   setExportState: (value: { busy: boolean; result: WorkResult | null; error: string | null }) => void
+  onUpdate: (mutate: NoteMutation) => void
   onReconfigure: () => void
   onBackToEdit: () => void
   onConfirm: (state: NonNullable<ConfirmState>) => void
@@ -768,6 +716,7 @@ function Step03({ note, issues, blocking, exportState, setExportState, onReconfi
           {warnings.length > 0 && <ul className="issue-list warnings">{warnings.map((issue, index) => <li key={index}>{issue.message}</li>)}</ul>}
         </details>
         <section className="panel side-block">
+          {note.assemblyPackageId && <label className="content-confirm"><input type="checkbox" checked={note.assemblyReviewConfirmed === true} onChange={event => onUpdate(current => current ? { ...current, assemblyReviewConfirmed: event.target.checked } : current)} /> 我已核对本工程的整篇说明、适用条件和规范引用</label>}
           <button className="primary-button wide" disabled={blocking || exportState.busy} onClick={() => void exportDocx()}>{exportState.busy ? '正在导出…' : '导出 Word'} <span>↗</span></button>
           {exportState.error && <p className="error-hint">{exportState.error}</p>}
           {exportState.result && !exportState.result.success && <div className="export-result failed"><strong>导出未完成</strong><p>{exportState.result.message}</p>{exportState.result.diagnostics.length > 0 && <ul>{exportState.result.diagnostics.map((item, index) => <li key={index}>{item.message}</li>)}</ul>}</div>}

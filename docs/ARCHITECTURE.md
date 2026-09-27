@@ -24,6 +24,8 @@ Electron 用于独立桌面进程在技术上可行，但不会把 Electron 或�
 2026-09-26 ADR-013（桌面 D0）：Electron + React/TypeScript 承载独立桌面 UI，.NET 10 本机工作进程写出和检查 DOCX；Electron 主进程通过仅桌面内部使用的固定操作白名单调用工作进程，渲染窗口只用预加载桥访问允许的操作，不开放网络端口。用户优先要求前端视觉表现并委托技术判断；Electron 增加 JavaScript/Node 构建、包体与更新责任，换取更灵活的网页式界面。WPF 的单栈维护优势已比较；D1/D3 实测启动、资源、安装与外观，若达不到要求再记录和讨论调整。两个程序之间只有用户手动保存/选择 DOCX，CAD 代码与共享协议不变。
 
 2026-09-27 T18/A 阶段实现登记：桌面代码位于 `desktop/`（不在 CAD 解决方案内）。`desktop/app` 为 Electron + React/TypeScript：渲染进程只经预加载桥调用白名单 IPC；`desktop/app/src/shared/model.ts`（专业/结构参数/章节库/模板/说明快照/校验/预览与导出映射，零依赖可擦除语法）与 `store.ts`（本机 JSON 原子存储）由渲染进程、Electron 主进程和 Node 自动化测试三方共用；主进程以 `app.getPath('userData')/data` 存 projects.json 与 notes/<id>.json。`desktop/worker` 为 net10.0 控制台工作进程，引用 DocxAdapter（现有 `DocxDocumentParser`）做生成后读回检查，不引用 AutoCAD API。桌面与 CAD 之间仍只有用户手动保存/选择的 DOCX；未新增共享契约、模块依赖或技术栈变化（相对 ADR-013）。
+
+2026-09-28 ADR-014（用户明确调整）：候选资料包的正式位置是 G 盘项目根目录的 `content-library/private/catalog.json`，不再由用户导入后复制到 C 盘应用数据。Electron 主进程从项目祖先目录或明确配置的路径只读加载；用户数据目录仍保存草稿/项目，不保存资料包。模板选择调用纯数据装配器，按来源文件版本、主题章和排除规则建立条款快照。说明 JSON 增加可选的 `assemblyPackageId`、`assemblyReviewConfirmed`，旧草稿缺字段时按原逻辑读取；模板、正文或工程值改动会使整篇核对失效。影响为桌面本机存储与编制模型，CAD 共享契约、模块依赖方向及技术栈不变。用户已要求“选模板后第二步直接有完整说明、资料库在 G 盘”，因此按此决策实施。真实性能、规范引用和工程适用性另行验收；当前只称候选初稿。
 ## 模块与允许引用
 箭头表示左侧可以引用右侧；未列出方向禁止。
 | 模块 | 允许引用 | 责任 |

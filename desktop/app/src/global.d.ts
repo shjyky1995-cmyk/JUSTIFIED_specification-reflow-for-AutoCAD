@@ -22,7 +22,6 @@ declare global {
       projectsList(): Promise<import('./shared/model').StoredProject[]>
       projectSave(project: import('./shared/model').StoredProject): Promise<import('./shared/model').StoredProject[]>
       catalogLoad(): Promise<import('./shared/content').ContentCatalog | null>
-      catalogImport(): Promise<import('./shared/content').ContentCatalog | null>
     }
   }
 }

@@ -41,7 +41,7 @@ function readJsonFile(path: string): string {
   return readFileSync(path, 'utf8')
 }
 
-export function createStore(root: string): DesktopStore {
+export function createStore(root: string, projectCatalogPath?: string): DesktopStore {
   const notesDir = join(root, 'notes')
   const projectsFile = join(root, 'projects.json')
   const catalogDir = join(root, 'content-library')
@@ -134,8 +134,9 @@ export function createStore(root: string): DesktopStore {
     },
 
     loadCatalog() {
-      if (!existsSync(catalogFile)) return null
-      return parseContentCatalog(JSON.parse(readJsonFile(catalogFile)))
+      const path = projectCatalogPath === undefined ? catalogFile : projectCatalogPath
+      if (!path || !existsSync(path)) return null
+      return parseContentCatalog(JSON.parse(readJsonFile(path)))
     },
 
     importCatalog(path) {

@@ -11,5 +11,4 @@ contextBridge.exposeInMainWorld('workbench', {
   projectsList: () => ipcRenderer.invoke('projects-list'),
   projectSave: project => ipcRenderer.invoke('project-save', project),
   catalogLoad: () => ipcRenderer.invoke('catalog-load'),
-  catalogImport: () => ipcRenderer.invoke('catalog-import'),
 })
