@@ -37,7 +37,7 @@ node scripts\test-desktop-worker.mjs   # 六专业生成/读回/阻断
 node scripts\test-desktop-flow.mjs     # 全流程：新建→编辑→关闭重开→预览→导出→读回
 ```
 
-真实窗口：`cd desktop\app; $env:DSS_DOTNET_EXE="<仓库>\artifacts\dotnet10\sdk\dotnet.exe"; npx electron .`（系统未装 .NET 10 时必须指定，否则工作进程找不到）。打包后的 worker.exe 与安装属阶段 C。`desktop/app/src/shared` 的模型与存储由渲染进程、主进程和 Node 测试共用，修改时同时跑上述两个脚本。
+真实窗口：双击 `desktop\app\start-desktop.cmd` 即可（自动找本机 .NET 10 SDK、缺构建时自动构建）；也可 `cd desktop\app; npx electron .`。打包后的 worker.exe 与安装属阶段 C。`desktop/app/src/shared` 的模型与存储由渲染进程、主进程和 Node 测试共用，修改时同时跑上述两个脚本。
 
 ## Git 提交与回滚
 完成一个小步后运行相关检查、追加日志，再仅暂存本任务路径并提交。

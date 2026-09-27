@@ -11,5 +11,5 @@
     "types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/shared/store.ts"]
+  "exclude": ["src/shared/store.ts", "src/shared/dotnet.ts"]
 }

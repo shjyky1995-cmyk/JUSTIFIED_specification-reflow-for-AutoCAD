@@ -5,6 +5,7 @@ import { extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createStore, type DesktopStore, type SaveResult } from '../src/shared/store.ts'
 import { parseNote, serializeNote, type Note, type NoteSummary, type StoredProject } from '../src/shared/model.ts'
+import { workerDotnetCommand } from '../src/shared/dotnet.ts'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = resolve(here, '../..')
@@ -20,7 +21,7 @@ function workerCommand(): { command: string; args: string[] } {
   if (existsSync(bundled)) return { command: bundled, args: [] }
   const local = resolve(here, '../../../worker/bin/Debug/net10.0/DocxWorkbench.Worker.dll')
   if (existsSync(local)) {
-    const dotnet = process.env.DSS_DOTNET_EXE || 'dotnet'
+    const dotnet = process.env.DSS_DOTNET_EXE || workerDotnetCommand(appRoot).command
     return { command: dotnet, args: [local] }
   }
   throw new Error('尚未找到 DOCX 工作进程，请先构建桌面程序。')
