@@ -24,6 +24,21 @@ Core 入口已经验证不依赖 CAD 引用；All/Package 验证 AutoCAD DLL 为
 若控制台拒绝未信任路径，在 AutoCAD 正常 NETLOAD 流程人工验证；切勿将未加载记录为通过。
 禁止降低系统安全策略来加载插件；手工测试在 AutoCAD 正常信任/加载流程完成。
 
+## 桌面端构建与测试（T18 起）
+桌面代码在 `desktop/`，不在 CAD 解决方案内；与 CAD 插件只共享用户手动保存/选择的 DOCX。
+
+```powershell
+# 工作进程（.NET 10；本机 SDK 位于被忽略的 artifacts/dotnet10/sdk/，系统 8.0 无法构建）
+& "artifacts\dotnet10\sdk\dotnet.exe" build desktop\worker
+# 桌面界面（Node/npm）
+cd desktop\app; npm ci; npm run build
+# 自动化验证（从仓库根运行）
+node scripts\test-desktop-worker.mjs   # 六专业生成/读回/阻断
+node scripts\test-desktop-flow.mjs     # 全流程：新建→编辑→关闭重开→预览→导出→读回
+```
+
+真实窗口：双击 `desktop\app\start-desktop.cmd` 即可（自动找本机 .NET 10 SDK、缺构建时自动构建）；也可 `cd desktop\app; npx electron .`。打包后的 worker.exe 与安装属阶段 C。`desktop/app/src/shared` 的模型与存储由渲染进程、主进程和 Node 测试共用，修改时同时跑上述两个脚本。
+
 ## Git 提交与回滚
 完成一个小步后运行相关检查、追加日志，再仅暂存本任务路径并提交。
 ```powershell

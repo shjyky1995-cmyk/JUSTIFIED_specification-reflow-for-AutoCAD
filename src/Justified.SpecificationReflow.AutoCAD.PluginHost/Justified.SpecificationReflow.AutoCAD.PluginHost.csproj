@@ -3,7 +3,7 @@
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
-    <EmbeddedResource Include="Assets/note-logo.png" />
+    <EmbeddedResource Include="../../branding/product-icon.png" LogicalName="Justified.SpecificationReflow.AutoCAD.PluginHost.Assets.note-logo.png" />
     <Content Include="Assets/fonts/NotoSansSC-VF.ttf" CopyToOutputDirectory="PreserveNewest" Link="fonts/NotoSansSC-VF.ttf" />
     <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Application/Justified.SpecificationReflow.AutoCAD.Application.csproj" />
     <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.Contracts/Justified.SpecificationReflow.AutoCAD.Contracts.csproj" />
