@@ -159,10 +159,10 @@ export const TEMPLATES: TemplateDefinition[] = [
   { id: 'tpl-struct-pool', name: '水池结构', discipline: 'structural', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-struct-system', 'sec-struct-foundation', 'sec-struct-material', 'sec-struct-pool', 'sec-struct-detail', 'sec-other'] },
   { id: 'tpl-struct-pool-frame', name: '水池＋框架', discipline: 'structural', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-struct-system', 'sec-struct-foundation', 'sec-struct-material', 'sec-struct-pool', 'sec-struct-frame', 'sec-struct-detail', 'sec-other'] },
   { id: 'tpl-struct-steel', name: '钢结构', discipline: 'structural', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-struct-system', 'sec-struct-material', 'sec-struct-steel', 'sec-struct-protection', 'sec-struct-calculation', 'sec-struct-detail', 'sec-other'] },
-  { id: 'tpl-arch-standard', name: '建筑专业组合', discipline: 'architecture', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-arch-overall', 'sec-arch-fire', 'sec-arch-detail', 'sec-general-requirements', 'sec-other'] },
-  { id: 'tpl-plumb-standard', name: '给排水专业组合', discipline: 'plumbing', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-plumb-supply', 'sec-plumb-drainage', 'sec-plumb-equipment', 'sec-general-requirements', 'sec-other'] },
-  { id: 'tpl-elec-standard', name: '电气专业组合', discipline: 'electrical', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-elec-supply', 'sec-elec-lighting', 'sec-elec-protection', 'sec-general-requirements', 'sec-other'] },
-  { id: 'tpl-hvac-standard', name: '暖通专业组合', discipline: 'hvac', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-hvac-design', 'sec-hvac-ventilation', 'sec-hvac-energy', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-arch-standard', name: '厂房建筑（候选）', discipline: 'architecture', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-arch-overall', 'sec-arch-fire', 'sec-arch-detail', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-plumb-standard', name: '水处理工艺总图（候选）', discipline: 'plumbing', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-plumb-supply', 'sec-plumb-drainage', 'sec-plumb-equipment', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-elec-standard', name: '电气总图（候选）', discipline: 'electrical', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-elec-supply', 'sec-elec-lighting', 'sec-elec-protection', 'sec-general-requirements', 'sec-other'] },
+  { id: 'tpl-hvac-standard', name: '暖通设计（候选）', discipline: 'hvac', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-hvac-design', 'sec-hvac-ventilation', 'sec-hvac-energy', 'sec-general-requirements', 'sec-other'] },
   { id: 'tpl-other-standard', name: '通用组合', discipline: 'other', custom: false, sectionIds: ['sec-overview', 'sec-basis', 'sec-general-requirements', 'sec-other'] },
 ]
 

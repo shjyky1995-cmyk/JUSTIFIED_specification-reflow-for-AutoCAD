@@ -28,7 +28,6 @@ import {
   SEISMIC_GRADES,
   SEISMIC_INTENSITIES,
   SEISMIC_INTENSITY_PENDING,
-  sectionTitle,
   SITE_CATEGORIES,
   templatesFor,
   toExportRequest,
@@ -503,7 +502,7 @@ function Step02A({ note, catalogReady, catalogError, onBack, onSelect }: { note:
       {templates.map(template => <button key={template.id} disabled={!catalogReady && !template.custom && !['tpl-struct-steel', 'tpl-other-standard'].includes(template.id)} className={note.templateId === template.id && note.sections.length > 0 ? 'template-card active' : 'template-card'} onClick={() => onSelect(template.id)}>
         <span className="template-icon"><FileText size={18} /></span>
         <strong>{template.name}</strong>
-        <small>{template.custom ? '从空白开始，自由组合标准章节。' : template.sectionIds.map(id => sectionTitle(id)).slice(0, 3).join('、') + '等章节。'}</small>
+        <small>{template.custom ? '从空白开始，自由组合标准章节。' : ['tpl-struct-steel', 'tpl-other-standard'].includes(template.id) ? '暂无可靠正文来源，先建立章节框架。' : '自动载入对应来源的候选正文，下一步直接核对。'}</small>
       </button>)}
     </div>
   </div>
