@@ -46,7 +46,7 @@ public class PublishedPackageContentsTests
         var catalog = new DirectoryPackageCatalog(root, allowTestFixtures: false);
         var standardLoad = catalog.Load(new StandardRef { Id = "jsr-note", Version = "1.0.0" }, CancellationToken.None);
         Assert.That(standardLoad.Success, Is.True);
-        var templateLoad = catalog.Load(new TemplateRef { Id = "jsr-A2-three-column", Version = "1.1.0" }, CancellationToken.None);
+        var templateLoad = catalog.Load(new TemplateRef { Id = "jsr-A2-three-column", Version = "1.1.1" }, CancellationToken.None);
         Assert.That(templateLoad.Success, Is.True, string.Join("；", templateLoad.Diagnostics.Select(item => item.Code + " " + item.Message)));
         var template = templateLoad.Template!;
         var pageWidth = template.PageBounds.Right - template.PageBounds.Left;
@@ -79,7 +79,7 @@ public class PublishedPackageContentsTests
         var firstColumnLeft = template.Columns.Min(column => column.Left);
         var first = result.Texts.OrderBy(text => text.Position.X).ThenBy(text => text.Position.Y).First();
         Assert.That(first.Position.X, Is.EqualTo(anchorX + firstColumnLeft).Within(0.001), "首行应从锚点右侧第一栏左缘开始。");
-        Assert.That(result.Texts.All(text => text.Position.Y < anchorY - 60), Is.True, "顶部 60mm 预留图框与标题栏，说明不得进入。");
+        Assert.That(result.Texts.All(text => text.Position.Y <= anchorY - 44.6), Is.True, "首行基线应位于新版模板的顶部留量以下。");
         var columnsLeft = template.Columns.Min(column => column.Left);
         var columnsRight = template.Columns.Max(column => column.Right);
         Assert.That(columnsLeft, Is.EqualTo(pageWidth - columnsRight).Within(0.001), "栏组在整页内左右边距应相等（横向居中）。");
@@ -87,6 +87,36 @@ public class PublishedPackageContentsTests
         {
             var step = result.Layout.Pages[1].PageOffset.X - result.Layout.Pages[0].PageOffset.X;
             Assert.That(step, Is.EqualTo(pageWidth).Within(0.001), "页与页应紧贴，间距等于页宽。");
+        }
+    }
+
+    [TestCase("jsr-A1-three-column", 71, -550.31)]
+    [TestCase("jsr-A2-three-column", 47, -378.4)]
+    [TestCase("jsr-A3-two-column", 30, -258.4)]
+    public void PublishedTemplateKeepsBottomTitleBlockClearWithAnExtraRow(
+        string templateId, int rowCount, double expectedBottom)
+    {
+        var root = Path.Combine(RepoRoot(), "standards", "published");
+        var catalog = new DirectoryPackageCatalog(root, allowTestFixtures: false);
+        var loaded = catalog.Load(new TemplateRef { Id = templateId, Version = "1.1.1" }, CancellationToken.None);
+        Assert.That(loaded.Success, Is.True, templateId);
+        var template = loaded.Template!;
+        const double rowPitch = 7.2;
+        const double oldFirstBaseline = -66.2;
+        var oldLastBaseline = oldFirstBaseline - (rowCount - 1) * rowPitch;
+
+        foreach (var column in template.Columns)
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(column.Top, Is.EqualTo(-38.4).Within(0.001));
+                Assert.That(column.FirstBaselineY, Is.EqualTo(-44.6).Within(0.001));
+                Assert.That(column.Bottom, Is.EqualTo(expectedBottom).Within(0.001));
+                Assert.That(column.RowCount, Is.EqualTo(rowCount));
+                Assert.That(column.FirstBaselineY - (rowCount - 1) * rowPitch,
+                    Is.GreaterThanOrEqualTo(oldLastBaseline + rowPitch),
+                    "底栏末行应比旧版接触图签的末行至少高一行。");
+            });
         }
     }
 

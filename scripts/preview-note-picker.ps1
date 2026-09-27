@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$OutputPath = 'artifacts/ui-preview/note-picker.png'
+    [string]$OutputPath = 'artifacts/ui-preview/note-picker.png',
+    [ValidateRange(1.0, 2.0)][float]$PreviewScale = 1.0
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -30,6 +31,9 @@ try {
     $form = $constructor.Invoke($arguments)
     try {
         $form.Show()
+        if ($PreviewScale -ne 1.0) {
+            $form.Scale((New-Object Drawing.SizeF($PreviewScale, $PreviewScale)))
+        }
         [Windows.Forms.Application]::DoEvents()
         $image = New-Object Drawing.Bitmap($form.Width, $form.Height)
         try {

@@ -1,7 +1,7 @@
 ﻿{
     "classification": "production",
     "templateId": "jsr-A3-two-column",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "disciplineCode": "structure",
     "paperCode": "A3",
     "status": "calibrated",
@@ -27,18 +27,18 @@
             "columnId": "c0",
             "left": 35,
             "right": 205,
-            "top": -60,
-            "bottom": -280.0,
-            "firstBaselineY": -66.2,
+            "top": -38.4,
+            "bottom": -258.4,
+            "firstBaselineY": -44.6,
             "rowCount": 30
         },
         {
             "columnId": "c1",
             "left": 215,
             "right": 385,
-            "top": -60,
-            "bottom": -280.0,
-            "firstBaselineY": -66.2,
+            "top": -38.4,
+            "bottom": -258.4,
+            "firstBaselineY": -44.6,
             "rowCount": 30
         }
     ],

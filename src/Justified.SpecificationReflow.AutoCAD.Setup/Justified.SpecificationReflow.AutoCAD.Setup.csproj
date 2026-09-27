@@ -12,5 +12,7 @@
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
     <ProjectReference Include="../Justified.SpecificationReflow.AutoCAD.SetupCore/Justified.SpecificationReflow.AutoCAD.SetupCore.csproj" />
     <EmbeddedResource Include="../../branding/product-icon.png" LogicalName="Justified.SpecificationReflow.AutoCAD.Setup.Assets.note-logo.png" />
+    <EmbeddedResource Include="$(InstallerPayloadPath)" LogicalName="Justified.SpecificationReflow.AutoCAD.Setup.InstallerPayload.zip" Condition="'$(InstallerPayloadPath)' != ''" />
+    <Reference Include="System.IO.Compression" />
   </ItemGroup>
 </Project>
