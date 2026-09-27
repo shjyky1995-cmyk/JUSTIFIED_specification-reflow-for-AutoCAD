@@ -12,7 +12,7 @@
 ## 2026-09-27 T20：用户新 Figma CAD 窗口改版
 
 - 新任务优先于原接续 T18；独立分支 `task/T20-cad-figma-ui`，基于已发布的 `main`，worktree 为 `C:/Users/Administrator/.codex/worktrees/cad-ui-figma/JUSTIFIED_specification reflow for AutoCAD`。不把尚未验收的 T18 桌面分支带入 CAD。用户 Figma Make、本地 ZIP 和截图来源、实现差异与检查见 [T20 日志](devlog/T20.md) 和 [视觉规范](VISUAL_SPEC_V1.md)。
-- T20 代码与 100%/模拟 150% 离线预览已完成。用户安装截图暴露 `测试文件/程序/Setup.exe` 缺同目录 bundle，已在 `6119db9` 修复；本机交付目录和解压 ZIP 均经校验。最新候选 ZIP 为 `artifacts/packages/20260927-163557-500/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-6119db9.zip`（SHA256 见 T20 日志），包内 `productionReady=false`。此前已验收的 T17/T19 主线提交已推公开 `origin/main`（8f2563e）；T20 已推分支、建 [草稿 PR #2](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/pull/2)，尚未合并或发布。真实 AutoCAD 2021 宿主视觉/交互待用户方便时核对；工作目录原有 `tests/.../Fixtures/test-note-standard.json` 换行差异不是本任务改动，不暂存。用户业务文件与测试结果不入库。
+- T20 代码与 100%/模拟 150% 离线预览已完成。用户安装截图暴露 `测试文件/程序/Setup.exe` 缺同目录 bundle，已在 `6119db9` 修复；本机交付目录和解压 ZIP 均经校验。最新候选 ZIP 为 `artifacts/packages/20260927-163749-553/JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-candidate-a00a074.zip`（SHA256 见 T20 日志），包内 `productionReady=false`。此前已验收的 T17/T19 主线提交已推公开 `origin/main`（8f2563e）；T20 已推分支、建 [草稿 PR #2](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/pull/2)，尚未合并或发布。真实 AutoCAD 2021 宿主视觉/交互待用户方便时核对；工作目录原有 `tests/.../Fixtures/test-note-standard.json` 换行差异不是本任务改动，不暂存。用户业务文件与测试结果不入库。
 
 ## 唯一下一动作
 
