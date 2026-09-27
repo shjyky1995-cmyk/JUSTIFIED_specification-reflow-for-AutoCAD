@@ -6,8 +6,20 @@ namespace Justified.SpecificationReflow.AutoCAD.Setup;
 internal static class Program
 {
     [STAThread]
-    private static void Main(string[] args)
+    private static int Main(string[] args)
     {
+        if (args.Any(arg => string.Equals(arg, "--verify-installer", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                var service = new InstallService(BundleLocator.BundleRoot);
+                return service.BundleLooksComplete && service.Verify(out _).Ok ? 0 : 2;
+            }
+            catch (System.Exception)
+            {
+                return 3;
+            }
+        }
         global::System.Windows.Forms.Application.EnableVisualStyles();
         global::System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
         var uninstall = args.Any(arg => string.Equals(arg, "--uninstall", StringComparison.OrdinalIgnoreCase));
@@ -22,6 +34,8 @@ internal static class Program
                 "Word 设计说明落图工具",
                 System.Windows.Forms.MessageBoxButtons.OK,
                 System.Windows.Forms.MessageBoxIcon.Error);
+            return 1;
         }
+        return 0;
     }
 }

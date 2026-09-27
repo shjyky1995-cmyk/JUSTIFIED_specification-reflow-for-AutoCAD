@@ -59,11 +59,6 @@ try {
         Copy-Item -LiteralPath 'schemas' -Destination $bundle -Recurse
         $setupBin = "src/Justified.SpecificationReflow.AutoCAD.Setup/bin/$Configuration/net48"
         $setupFiles = @('Setup.exe', 'Justified.SpecificationReflow.AutoCAD.SetupCore.dll', 'Newtonsoft.Json.dll')
-        foreach ($setupFile in $setupFiles) {
-            $setupPath = Join-Path $setupBin $setupFile
-            if (-not (Test-Path -LiteralPath $setupPath)) { throw "Missing installer file: $setupFile" }
-            Copy-Item -LiteralPath $setupPath -Destination $output
-        }
         $published = Join-Path $contents 'standards/published'
         New-Item -ItemType Directory -Path $published -Force | Out-Null
         Copy-Item -Path 'standards/published/*' -Destination $published -Recurse
@@ -93,11 +88,57 @@ try {
             Select-Object @{n='File';e={$_.Path.Substring($bundle.Length + 1)}},Hash
         $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'SHA256.json') -Encoding UTF8
         & (Join-Path $PSScriptRoot 'verify-package.ps1') -BundlePath $bundle
+
+        # Build the release installer from the verified payload. It must not depend on
+        # Explorer preserving a sibling .bundle directory when the user opens the ZIP.
+        $payload = Join-Path $output 'InstallerPayload.zip'
+        Compress-Archive -LiteralPath $bundle -DestinationPath $payload
+        $setupProject = 'src/Justified.SpecificationReflow.AutoCAD.Setup/Justified.SpecificationReflow.AutoCAD.Setup.csproj'
+        $payloadProperty = "-p:InstallerPayloadPath=$payload"
+        & dotnet build $setupProject --no-restore -t:Rebuild -c $Configuration $payloadProperty --nologo
+        if ($LASTEXITCODE -ne 0) { throw 'Installer payload build failed.' }
+        foreach ($setupFile in $setupFiles) {
+            $setupPath = Join-Path $setupBin $setupFile
+            if (-not (Test-Path -LiteralPath $setupPath)) { throw "Missing installer file: $setupFile" }
+            Copy-Item -LiteralPath $setupPath -Destination $output
+        }
+
+        function Assert-InstallerProbe([string]$directory) {
+            $start = [Diagnostics.ProcessStartInfo]::new()
+            $start.FileName = Join-Path $directory 'Setup.exe'
+            $start.Arguments = '--verify-installer'
+            $start.UseShellExecute = $false
+            $start.CreateNoWindow = $true
+            $start.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+            $process = [Diagnostics.Process]::Start($start)
+            if ($null -eq $process) { throw 'Installer probe did not start.' }
+            try {
+                if (-not $process.WaitForExit(30000)) {
+                    $process.Kill()
+                    throw 'Installer probe timed out.'
+                }
+                if ($process.ExitCode -ne 0) { throw "Installer probe failed with exit code $($process.ExitCode): $directory" }
+            }
+            finally { $process.Dispose() }
+        }
+
+        # Regression gate: run the *built executable* from a clean extraction and
+        # from a directory containing only Setup.exe and its two managed dependencies.
+        $standalone = Join-Path $output 'standalone-check'
+        New-Item -ItemType Directory -Path $standalone | Out-Null
+        foreach ($setupFile in $setupFiles) { Copy-Item -LiteralPath (Join-Path $output $setupFile) -Destination $standalone }
+        Assert-InstallerProbe $standalone
+        Write-Host 'INSTALLER_PROBE_OK standalone-without-bundle'
         $packageKind = if ($isCandidate) { 'candidate' } else { 'release' }
         $zip = Join-Path $output "JUSTIFIED_specification-reflow-for-AutoCAD-0.1.0-$packageKind-$($commit.Substring(0,7)).zip"
         $zipItems = @($bundle) + ($setupFiles | ForEach-Object { Join-Path $output $_ })
         Compress-Archive -LiteralPath $zipItems -DestinationPath $zip
         (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash | Set-Content -LiteralPath "$zip.sha256" -Encoding ASCII
+        $roundtrip = Join-Path $output 'zip-roundtrip'
+        Expand-Archive -LiteralPath $zip -DestinationPath $roundtrip
+        & (Join-Path $PSScriptRoot 'verify-package.ps1') -BundlePath (Join-Path $roundtrip 'JUSTIFIED_specification-reflow-for-AutoCAD.bundle')
+        Assert-InstallerProbe $roundtrip
+        Write-Host 'INSTALLER_PROBE_OK extracted-zip'
         # Stable, visible handoff location for manual testing; do not change CAD trust settings.
         $handoff = Join-Path $taskRoot ([string][char]0x6D4B + [char]0x8BD5 + [char]0x6587 + [char]0x4EF6)
         $program = Join-Path $handoff ([string][char]0x7A0B + [char]0x5E8F)
@@ -130,7 +171,7 @@ try {
         }
         Copy-Item -LiteralPath $zip -Destination $handoff -Force
         Write-Host "Manual test DLL: $(Join-Path $program 'Justified.SpecificationReflow.AutoCAD.PluginHost.dll')"
-        Write-Host "Graphical installer with adjacent verified bundle: $(Join-Path $program 'Setup.exe')"
+        Write-Host "Graphical installer with embedded verified bundle: $(Join-Path $program 'Setup.exe')"
         Write-Host "Package ($packageKind): $zip"
     }
 }

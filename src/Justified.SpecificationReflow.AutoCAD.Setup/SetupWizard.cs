@@ -147,8 +147,8 @@ internal sealed class SetupWizard : Form
                 ? "本程序用于安装 Word 设计说明工具（AutoCAD 插件）。\n\n" +
                   "安装前请先保存图纸并退出 AutoCAD。\n\n" +
                   "支持环境：AutoCAD 2021（R24.0）；后续版本将适配 AutoCAD 2014–2021 全系。"
-                : "安装文件夹缺少程序数据，当前无法继续。\n\n" +
-                  "请重新完整解压候选 ZIP，再运行解压目录中的 Setup.exe。"));
+                : "安装程序无法读取内置数据，当前无法继续。\n\n" +
+                  "请把本窗口截图发给程序维护方，不必反复解压。"));
         ShowPage(_welcomePage);
         _steps.Text = "① 欢迎 → ② 环境检查 → ③ 安装 → ④ 完成";
         _page = 0;
