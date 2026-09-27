@@ -2,7 +2,8 @@
 CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 通用编制框架→B 标准内容与专业深化→C 成品交付连续推进。T 编号用于追踪，不要求用户逐个小步确认。固定交付/验收按 [WORKFLOW](WORKFLOW.md)，唯一下一步读 [NEXT_AGENT](NEXT_AGENT.md)。任务范围不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前任务：CAD 阶段 T12/T14/T13 于 2026-09-26 由用户人工签收，已合入 main；发布包与 v0.1.0 标签已上传 GitHub。T17 设计说明 PRD 与实施计划于 2026-09-27 经用户认可并合入 main（dea84f2）。桌面端 A 阶段 T18 仍在独立分支；用户本轮提出 CAD Figma 窗口改版 T20，先交付视觉候选并核对真实 CAD 宿主，状态见 NEXT_AGENT。用户免除的补充测量不倒写成实测通过。
+当前任务：CAD 阶段 T12/T14/T13 于 2026-09-26 由用户人工签收，已合入 main；发布包与 v0.1.0 标签已上传 GitHub。T17 设计说明 PRD 与实施计划于 2026-09-27 经用户认可并合入 main（dea84f2）。T18/A 桌面通用编制框架已按 Figma 重排并完成六专业链路，用户反馈试用无问题；进入 B1 内容清点。CAD T20 的 1.1.1 新打印仍待反馈，状态见 NEXT_AGENT。用户免除的补充测量不倒写成实测通过。
+阶段更新：T18/A 已通过 PR #1 合入 `main`（2224681），`desktop-a-framework` 标签已推 GitHub。T22/B1 清点六专业 25 章节、来源与待补缺口；正式专业正文尚未提供，不据此将 B2/B3 标记完成。CAD T20 的 1.1.1 打印仍待反馈。
 远程：[GitHub 公开仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)（用户 2026-09-26 确认公开）；发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。业务源文件、测试结果不入库。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |
@@ -24,8 +25,10 @@ CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 
 | T15/D0 | 桌面 DOCX 编制工作台 → 技术框架与开发路线定稿 | CAD v0.1.0 已签收；新版打印待用户复核 | 桌面 PRD V1、架构比较、分阶段路线、ADR-013 | 桌面 PRD D0 | 固定模板生成 DOCX、Word/WPS 修改、用户在 CAD 重新选择文件；独立程序与技术边界已确定 | 完成（2026-09-26；用户委托技术判断后选 Electron + React/TypeScript、.NET 10；D1 可启动） |
 | T16/D1 | 桌面初版实现 checkpoint | T15/D0 | `task/T16-desktop-authoring` | 旧 D0 路线 | 工作进程生成/检查通过，界面构建通过；实际窗口待验 | 进行中（433ec3a 已推分支；新 PRD 评审前不继续固定栏目主流程，不合 main） |
 | T17/P0 | 设计说明新业务流程与大阶段计划 | 用户新讨论、Figma 初稿、现有代码 | `docs/PRD.md`、`docs/IMPLEMENTATION_PLAN.md`、设计参考与抗震来源记录 | 桌面 PRD 更新 | 六专业共用编制/导出流程，非结构跳过结构参数；桌面交付到 DOCX；先框架后内容；大阶段验收 | 完成（2026-09-27 用户认可，dea84f2 合入 main；用户提供的 Make ZIP 与五张截图已核对；云端后续变更仍需另行核对） |
-| T19/P0 | 更新 Agent 长期规则与阶段入口 | T17 已确认 | `AGENTS.md`、`docs/WORKFLOW.md`、`docs/TASKS.md` | 当前桌面 PRD、计划与接续一致 | 新 Agent 不再从旧 CAD 或 D0 目标起步；保留 CAD 历史边界 | 完成（文档检查与提交见 T19 日志；T18 开发分支需在安全时点纳入本更新） |
-| T20/CAD UI | 用户 Figma 参考图 → 重排 `DSS` 窗口、修复候选安装入口并让三图幅文字栏避开底部图签 | CAD v0.1.0 已发布；独立于 T18 | `NotePickerForm`、安装打包、1.1.1 模板、设计截图、视觉规范与日志 | 三项短流程、现有产品图标、无重叠、未知单位明确选择；本机安装入口带完整 bundle；A1/A2/A3 底部多留至少一行 | WinForms 离线预览、双框架检查、ZIP 和本机安装目录校验；新版真实 CAD 打印 | 待验收（用户确认安装器可用；几何修订代码/包检查通过，1.1.1 真实打印待反馈，详见 T20 日志） |
+| T18/A | 桌面通用编制框架：首页导航、六专业与条件结构参数、项目/草稿、章节模板与自定义组合、纯文本编辑与自动保存、连续预览、导出 DOCX | T17/P0；T16 checkpoint 技术基础 | desktop/app、desktop/worker、scripts/test-desktop-*.mjs、文档 | PRD 第 1–4 章；实施计划 A 阶段 | 逐专业自动化走通新建→编辑→关闭重开→预览→导出→解析器读回；非结构无结构字段；UI 无遮挡；Agent 自测修复后交一次集中验收 | 完成（2026-09-27 用户反馈已试用且无问题；六专业 worker/flow、CAD All 双框架各 164/164、1280/900 Electron 截图已核对；库提示不当正文。Word/WPS 单独打开证据未留，不虚构） |
+| T19/P0 | 更新 Agent 长期规则与阶段入口 | T17 已确认 | `AGENTS.md`、`docs/WORKFLOW.md`、`docs/TASKS.md` | 当前桌面 PRD、计划与接续一致 | 新 Agent 不再从旧 CAD 或 D0 目标起步；保留 CAD 历史边界 | 完成（文档检查与提交见 T19 日志；已由 T18 分支在安全时点纳入） |
+| T22/B1 | 六专业章节、来源与版本缺口清点 | T18/A 已合入 main | `docs/CONTENT_INVENTORY.md`、计划与日志 | 实施计划 B1 | 清单覆盖全部稳定章节 ID；每条状态明确，未核定正文不冒充正式内容 | 完成清点（25/25 ID 已核对；来源/正文 0 条已核定，待用户后续资料；B 阶段总体仍进行中） |
+| T20/CAD UI | Figma 导入窗、安装入口与三图幅图签避让 | CAD v0.1.0 已发布 | `NotePickerForm`、安装打包、1.1.1 模板、视觉规范与日志 | 三项短流程、现有产品图标、无重叠；A1/A2/A3 底部多留至少一行 | WinForms 离线预览、双框架检查、ZIP 和本机安装目录校验；新版真实 CAD 打印 | 待验收（安装器用户已确认可用；1.1.1 代码/包检查通过，真实打印待反馈；草稿 PR #2，不合 main） |
 
 ## 双端与界面顺序（2026-09-24，规划，不扩大 V1）
 
