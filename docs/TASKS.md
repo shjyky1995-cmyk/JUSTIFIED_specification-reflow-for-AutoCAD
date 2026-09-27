@@ -2,7 +2,7 @@
 CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 通用编制框架→B 标准内容与专业深化→C 成品交付连续推进。T 编号用于追踪，不要求用户逐个小步确认。固定交付/验收按 [WORKFLOW](WORKFLOW.md)，唯一下一步读 [NEXT_AGENT](NEXT_AGENT.md)。任务范围不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
-当前任务：CAD 阶段 T12/T14/T13 于 2026-09-26 由用户人工签收，已合入 main；发布包与 v0.1.0 标签已上传 GitHub。T17 设计说明 PRD 与实施计划于 2026-09-27 经用户认可并合入 main（dea84f2）；下一大阶段为桌面端 A 阶段通用编制框架（T18），状态见 NEXT_AGENT。用户免除的补充测量不倒写成实测通过。
+当前任务：CAD 阶段 T12/T14/T13 于 2026-09-26 由用户人工签收，已合入 main；发布包与 v0.1.0 标签已上传 GitHub。T17 设计说明 PRD 与实施计划于 2026-09-27 经用户认可并合入 main（dea84f2）。桌面端 A 阶段 T18 仍在独立分支；用户本轮提出 CAD Figma 窗口改版 T20，先交付视觉候选并核对真实 CAD 宿主，状态见 NEXT_AGENT。用户免除的补充测量不倒写成实测通过。
 远程：[GitHub 公开仓库](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD)（用户 2026-09-26 确认公开）；发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。业务源文件、测试结果不入库。
 
 | 编号/阶段 | 目标与输入 → 输出 | 前置 | 修改范围 | REQ / AC | 验收方式 | 状态 |
@@ -25,6 +25,7 @@ CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 
 | T16/D1 | 桌面初版实现 checkpoint | T15/D0 | `task/T16-desktop-authoring` | 旧 D0 路线 | 工作进程生成/检查通过，界面构建通过；实际窗口待验 | 进行中（433ec3a 已推分支；新 PRD 评审前不继续固定栏目主流程，不合 main） |
 | T17/P0 | 设计说明新业务流程与大阶段计划 | 用户新讨论、Figma 初稿、现有代码 | `docs/PRD.md`、`docs/IMPLEMENTATION_PLAN.md`、设计参考与抗震来源记录 | 桌面 PRD 更新 | 六专业共用编制/导出流程，非结构跳过结构参数；桌面交付到 DOCX；先框架后内容；大阶段验收 | 完成（2026-09-27 用户认可，dea84f2 合入 main；用户提供的 Make ZIP 与五张截图已核对；云端后续变更仍需另行核对） |
 | T19/P0 | 更新 Agent 长期规则与阶段入口 | T17 已确认 | `AGENTS.md`、`docs/WORKFLOW.md`、`docs/TASKS.md` | 当前桌面 PRD、计划与接续一致 | 新 Agent 不再从旧 CAD 或 D0 目标起步；保留 CAD 历史边界 | 完成（文档检查与提交见 T19 日志；T18 开发分支需在安全时点纳入本更新） |
+| T20/CAD UI | 用户 2026-09-27 Figma Make 与参考图 → 重排 `DSS` 选择窗口 | CAD v0.1.0 已发布；独立于 T18 | `NotePickerForm`、设计截图、视觉规范与日志 | 三项短流程、现有产品图标、无重叠、未知单位明确选择 | WinForms 离线预览与双框架检查；真实 AutoCAD 2021 中核对尺寸、字体、点击与取消 | 待验收（代码和离线预览已检查；真实 CAD 宿主视觉待用户反馈，详见 T20 日志） |
 
 ## 双端与界面顺序（2026-09-24，规划，不扩大 V1）
 

@@ -9,8 +9,13 @@
 - A 阶段范围（本次只做这些）：首页与导航（仅「设计说明」进入真实流程，其余入口标注未开放）、六专业选择（建筑/结构/给排水/电气/暖通/其他；仅结构显示结构参数，抗震设防烈度无核验数据时显示「待核定」）、项目与草稿本机保存与恢复、章节模板与自定义组合、纯文本编辑与真实自动保存、连续预览、导出可编辑 DOCX；逐专业自动化验证新建→编辑→关闭重开→预览→导出并用现有 DocxDocumentParser 读回。可研/投标/AI/专业标准正文、CAD 联动与同步、额外交接文件不在范围。
 - 0925 旧测试 PDF 有越界与顶部碰框；后续 1.1.0 几何已修，真实重印结果待用户自行反馈，不阻断桌面规划，也不得宣称打印已复核。
 
+## 2026-09-27 T20：用户新 Figma CAD 窗口改版
+
+- 新任务优先于原接续 T18；独立分支 `task/T20-cad-figma-ui`，基于已发布的 `main`，worktree 为 `C:/Users/Administrator/.codex/worktrees/cad-ui-figma/JUSTIFIED_specification reflow for AutoCAD`。不把尚未验收的 T18 桌面分支带入 CAD。用户 Figma Make、本地 ZIP 和截图来源、实现差异与检查见 [T20 日志](devlog/T20.md) 和 [视觉规范](VISUAL_SPEC_V1.md)。
+- T20 代码与离线预览已完成，真实 AutoCAD 2021 宿主视觉/交互待用户方便时核对；工作目录原有 `tests/.../Fixtures/test-note-standard.json` 换行差异不是本任务改动，不暂存。用户业务文件与测试结果不入库。
+
 ## 唯一下一动作
 
-T18 分支 `task/T18-desktop-framework`（worktree `artifacts/t18-worktree`）按 A 阶段连续开发、自测、修复并提交；完成后交用户集中验收。验收通过后再合 main、打标签并推送公开 origin。抗震地点数据先留「待核定」，后续优先核对官方来源/许可。新版 CAD 打印由用户方便时反馈，不阻断。用户要求**全部工作完成后**设置 10 分钟关机；当前仍在开发，不执行。
+交付 T20 候选包供用户在 CAD 2021 中运行 `DSS`：核对窗口与 Figma 参考的比例、无遮挡、logo、选 DOCX、切换 A1/A2/A3 与比例、取消后无落图；异常给一张截图和 F2 文本。确认后把 T20 合入 `main` 并推送公开 GitHub，再接续 T18/A 阶段通用编制框架。T18 分支 `task/T18-desktop-framework`（worktree `artifacts/t18-worktree`）仍独立进行；抗震地点数据先留「待核定」。新版 CAD 打印由用户方便时反馈，不阻断。用户要求**全部工作完成后**设置 10 分钟关机；当前仍在开发，不执行。
 
 原工作目录的用户业务 DOCX、截图/PDF 结果与测试夹具换行差异保持未暂存；不得带入公开仓库。
