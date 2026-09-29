@@ -9,6 +9,7 @@
 - 私有 `source-layouts.json`、`source-fidelity-audit.json` 与 `source-export-tests.json` 在项目根 `content-library/private`；均不上传。独立源文字/输出核对、七模板导出、六专业回归和构建通过，详见 `devlog/T29.md`。
 - 用户待办：方便时按 `DESKTOP_SOURCE_ACCEPTANCE.md` 重新选模板查看，再用Word/WPS核对分页与可编辑性。原有草稿不自动覆盖。当前无文档渲染组件，真实窗口与Word视觉未实测；规范和工程条件仍待专业核定。
 - CAD T28在主工作区 `task/T28-cad-tables`，用户正在测试；两个候选分支单独推送备份，不把桌面导出当成CAD验收。
+- T29实现598c1f3与T28交接c70abf4已推送origin并核对远端SHA；未合main、未打正式标签。
 - 用户本轮明确要求完成后推GitHub，再10分钟关机；只在远端确认后安排一次。后续轮次不要重复关机。
 
 ## 历史：T27 水池原稿基准
