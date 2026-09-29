@@ -1,7 +1,7 @@
 // 本机 JSON 存储：项目资料与说明草稿。供 Electron 主进程与 Node 自动化测试共用。
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseContentCatalog, type ContentCatalog } from './content.ts'
+import { parseContentCatalog, parseContentLayout, type ContentCatalog } from './content.ts'
 import {
   deserializeNote,
   parseNote,
@@ -136,7 +136,14 @@ export function createStore(root: string, projectCatalogPath?: string): DesktopS
     loadCatalog() {
       const path = projectCatalogPath === undefined ? catalogFile : projectCatalogPath
       if (!path || !existsSync(path)) return null
-      return parseContentCatalog(JSON.parse(readJsonFile(path)))
+      const catalog = parseContentCatalog(JSON.parse(readJsonFile(path)))
+      const layoutFile = join(projectCatalogPath ? join(path, '..') : catalogDir, 'pool-layout.json')
+      if (existsSync(layoutFile)) {
+        const layout = parseContentLayout(JSON.parse(readJsonFile(layoutFile)))
+        if (layout.sourceId !== catalog.sourceDigest.find(source => source.file === layout.sourceFile)?.id) throw new Error('水池版式来源与资料包不一致。')
+        catalog.layouts = [layout]
+      }
+      return catalog
     },
 
     importCatalog(path) {

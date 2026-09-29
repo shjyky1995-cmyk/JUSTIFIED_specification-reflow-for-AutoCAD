@@ -1347,6 +1347,11 @@ textarea:focus-visible {
 .content-edit textarea { width: 100%; min-height: 96px; margin: 8px 0; padding: 8px; box-sizing: border-box; resize: vertical; }
 .content-confirm input { flex: none; }
 .content-field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin: 14px 0; }
+.layout-table-wrap { overflow-x: auto; margin: 12px 0 18px; }
+.layout-table { border-collapse: collapse; width: 100%; min-width: 540px; font-size: 13px; }
+.layout-table td { border: 1px solid #b9c5d5; padding: 6px 8px; vertical-align: top; }
+.layout-table input { width: 100%; min-width: 76px; border: 0; background: transparent; font: inherit; color: inherit; }
+.layout-table-wrap small { display: block; margin-top: 5px; color: #69788a; }
 .content-candidates-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 14px; }
 .content-candidates-head input { max-width: 250px; min-width: 120px; }
 .content-candidates { max-height: 330px; overflow: auto; margin: 10px 0; border: 1px solid #e5e7eb; border-radius: 8px; }

@@ -11,7 +11,8 @@
     "test:worker": "node ../../scripts/test-desktop-worker.mjs",
     "test:flow": "node ../../scripts/test-desktop-flow.mjs",
     "test:content": "node ../../scripts/test-content-library.mjs",
-    "test:auto": "node ../../scripts/test-auto-assembly.mjs"
+    "test:auto": "node ../../scripts/test-auto-assembly.mjs",
+    "test:pool": "node ../../scripts/test-pool-reference.mjs"
   },
   "dependencies": {
     "lucide-react": "1.48.0",

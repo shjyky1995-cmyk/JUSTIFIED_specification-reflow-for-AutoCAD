@@ -28,6 +28,30 @@ export type ContentCatalog = {
   fields: ContentField[]
   clauses: ContentClause[]
   sourceDigest: { id: string; file: string; sha256: string | null; discipline: string; versionRelation: string; rightsStatus: string }[]
+  layouts?: ContentLayout[]
+}
+
+export type ContentLayoutBlock =
+  | { kind: 'paragraph'; sourcePara: number; template: string; clauseIds: string[]; fieldIds: string[]; reviewNote: string }
+  | { kind: 'table'; sourcePara: number; rows: string[][]; reviewNote: string }
+export type ContentLayout = { schemaVersion: 1; templateId: string; sourceId: string; sourceFile: string; sections: { id: string; title: string; sourcePara: number; blocks: ContentLayoutBlock[] }[] }
+
+export function parseContentLayout(value: unknown): ContentLayout {
+  const raw = object(value, '版式')
+  if (raw.schemaVersion !== 1) throw new Error('版式版本不受支持。')
+  const sections = Array.isArray(raw.sections) ? raw.sections.map(value => {
+    const section = object(value, '版式章节')
+    const blocks: ContentLayoutBlock[] = Array.isArray(section.blocks) ? section.blocks.map(value => {
+      const block = object(value, '版式内容块')
+      if (!Number.isInteger(block.sourcePara) || (block.sourcePara as number) < 0) throw new Error('版式来源段号无效。')
+      if (block.kind === 'paragraph') return { kind: 'paragraph' as const, sourcePara: block.sourcePara as number, template: string(block.template, '版式段落'), clauseIds: strings(block.clauseIds, '条款编号'), fieldIds: strings(block.fieldIds, '字段编号'), reviewNote: string(block.reviewNote, '核定提示') }
+      if (block.kind === 'table' && Array.isArray(block.rows) && block.rows.length > 0 && block.rows.every(row => Array.isArray(row) && row.length > 0 && row.every(cell => typeof cell === 'string'))) return { kind: 'table' as const, sourcePara: block.sourcePara as number, rows: block.rows as string[][], reviewNote: string(block.reviewNote, '核定提示') }
+      throw new Error('版式内容块类型无效。')
+    }) : []
+    return { id: string(section.id, '版式章节编号'), title: string(section.title, '版式章节标题'), sourcePara: section.sourcePara as number, blocks }
+  }) : []
+  if (sections.length === 0 || sections.some(section => section.blocks.length === 0)) throw new Error('版式章节缺少内容。')
+  return { schemaVersion: 1, templateId: string(raw.templateId, '模板编号'), sourceId: string(raw.sourceId, '来源编号'), sourceFile: string(raw.sourceFile, '来源文件'), sections }
 }
 
 export type SelectedModule = {
@@ -106,11 +130,16 @@ export function parseContentCatalog(value: unknown): ContentCatalog {
     const inText = [...clause.template.matchAll(/\{([a-z][a-z0-9_]*)\}/g)].map(match => match[1])
     if (new Set(inText).size !== new Set(clause.fieldIds).size || inText.some(id => !clause.fieldIds.includes(id))) throw new Error(`条款 ${clause.id} 的占位符清单不一致。`)
   }
+  const layouts = Array.isArray(raw.layouts) ? raw.layouts.map(parseContentLayout) : []
+  for (const layout of layouts) {
+    if (!sourceIds.has(layout.sourceId)) throw new Error(`版式 ${layout.templateId} 的来源不存在。`)
+    if (layout.sections.some(section => section.blocks.some(block => block.kind === 'paragraph' && block.fieldIds.some(id => !fieldIds.has(id))))) throw new Error(`版式 ${layout.templateId} 使用了未定义字段。`)
+  }
   return {
     schemaVersion: 1,
     packageId: string(raw.packageId, '资料库编号'), generatedAt: typeof raw.generatedAt === 'string' ? raw.generatedAt : '',
     title: string(raw.title, '资料库名称'), reviewStatus: typeof raw.reviewStatus === 'string' ? raw.reviewStatus : 'pending',
-    chapters, fields, clauses, sourceDigest,
+    chapters, fields, clauses, sourceDigest, layouts,
   }
 }
 

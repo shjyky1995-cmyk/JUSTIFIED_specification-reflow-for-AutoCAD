@@ -78,17 +78,21 @@ internal static class Program
         var project = document.Project ?? new WorkerProject();
         var projectName = Required(project.Name, "工程名称", 120);
 
-        var lines = new List<(string Style, string Text)>
+        var lines = new List<(string Style, string Text)> { ("Heading1", title) };
+        if (document.LayoutMode == "source")
         {
-            ("Heading1", title),
-            ("Normal", "专业：" + discipline),
-            ("Normal", "工程名称：" + projectName)
-        };
-        AddMeta(lines, "工程编号：", project.Number, 60);
-        AddMeta(lines, "建设单位：", project.Owner, 120);
-        AddMeta(lines, "建设地点：", project.Location, 120);
+            lines.Add(("Normal", "资料状态：旧工程候选文字，项目取值、规范版本与适用性须由设计人员核定。"));
+        }
+        else
+        {
+            lines.Add(("Normal", "专业：" + discipline));
+            lines.Add(("Normal", "工程名称：" + projectName));
+            AddMeta(lines, "工程编号：", project.Number, 60);
+            AddMeta(lines, "建设单位：", project.Owner, 120);
+            AddMeta(lines, "建设地点：", project.Location, 120);
+        }
 
-        if (document.Structural is not null)
+        if (document.Structural is not null && document.LayoutMode != "source")
         {
             var structural = document.Structural;
             var site = Required(structural.SiteCategory, "结构参数「场地类别」", 20);
@@ -119,19 +123,33 @@ internal static class Program
         {
             var heading = Required(section.Title, "章节标题", 120);
             var body = section.Body ?? string.Empty;
-            if (body.Trim().Length == 0) continue;
+            if (body.Trim().Length == 0 && (section.Blocks?.Count ?? 0) == 0) continue;
             if (body.Length > MaxSectionCharacters) throw new ArgumentException("章节「" + heading + "」内容过长。");
             filled += 1;
             lines.Add(("Heading2", heading));
-            var bodyLines = body.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n').Where(line => line.Trim().Length > 0).ToArray();
-            if (bodyLines.Length > MaxLines) throw new ArgumentException("章节「" + heading + "」段落数过多。");
-            foreach (var line in bodyLines) lines.Add(("Normal", line));
+            if (section.Blocks is { Count: > 0 })
+            {
+                if (section.Blocks.Count > MaxLines) throw new ArgumentException("章节「" + heading + "」内容块过多。");
+                foreach (var block in section.Blocks)
+                {
+                    if (block.Kind == "paragraph") lines.Add(("Normal", Trim(block.Text ?? string.Empty, MaxSectionCharacters, "正文段落")));
+                    else if (block.Kind == "table" && block.Rows is { Count: > 0 }) lines.Add(("TableJson", JsonSerializer.Serialize(block.Rows)));
+                    else throw new ArgumentException("章节「" + heading + "」包含无效内容块。");
+                }
+            }
+            else
+            {
+                var bodyLines = body.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n').Where(line => line.Trim().Length > 0).ToArray();
+                if (bodyLines.Length > MaxLines) throw new ArgumentException("章节「" + heading + "」段落数过多。");
+                foreach (var line in bodyLines) lines.Add(("Normal", line));
+            }
         }
         if (filled == 0) throw new ArgumentException("所有章节都是空的，请至少填写一个章节正文。");
 
         var bytes = BuildDocx(lines);
-        var parsed = Parse(new DocxBytesSource(Path.GetFileName(outputPath), bytes));
-        if (!parsed.Success) return FromParse(parsed, null, "生成的 DOCX 未通过导入检查，文件没有保存。");
+        var hasTables = lines.Any(line => line.Style == "TableJson");
+        var parsed = hasTables ? null : Parse(new DocxBytesSource(Path.GetFileName(outputPath), bytes));
+        if (parsed is not null && !parsed.Success) return FromParse(parsed, null, "生成的 DOCX 未通过导入检查，文件没有保存。");
 
         var directory = Path.GetDirectoryName(outputPath)!;
         Directory.CreateDirectory(directory);
@@ -145,7 +163,8 @@ internal static class Program
         {
             if (File.Exists(temporary)) File.Delete(temporary);
         }
-        return FromParse(parsed, outputPath, "DOCX 已生成，可用 Word/WPS 修改。");
+        if (hasTables) return TableDocumentResult(outputPath, bytes);
+        return FromParse(parsed!, outputPath, "DOCX 已生成，可用 Word/WPS 修改。");
     }
 
     private static void AddMeta(List<(string Style, string Text)> lines, string label, string? value, int maxLength)
@@ -200,8 +219,8 @@ internal static class Program
             stylesPart.Styles.Save();
             var body = new Body();
             foreach (var (style, text) in lines)
-                body.Append(Paragraph(style, text));
-            body.Append(new SectionProperties());
+                body.Append(style == "TableJson" ? MakeTable(JsonSerializer.Deserialize<List<List<string>>>(text) ?? throw new InvalidDataException("表格数据无效。")) : Paragraph(style, text));
+            body.Append(new SectionProperties(new PageSize { Width = 11906, Height = 16838 }, new PageMargin { Top = 1417, Bottom = 1417, Left = 1134, Right = 1134 }));
             main.Document = new DocumentFormat.OpenXml.Wordprocessing.Document(body);
             main.Document.Save();
             word.PackageProperties.Title = lines.Count > 0 ? lines[0].Text : null;
@@ -209,14 +228,48 @@ internal static class Program
         return stream.ToArray();
     }
 
-    private static Style MakeStyle(string id, string name, bool isDefault) =>
-        new(new StyleName { Val = name }) { Type = StyleValues.Paragraph, StyleId = id, Default = isDefault };
+    private static Style MakeStyle(string id, string name, bool isDefault)
+    {
+        var style = new Style(new StyleName { Val = name }) { Type = StyleValues.Paragraph, StyleId = id, Default = isDefault };
+        var heading = id != "Normal";
+        style.Append(new StyleParagraphProperties(new SpacingBetweenLines { Before = heading ? "240" : "0", After = heading ? "120" : "0", Line = "360", LineRule = LineSpacingRuleValues.Auto }));
+        style.Append(new StyleRunProperties(new RunFonts { Ascii = "SimSun", HighAnsi = "SimSun", EastAsia = "宋体" }, new FontSize { Val = id == "Heading1" ? "32" : id == "Heading2" ? "26" : "21" }));
+        return style;
+    }
 
     private static Paragraph Paragraph(string style, string text)
     {
         var paragraph = new Paragraph(new ParagraphProperties(new ParagraphStyleId { Val = style }));
         if (text.Length > 0) paragraph.Append(new Run(new Text(text) { Space = SpaceProcessingModeValues.Preserve }));
         return paragraph;
+    }
+
+    private static Table MakeTable(List<List<string>> rows)
+    {
+        if (rows.Count == 0 || rows.Count > 100 || rows.Any(row => row.Count == 0 || row.Count > 12)) throw new ArgumentException("表格行列数无效。");
+        var table = new Table(new TableProperties(new TableBorders(
+            new TopBorder { Val = BorderValues.Single, Size = 4 }, new BottomBorder { Val = BorderValues.Single, Size = 4 },
+            new LeftBorder { Val = BorderValues.Single, Size = 4 }, new RightBorder { Val = BorderValues.Single, Size = 4 },
+            new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4 }, new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 })));
+        foreach (var row in rows)
+        {
+            var tableRow = new TableRow();
+            foreach (var cell in row) tableRow.Append(new TableCell(Paragraph("Normal", Trim(cell, 1000, "表格单元格")), new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Auto })));
+            table.Append(tableRow);
+        }
+        return table;
+    }
+
+    private static WorkerResult TableDocumentResult(string path, byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes);
+        using var word = WordprocessingDocument.Open(stream, false);
+        var body = word.MainDocumentPart?.Document.Body ?? throw new InvalidDataException("DOCX 缺少正文。");
+        var headings = body.Elements<Paragraph>().Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value is "Heading1" or "Heading2").Select(p => p.InnerText).ToArray();
+        var blocks = body.Elements().Count(element => element is DocumentFormat.OpenXml.Wordprocessing.Paragraph or Table);
+        if (headings.Length < 2 || !body.Elements<Table>().Any()) throw new InvalidDataException("DOCX 章节或表格结构无效。");
+        return new WorkerResult(true, "含可编辑表格的 DOCX 已生成；当前 CAD 插件尚不支持表格导入。", path, blocks, headings,
+            new[] { new WorkerDiagnostic("W_TABLE_CAD_UNSUPPORTED", "warning", "当前 CAD 插件不能导入含表格的 DOCX；请在 Word/WPS 完成审查，CAD 适配另行处理。") });
     }
 
     private static DocumentParseResult Parse(IDocumentSource source)
@@ -264,6 +317,7 @@ internal sealed class WorkerDocument
     public WorkerProject? Project { get; set; }
     public WorkerStructural? Structural { get; set; }
     public List<WorkerSection>? Sections { get; set; }
+    public string? LayoutMode { get; set; }
 }
 
 internal sealed class WorkerProject
@@ -291,6 +345,14 @@ internal sealed class WorkerSection
 {
     public string? Title { get; set; }
     public string? Body { get; set; }
+    public List<WorkerBlock>? Blocks { get; set; }
+}
+
+internal sealed class WorkerBlock
+{
+    public string? Kind { get; set; }
+    public string? Text { get; set; }
+    public List<List<string>>? Rows { get; set; }
 }
 
 internal sealed record WorkerResult(bool Success, string Message, string? Path, int Blocks, IReadOnlyList<string> Headings, IReadOnlyList<WorkerDiagnostic> Diagnostics);
