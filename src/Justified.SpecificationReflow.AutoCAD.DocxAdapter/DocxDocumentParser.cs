@@ -268,6 +268,7 @@ public sealed class DocxDocumentParser : IDocumentParser
             if (HasError()) return new DocumentParseResult(null, _diagnostics);
             // 末段没有正文或硬换行时就是编辑器终止段。样式带自动编号也不让它变成条目。
             if (_blocks.Count > 0
+                && _blocks[_blocks.Count - 1].Type != BlockType.Table
                 && _blocks[_blocks.Count - 1].SourceRef.ParagraphIndex == _lastParagraphIndex
                 && !HasText(_blocks[_blocks.Count - 1]))
             {
@@ -277,7 +278,7 @@ public sealed class DocxDocumentParser : IDocumentParser
             var name = string.IsNullOrWhiteSpace(_source.Info.Name) ? "document.docx" : _source.Info.Name;
             var document = new ModelDocument
             {
-                SchemaVersion = SchemaVersion,
+                SchemaVersion = _blocks.Exists(b => b.Type == BlockType.Table) ? "2.0" : SchemaVersion,
                 DocumentId = _parser._options.DocumentId.Trim(),
                 DisciplineCode = _parser._options.DisciplineCode.Trim(),
                 Source = new SourceInfo
@@ -301,7 +302,7 @@ public sealed class DocxDocumentParser : IDocumentParser
                     ReadParagraph(paragraph);
                     break;
                 case Table table:
-                    Report(table, "table", "检测到表格。V1 不排版表格，请删除或改成正文后再试。", Excerpt(table.InnerText));
+                    ReadTable(table);
                     break;
                 case SdtBlock sdt when sdt.SdtContentBlock != null:
                     Walk(sdt.SdtContentBlock);
@@ -322,6 +323,25 @@ public sealed class DocxDocumentParser : IDocumentParser
                         Report(element, "unknown", "检测到未支持的正文内容（" + element.LocalName + "）。", Excerpt(element.InnerText));
                     break;
             }
+        }
+
+        private void ReadTable(Table table)
+        {
+            var index = _paragraphCount;
+            var error = DocxTableReader.Read(table, _package.MainDocumentPart?.StyleDefinitionsPart?.Styles, p =>
+            {
+                var start = _blocks.Count;
+                ReadParagraph(p);
+                var found = _blocks.GetRange(start, _blocks.Count - start);
+                _blocks.RemoveRange(start, _blocks.Count - start);
+                return found;
+            }, _cancellation, out var data);
+            if (error != null)
+            {
+                Add(index, DiagnosticCodes.EUnsupportedContent, Severity.Error, "表格（起始段 " + (index + 1) + "）：" + error, Details("kind", "table", "excerpt", Excerpt(table.InnerText)));
+                return;
+            }
+            _blocks.Add(new Block { Id = "table" + index, Type = BlockType.Table, SourceRef = new SourceRef { ParagraphIndex = index }, Table = data });
         }
 
         private void ReadParagraph(Paragraph paragraph)

@@ -13,11 +13,14 @@ namespace Justified.SpecificationReflow.AutoCAD.AutoCadAdapter;
 public sealed class DbTextWriter
 {
     public RenderReport Write(Database database, IReadOnlyList<PlacedText> texts, double elevation, System.Threading.CancellationToken cancellationToken)
+        => Write(database, texts, Array.Empty<PlacedLine>(), elevation, cancellationToken);
+
+    public RenderReport Write(Database database, IReadOnlyList<PlacedText> texts, IReadOnlyList<PlacedLine> lines, double elevation, System.Threading.CancellationToken cancellationToken)
     {
         if (database == null) throw new ArgumentNullException(nameof(database));
         if (texts == null) throw new ArgumentNullException(nameof(texts));
         if (cancellationToken.IsCancellationRequested) return Report(false, 0, 0, Problem(DiagnosticCodes.Cancelled, "落图已取消。"));
-        if (texts.Count == 0) return Report(true, 0, 0);
+        if (texts.Count == 0 && lines.Count == 0) return Report(true, 0, 0);
 
         using (var transaction = database.TransactionManager.StartTransaction())
         {
@@ -59,13 +62,30 @@ public sealed class DbTextWriter
                     written++;
                 }
 
+                foreach (var line in lines)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return Report(false, 0, 0, Problem(DiagnosticCodes.Cancelled, "落图已取消。"));
+                    var layerId = EnsureLayer(database, transaction, line.Layer, layers, out var layerError);
+                    if (layerError != null) return Report(false, 0, 0, layerError);
+                    var entity = new Line(new Point3d(line.Start.X, line.Start.Y, elevation), new Point3d(line.End.X, line.End.Y, elevation));
+                    entity.SetDatabaseDefaults(database);
+                    entity.LayerId = layerId;
+                    entity.Linetype = line.Linetype;
+                    entity.LineWeight = (LineWeight)line.Lineweight;
+                    space.AppendEntity(entity);
+                    transaction.AddNewlyCreatedDBObject(entity, true);
+                    pages.Add(line.PageIndex);
+                    written++;
+                }
+                if (cancellationToken.IsCancellationRequested) return Report(false, 0, 0, Problem(DiagnosticCodes.Cancelled, "落图已取消。"));
                 if (written == 0) return Report(true, 0, 0);
                 transaction.Commit();
                 return Report(true, pages.Count, written);
             }
             catch (System.Exception error)
             {
-                return Report(false, 0, 0, Problem(DiagnosticCodes.ERenderFailed, "写入单行文字失败：" + Describe(error) + "。本次没有提交。"));
+                return Report(false, 0, 0, Problem(DiagnosticCodes.ERenderFailed, "写入文字或表格线条失败：" + Describe(error) + "。本次没有提交。"));
             }
         }
     }

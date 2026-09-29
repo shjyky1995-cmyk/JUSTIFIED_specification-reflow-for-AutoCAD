@@ -5,19 +5,36 @@
   "description": "JUSTIFIED 数据协议 Document 契约（PRD 5.2）。schemaVersion 主版本必须为 1；未知主版本或未知块类型必须拒绝；extensions 为命名空间 key 的扩展数据，原样保留，核心规则不依赖其值。",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "documentId", "disciplineCode", "source", "blocks", "extensions"],
+  "required": [
+    "schemaVersion",
+    "documentId",
+    "disciplineCode",
+    "source",
+    "blocks",
+    "extensions"
+  ],
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "pattern": "^1\\.[0-9]+$",
+      "pattern": "^(1\\.[0-9]+|2\\.0)$",
       "description": "协议版本；支持的主版本内只追加可选字段。"
     },
-    "documentId": { "type": "string", "minLength": 1 },
-    "disciplineCode": { "type": "string", "minLength": 1 },
-    "source": { "$ref": "#/definitions/source" },
+    "documentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "disciplineCode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "$ref": "#/definitions/source"
+    },
     "blocks": {
       "type": "array",
-      "items": { "$ref": "#/definitions/block" },
+      "items": {
+        "$ref": "#/definitions/block"
+      },
       "description": "保留原阅读顺序；无 CAD 坐标。"
     },
     "extensions": {
@@ -30,68 +47,304 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "name", "contentHash"],
+      "required": [
+        "kind",
+        "name",
+        "contentHash"
+      ],
       "properties": {
-        "kind": { "enum": ["docx"] },
-        "name": { "type": "string", "minLength": 1 },
-        "contentHash": { "type": "string", "minLength": 1 },
-        "localPath": { "type": "string", "description": "仅本地诊断可选，不作为身份。" }
+        "kind": {
+          "enum": [
+            "docx"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "localPath": {
+          "type": "string",
+          "description": "仅本地诊断可选，不作为身份。"
+        }
       }
     },
     "block": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "type", "sourceRef", "runs"],
+      "required": [
+        "id",
+        "type",
+        "sourceRef",
+        "runs"
+      ],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "type": { "enum": ["heading1", "heading2", "paragraph", "spacer"] },
-        "sourceRef": { "$ref": "#/definitions/sourceRef" },
-        "runs": { "type": "array", "items": { "$ref": "#/definitions/textRun" } },
-        "numbering": { "$ref": "#/definitions/numbering" },
-        "slotCount": { "type": "integer", "minimum": 1 }
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "heading1",
+            "heading2",
+            "paragraph",
+            "spacer",
+            "table"
+          ]
+        },
+        "sourceRef": {
+          "$ref": "#/definitions/sourceRef"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/textRun"
+          }
+        },
+        "numbering": {
+          "$ref": "#/definitions/numbering"
+        },
+        "slotCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "table": {
+          "$ref": "#/definitions/table"
+        }
       },
       "if": {
-        "properties": { "type": { "const": "spacer" } },
-        "required": ["type"]
+        "properties": {
+          "type": {
+            "const": "spacer"
+          }
+        },
+        "required": [
+          "type"
+        ]
       },
-      "then": { "required": ["slotCount"] }
+      "then": {
+        "required": [
+          "slotCount"
+        ]
+      },
+      "else": {
+        "if": {
+          "properties": {
+            "type": {
+              "const": "table"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "table"
+          ]
+        },
+        "else": {
+          "properties": {
+            "table": {
+              "not": {}
+            }
+          }
+        }
+      }
     },
     "textRun": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["text", "semantic"],
+      "required": [
+        "text",
+        "semantic"
+      ],
       "properties": {
-        "text": { "type": "string", "description": "字符串原样保留；硬换行为独立 break run（semantic=normal 且 text 恰为换行符）。" },
-        "semantic": { "enum": ["normal", "superscript", "subscript"] }
+        "text": {
+          "type": "string",
+          "description": "字符串原样保留；硬换行为独立 break run（semantic=normal 且 text 恰为换行符）。"
+        },
+        "semantic": {
+          "enum": [
+            "normal",
+            "superscript",
+            "subscript"
+          ]
+        }
       }
     },
     "numbering": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["label", "sourceKind", "level"],
+      "required": [
+        "label",
+        "sourceKind",
+        "level"
+      ],
       "properties": {
-        "label": { "type": "string", "description": "已解析可见编号；显示编号与正文分开。" },
-        "sourceKind": { "enum": ["manual", "automatic"] },
-        "level": { "type": "integer", "minimum": 0 }
+        "label": {
+          "type": "string",
+          "description": "已解析可见编号；显示编号与正文分开。"
+        },
+        "sourceKind": {
+          "enum": [
+            "manual",
+            "automatic"
+          ]
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     "sourceRef": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["paragraphIndex"],
+      "required": [
+        "paragraphIndex"
+      ],
       "properties": {
-        "paragraphIndex": { "type": "integer", "minimum": 0 },
-        "runIndex": { "type": "integer", "minimum": 0 },
-        "textRange": { "$ref": "#/definitions/textRange" }
+        "paragraphIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "textRange": {
+          "$ref": "#/definitions/textRange"
+        }
       }
     },
     "textRange": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["start", "length"],
+      "required": [
+        "start",
+        "length"
+      ],
       "properties": {
-        "start": { "type": "integer", "minimum": 0 },
-        "length": { "type": "integer", "minimum": 0 }
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "tableCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "row",
+        "column",
+        "rowSpan",
+        "columnSpan",
+        "top",
+        "bottom",
+        "left",
+        "right",
+        "paragraphs"
+      ],
+      "properties": {
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rowSpan": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "columnSpan": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top": {
+          "type": "boolean"
+        },
+        "bottom": {
+          "type": "boolean"
+        },
+        "left": {
+          "type": "boolean"
+        },
+        "right": {
+          "type": "boolean"
+        },
+        "paragraphs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/block"
+          }
+        }
+      }
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "columnWidths",
+        "rowCount",
+        "headerRows",
+        "cells"
+      ],
+      "properties": {
+        "columnWidths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "rowCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "headerRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cells": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/tableCell"
+          }
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "schemaVersion": {
+        "pattern": "^1\\."
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "blocks": {
+        "items": {
+          "properties": {
+            "type": {
+              "not": {
+                "const": "table"
+              }
+            },
+            "table": {
+              "not": {}
+            }
+          }
+        }
       }
     }
   }

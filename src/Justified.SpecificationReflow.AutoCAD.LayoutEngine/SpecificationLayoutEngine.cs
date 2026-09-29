@@ -16,7 +16,7 @@ using Justified.SpecificationReflow.AutoCAD.Contracts.Templates;
 namespace Justified.SpecificationReflow.AutoCAD.LayoutEngine;
 
 // 按当前栏的可用宽度逐行换行，再写入固定行槽。栏宽、行距和缩进都来自当次院标与模板。
-public sealed class SpecificationLayoutEngine : ILayoutEngine
+public sealed partial class SpecificationLayoutEngine : ILayoutEngine
 {
     private readonly int _safetyPageLimit;
 
@@ -69,6 +69,13 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
             {
                 diagnostics.Add(Problem(DiagnosticCodes.ESchemaInvalid, "文档含有空的块。", DiagnosticStage.Protocol, null));
                 return Finish(documentHash, standard, template, profileHash, new List<LayoutPage>(), diagnostics, watch);
+            }
+
+            if (block.Type == BlockType.Table)
+            {
+                if (!PlaceTable(block, flow, template, standard, composer, diagnostics, cancellationToken))
+                    return Finish(documentHash, standard, template, profileHash, new List<LayoutPage>(), diagnostics, watch);
+                continue;
             }
 
             if (block.Type == BlockType.Spacer)
@@ -357,8 +364,8 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
     private static List<Diagnostic> Validate(Document document, InstitutionStandard standard, LayoutTemplate template)
     {
         var diagnostics = new List<Diagnostic>();
-        if (!IsSchemaV1(document.SchemaVersion))
-            diagnostics.Add(Problem(DiagnosticCodes.ESchemaVersion, "文档 schemaVersion 不是受支持的 1.x。", DiagnosticStage.Protocol, null));
+        if (!IsSchemaV1(document.SchemaVersion) && document.SchemaVersion != "2.0")
+            diagnostics.Add(Problem(DiagnosticCodes.ESchemaVersion, "文档 schemaVersion 不是受支持的 1.x 或 2.0。", DiagnosticStage.Protocol, null));
         if (document.Blocks == null)
             diagnostics.Add(Problem(DiagnosticCodes.ESchemaInvalid, "文档缺少块列表。", DiagnosticStage.Protocol, null));
         if (string.IsNullOrWhiteSpace(standard.StandardId) || string.IsNullOrWhiteSpace(standard.Version))
@@ -516,7 +523,7 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
         if (watch.IsRunning) watch.Stop();
         return new LayoutResult
         {
-            SchemaVersion = LayoutEngineInfo.SchemaVersion,
+            SchemaVersion = pages.Exists(p => p.Columns.Exists(c => c.Lines.Count > 0 || c.TableTexts.Count > 0)) ? "2.0" : LayoutEngineInfo.SchemaVersion,
             DocumentHash = documentHash,
             StandardRef = new StandardRef { Id = standard.StandardId ?? string.Empty, Version = standard.Version ?? string.Empty },
             TemplateRef = new TemplateRef { Id = template.TemplateId ?? string.Empty, Version = template.Version ?? string.Empty },
@@ -540,6 +547,8 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
             {
                 if (column?.Rows == null) continue;
                 rows += column.Rows.Count;
+                objects += column.Lines.Count;
+                foreach (var text in column.TableTexts) objects += text.VisualLine?.RenderRuns.Count ?? 0;
                 foreach (var row in column.Rows)
                 {
                     if (row?.Occupancy == Occupancy.Text && row.VisualLine?.RenderRuns != null)
@@ -586,6 +595,7 @@ public sealed class SpecificationLayoutEngine : ILayoutEngine
                         builder.Append('|').Append(run == null ? string.Empty : run.Semantic.ToString()).Append(':').Append(run == null ? string.Empty : run.Text);
                 }
 
+                if (block.Table != null) AppendTableHash(builder, block.Table);
                 builder.Append('\n');
             }
         }

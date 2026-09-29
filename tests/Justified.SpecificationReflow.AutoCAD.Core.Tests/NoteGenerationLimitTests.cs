@@ -65,7 +65,7 @@ public class NoteGenerationLimitTests
         var service = new NoteGenerationService(parser, engine, new NoMeasure());
         var result = service.Generate(new MemorySource(), Standard(), Template(), Transform(), CancellationToken.None, Limits(texts: 5));
         Assert.That(result.Success, Is.False);
-        Assert.That(result.Diagnostics.Single(item => item.Code == DiagnosticCodes.EResourceLimit).Message, Does.Contain("单行文字数"));
+        Assert.That(result.Diagnostics.Single(item => item.Code == DiagnosticCodes.EResourceLimit).Message, Does.Contain("文字与线条对象数"));
     }
 
     [Test]

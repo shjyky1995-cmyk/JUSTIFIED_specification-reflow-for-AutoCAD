@@ -10,7 +10,7 @@
   "blocks": [
     {
       "id": "b1",
-      "type": "table",
+      "type": "futureChart",
       "sourceRef": {
         "paragraphIndex": 0
       },

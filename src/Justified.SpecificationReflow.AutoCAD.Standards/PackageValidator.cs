@@ -50,6 +50,9 @@ public sealed class PackageValidator
         if (standard.LayerPolicy == null || string.IsNullOrWhiteSpace(standard.LayerPolicy.LayerName))
             diagnostics.Add(Error(DiagnosticCodes.ETemplateInvalid, "图层策略缺少图层名。", "layerPolicy.layerName"));
 
+        if (standard.TableStyle != null && !TableStyleRules.IsValid(standard.TableStyle))
+            diagnostics.Add(Error(DiagnosticCodes.ETemplateInvalid, "表格样式参数无效。", "tableStyle"));
+
         var families = new HashSet<string>(StringComparer.Ordinal);
         if (standard.FontProfile?.Fonts == null || standard.FontProfile.Fonts.Count == 0)
         {

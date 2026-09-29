@@ -4,6 +4,7 @@ namespace Justified.SpecificationReflow.AutoCAD.Contracts.Standards;
 
 public sealed class InstitutionStandard
 {
+    public TableStyle? TableStyle { get; set; }
     public string StandardId { get; set; } = string.Empty;
 
     public string Version { get; set; } = string.Empty;

@@ -440,7 +440,7 @@ public class NoteCommands
             if (TraceEnabled)
             {
                 editor.WriteMessage("\nDN_NOTE_SUMMARY pages=" + (generated.Layout == null ? 0 : generated.Layout.Pages.Count)
-                    + " objects=" + generated.Texts.Count
+                    + " objects=" + (generated.Texts.Count + generated.Lines.Count)
                     + " warnings=" + generated.Diagnostics.Count(item => item.Severity == Severity.Warning));
                 if (generated.Texts.Count > 0)
                 {
@@ -455,7 +455,7 @@ public class NoteCommands
             editor.WriteMessage("\n正在写入文字；提交前可取消，提交时正在完成。\n");
             renderTimer.Start();
             using (document.LockDocument())
-                report = new DbTextWriter().Write(database, generated.Texts, wcs.Z, cancellation.Token);
+                report = new DbTextWriter().Write(database, generated.Texts, generated.Lines, wcs.Z, cancellation.Token);
             renderTimer.Stop();
             rendered = new RenderReportResult
             {

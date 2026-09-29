@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using Justified.SpecificationReflow.AutoCAD.Contracts.Diagnostics;
@@ -13,6 +14,8 @@ namespace Justified.SpecificationReflow.AutoCAD.Application;
 public sealed class NotePlacementResult
 {
     public bool Success { get; set; }
+
+    public List<PlacedLine> Lines { get; set; } = new List<PlacedLine>();
 
     public List<PlacedText> Texts { get; set; } = new List<PlacedText>();
 
@@ -91,14 +94,30 @@ public static class NotePlacement
             {
                 if (column == null || column.ColumnIndex < 0 || column.ColumnIndex >= template.Columns.Count)
                 {
-                    result.Texts.Clear();
+                    result.Texts.Clear(); result.Lines.Clear();
                     result.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "排版栏与模板栏对不上。"));
                     return result;
                 }
 
                 var geometry = template.Columns[column.ColumnIndex];
+                foreach (var line in column.Lines)
+                {
+                    if (cancellationToken.IsCancellationRequested || standard.TableStyle == null || !TableStyleRules.IsValid(standard.TableStyle)
+                        || !Finite(line.Start.X) || !Finite(line.Start.Y) || !Finite(line.End.X) || !Finite(line.End.Y))
+                    {
+                        result.Texts.Clear(); result.Lines.Clear();
+                        result.Diagnostics.Add(Problem(cancellationToken.IsCancellationRequested ? DiagnosticCodes.Cancelled : DiagnosticCodes.ETemplateInvalid, "表格线条取消或样式/坐标无效。"));
+                        return result;
+                    }
+                    result.Lines.Add(new PlacedLine {
+                        PageIndex = page.PageIndex,
+                        Start = NoteCoordinates.World(transform.AnchorWcs, transform.UnitScale, page.PageOffset, geometry.Left, 0, line.Start, 0),
+                        End = NoteCoordinates.World(transform.AnchorWcs, transform.UnitScale, page.PageOffset, geometry.Left, 0, line.End, 0),
+                        Layer = standard.TableStyle.Layer, Linetype = standard.TableStyle.Linetype, Lineweight = standard.TableStyle.Lineweight
+                    });
+                }
                 if (column.Rows == null) continue;
-                foreach (var row in column.Rows)
+                foreach (var row in column.Rows.Concat(column.TableTexts))
                 {
                     if (row == null || row.Occupancy == Occupancy.Spacer || row.VisualLine == null)
                         continue;
@@ -109,7 +128,7 @@ public static class NotePlacement
                         if (run == null || run.Text == null || run.Text.Length == 0) continue;
                         if (run.ResolvedStyle == null)
                         {
-                            result.Texts.Clear();
+                            result.Texts.Clear(); result.Lines.Clear();
                             result.Diagnostics.Add(Problem(DiagnosticCodes.ETemplateInvalid, "文字 run 没有解析出的样式。"));
                             return result;
                         }
@@ -117,7 +136,7 @@ public static class NotePlacement
                         var font = run.ResolvedStyle.Font;
                         if (font == null || string.IsNullOrWhiteSpace(font.FileIdentity))
                         {
-                            result.Texts.Clear();
+                            result.Texts.Clear(); result.Lines.Clear();
                             result.Diagnostics.Add(Problem(DiagnosticCodes.EFontMissing, "文字样式没有字体文件。"));
                             return result;
                         }
