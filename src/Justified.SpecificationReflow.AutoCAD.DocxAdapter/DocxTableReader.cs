@@ -23,14 +23,26 @@ internal static class DocxTableReader
                 return "暂不支持表格属性或未接受修订：" + node.LocalName;
         }
         var grid = table.GetFirstChild<TableGrid>();
-        if (grid == null) return "表格缺少列宽网格，请在 Word/WPS 中明确设置列宽后保存。";
-        foreach (var col in grid.Elements<GridColumn>())
+        if (grid == null || !grid.Elements<GridColumn>().Any())
+        {
+            var autoRows = table.Elements<TableRow>().ToList();
+            var count = autoRows.Count > 0 ? autoRows[0].Elements<TableCell>().Count() : 0;
+            if (count == 0 || autoRows.Any(r => r.Elements<TableCell>().Count() != count)
+                || autoRows.SelectMany(r => r.Elements<TableCell>()).Any(c => Attr(Child(c.TableCellProperties, "tcW"), "type") != "auto"
+                    || Child(c.TableCellProperties, "gridSpan") != null || Child(c.TableCellProperties, "vMerge") != null))
+                return "表格缺少有效列宽网格，请在 Word/WPS 中明确设置列宽后保存。";
+            data.AutoColumnWidths = true;
+            data.ColumnWidths = Enumerable.Repeat(1d, count).ToList();
+        }
+        else foreach (var col in grid.Elements<GridColumn>())
         {
             if (!double.TryParse(Attr(col, "w"), NumberStyles.Float, CultureInfo.InvariantCulture, out var width)
                 || double.IsInfinity(width) || double.IsNaN(width) || width <= 0) return "表格列宽必须为有限正数。";
             data.ColumnWidths.Add(width);
         }
         if (data.ColumnWidths.Count == 0) return "表格没有有效列。";
+        if (table.ChildElements.Any(n => !(n is TableProperties) && !(n is TableGrid) && !(n is TableRow)))
+            return "表格含暂不支持的行包装内容。";
         var rows = table.Elements<TableRow>().ToList();
         data.RowCount = rows.Count;
         if (rows.Count == 0) return "表格没有行。";
@@ -50,6 +62,7 @@ internal static class DocxTableReader
             id = Attr(Child(style, "basedOn"), "val");
         }
         if (table.GetFirstChild<TableProperties>() != null) borderSources.Add(table.GetFirstChild<TableProperties>()!);
+        var mergeOrigins = new HashSet<TableCellData>();
         bool headerEnded = false;
         for (int r = 0; r < rows.Count; r++)
         {
@@ -58,6 +71,7 @@ internal static class DocxTableReader
             bool isHeader = header != null && Attr(header, "val") != "0" && Attr(header, "val") != "false" && Attr(header, "val") != "off";
             if (isHeader && headerEnded) return "重复表头必须是从第一行开始的连续行。";
             if (isHeader) data.HeaderRows++; else headerEnded = true;
+            if (rows[r].ChildElements.Any(n => !(n is TableRowProperties) && !(n is TableCell))) return "表格行含暂不支持的单元格包装内容。";
             int c = 0;
             foreach (var tc in rows[r].Elements<TableCell>())
             {
@@ -82,14 +96,18 @@ internal static class DocxTableReader
                 cell.Right = Border(borderSources, tc, "right", c + span == data.ColumnWidths.Count ? "right" : "insideV");
                 if (merge != null && mergeValue != "restart")
                 {
-                    var above = data.Cells.LastOrDefault(x => x.Column == c && x.ColumnSpan == span && x.Row + x.RowSpan == r);
+                    var above = data.Cells.LastOrDefault(x => mergeOrigins.Contains(x) && x.Column == c && x.ColumnSpan == span && x.Row + x.RowSpan == r);
                     if (above == null) return "纵向合并没有匹配的起始单元格。";
                     if (paragraphs.Any(p => p.Runs.Any(run => !string.IsNullOrWhiteSpace(run.Text)))) return "纵向合并延续单元格含独立文字，不能静默丢弃。";
                     above.RowSpan++;
                     above.Bottom = cell.Bottom;
                     if (above.Left != cell.Left || above.Right != cell.Right) return "纵向合并单元格侧边框不连续，请统一边框。";
                 }
-                else data.Cells.Add(cell);
+                else
+                {
+                    data.Cells.Add(cell);
+                    if (merge != null && mergeValue == "restart") mergeOrigins.Add(cell);
+                }
                 c += span;
             }
             if (c != data.ColumnWidths.Count) return "表格行与列宽网格不一致。";

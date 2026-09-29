@@ -117,8 +117,14 @@ public static class NotePlacement
                     });
                 }
                 if (column.Rows == null) continue;
-                foreach (var row in column.Rows.Concat(column.TableTexts))
+                foreach (var row in column.Rows.Concat(column.TableTexts).OrderBy(r => r.RowIndex).ThenBy(r => r.VisualLine?.RenderRuns.FirstOrDefault()?.RelativeOrigin.X ?? 0))
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        result.Texts.Clear(); result.Lines.Clear();
+                        result.Diagnostics.Add(Problem(DiagnosticCodes.Cancelled, "落图已取消。"));
+                        return result;
+                    }
                     if (row == null || row.Occupancy == Occupancy.Spacer || row.VisualLine == null)
                         continue;
                     if (row.VisualLine.RenderRuns == null || row.VisualLine.RenderRuns.Count == 0)

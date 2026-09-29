@@ -366,6 +366,8 @@ public sealed partial class SpecificationLayoutEngine : ILayoutEngine
         var diagnostics = new List<Diagnostic>();
         if (!IsSchemaV1(document.SchemaVersion) && document.SchemaVersion != "2.0")
             diagnostics.Add(Problem(DiagnosticCodes.ESchemaVersion, "文档 schemaVersion 不是受支持的 1.x 或 2.0。", DiagnosticStage.Protocol, null));
+        if (document.Blocks != null && document.SchemaVersion != "2.0" && document.Blocks.Exists(b => b?.Type == BlockType.Table))
+            diagnostics.Add(Problem(DiagnosticCodes.ESchemaVersion, "表格必须使用 2.0 文档协议。", DiagnosticStage.Protocol, null));
         if (document.Blocks == null)
             diagnostics.Add(Problem(DiagnosticCodes.ESchemaInvalid, "文档缺少块列表。", DiagnosticStage.Protocol, null));
         if (string.IsNullOrWhiteSpace(standard.StandardId) || string.IsNullOrWhiteSpace(standard.Version))
@@ -626,6 +628,14 @@ public sealed partial class SpecificationLayoutEngine : ILayoutEngine
             }
         }
 
+        if (standard.TableStyle != null)
+        {
+            var t = standard.TableStyle;
+            builder.Append('|').Append(t.AutoWidthPolicy).Append('|').Append(t.HorizontalPaddingEm.ToString("R", CultureInfo.InvariantCulture))
+                .Append('|').Append(t.VerticalPaddingEm.ToString("R", CultureInfo.InvariantCulture))
+                .Append('|').Append(t.BeforeSlots).Append('|').Append(t.AfterSlots).Append('|').Append(t.Layer)
+                .Append('|').Append(t.Linetype).Append('|').Append(t.Lineweight);
+        }
         return Sha256(builder.ToString());
     }
 

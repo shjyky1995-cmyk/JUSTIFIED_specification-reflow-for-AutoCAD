@@ -16,7 +16,7 @@ public sealed partial class SpecificationLayoutEngine
     private static void AppendTableHash(System.Text.StringBuilder b, TableData t)
     {
         var culture = System.Globalization.CultureInfo.InvariantCulture;
-        b.Append("|table:").Append(t.RowCount).Append(':').Append(t.HeaderRows);
+        b.Append("|table:").Append(t.AutoColumnWidths).Append(t.RowCount).Append(':').Append(t.HeaderRows);
         foreach (var w in t.ColumnWidths) b.Append('|').Append(w.ToString("R", culture));
         foreach (var c in t.Cells)
         {
@@ -24,7 +24,7 @@ public sealed partial class SpecificationLayoutEngine
                 .Append(c.Top).Append(c.Bottom).Append(c.Left).Append(c.Right);
             foreach (var p in c.Paragraphs)
             {
-                b.Append('|').Append(p.Numbering?.Label);
+                b.Append('|').Append(p.Type).Append(':').Append(p.SlotCount).Append(':').Append(p.Numbering?.Label);
                 foreach (var run in p.Runs) b.Append(run.Semantic).Append(':').Append(run.Text.Length).Append(':').Append(run.Text);
             }
         }
@@ -51,6 +51,12 @@ public sealed partial class SpecificationLayoutEngine
         var format = standard.TableStyle;
         if (table == null || !ValidTable(table)) return Fail("行列或合并结构无效、重叠或有缺格。");
         if (format == null || !TableStyleRules.IsValid(format)) return Fail("当前院标未配置有效表格样式，请安装支持表格的标准包。");
+        if (table.AutoColumnWidths)
+        {
+            if (format.AutoWidthPolicy != "equal-columns-with-warning") return Fail("表格采用自动列宽，当前院标未允许等宽排布；请在 Word/WPS 设置列宽。");
+            diagnostics.Add(new Diagnostic { Code = "W_TABLE_AUTO_WIDTH", Severity = Severity.Warning, Stage = DiagnosticStage.Layout,
+                SourceRef = block.SourceRef, Message = "表格 " + block.Id + " 未指定列宽；按院标在当前栏内等宽排布。需要不等宽时请在 Word/WPS 中设置列宽。" });
+        }
         for (var i = 0; i < format.BeforeSlots; i++)
             if (!Place(flow, template, standard, null, 0, diagnostics, block)) return false;
 
@@ -68,7 +74,7 @@ public sealed partial class SpecificationLayoutEngine
                 if (metrics == null) return false;
                 cache.Add(width, metrics);
             }
-            int end = GroupEnd(table, next);
+            int end = table.HeaderRows == table.RowCount ? table.RowCount : GroupEnd(table, next);
             // 首个表头与首个正文行组一起迁移，避免孤立表头。
             if (next == 0 && table.HeaderRows > 0 && table.HeaderRows < table.RowCount)
                 end = GroupEnd(table, table.HeaderRows);
@@ -150,7 +156,7 @@ public sealed partial class SpecificationLayoutEngine
             if (available <= 0) { diagnostics.Add(Problem(DiagnosticCodes.ENoLegalBreak, "表格第 " + (cell.Row + 1) + " 行第 " + (cell.Column + 1) + " 列窄于单元格留白。", DiagnosticStage.Layout, null)); return null; }
             foreach (var p in cell.Paragraphs)
             {
-                if (p.Type == BlockType.Spacer) { lines.Add(null); continue; }
+                if (p.Type == BlockType.Spacer) { for (int i = 0; i < (p.SlotCount ?? 1); i++) lines.Add(null); continue; }
                 // 表内所有文字使用正文样式，编号与上下标语义仍保留。
                 var body = new Block { Type = BlockType.Paragraph, Runs = p.Runs, Numbering = p.Numbering, SourceRef = p.SourceRef };
                 if (!TryResolve(standard, body, out var style, out _, out var styleError)) { diagnostics.Add(styleError!); return null; }
@@ -210,9 +216,9 @@ public sealed partial class SpecificationLayoutEngine
                 {
                     var offset = left + standard.TableStyle.HorizontalPaddingEm * standard.TextHeight;
                     // 测量缓存可重复用于续栏表头，不修改缓存中的坐标。
-                    var copy = new VisualLine { Text = line.Text, MeasuredWidth = line.MeasuredWidth, InkBounds = line.InkBounds, SourceSlices = line.SourceSlices };
+                    var copy = new VisualLine { Text = line.Text, MeasuredWidth = line.MeasuredWidth, InkBounds = ShiftInk(line.InkBounds, offset), SourceSlices = line.SourceSlices };
                     foreach (var run in line.RenderRuns)
-                        copy.RenderRuns.Add(new RenderRun { Text = run.Text, RelativeOrigin = new Point2 { X = run.RelativeOrigin.X + offset, Y = run.RelativeOrigin.Y }, BaselineOffset = run.BaselineOffset, ResolvedStyle = run.ResolvedStyle, MeasuredAdvance = run.MeasuredAdvance, InkBounds = run.InkBounds });
+                        copy.RenderRuns.Add(new RenderRun { Text = run.Text, RelativeOrigin = new Point2 { X = run.RelativeOrigin.X + offset, Y = run.RelativeOrigin.Y }, BaselineOffset = run.BaselineOffset, ResolvedStyle = run.ResolvedStyle, MeasuredAdvance = run.MeasuredAdvance, InkBounds = ShiftInk(run.InkBounds, offset) });
                     column.TableTexts.Add(new RowSlot { RowIndex = slot + m.Heights.Skip(start).Take(cell.Row - start).Sum() + index, Baseline = baseline - index * standard.RowPitch, Occupancy = Occupancy.Text, VisualLine = copy });
                 }
                 index++;
@@ -223,6 +229,8 @@ public sealed partial class SpecificationLayoutEngine
             if (cell.Right) AddEdge(column.Lines, right, bottom, right, cellTop);
         }
     }
+
+    private static Bounds2 ShiftInk(Bounds2 ink, double x) => new Bounds2 { MinX = ink.MinX + x, MaxX = ink.MaxX + x, MinY = ink.MinY, MaxY = ink.MaxY };
 
     // 合并共线且相接或重叠的边，包含合并单元格对接多个小格的情况。
     private static void AddEdge(List<LayoutLine> edges, double x1, double y1, double x2, double y2)

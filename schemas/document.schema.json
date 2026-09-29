@@ -282,7 +282,7 @@
         "paragraphs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/block"
+            "$ref": "#/definitions/cellParagraph"
           }
         }
       }
@@ -318,6 +318,88 @@
           "minItems": 1,
           "items": {
             "$ref": "#/definitions/tableCell"
+          }
+        },
+        "autoColumnWidths": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cellParagraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "sourceRef",
+        "runs"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "heading1",
+            "heading2",
+            "paragraph",
+            "spacer"
+          ]
+        },
+        "sourceRef": {
+          "$ref": "#/definitions/sourceRef"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/textRun"
+          }
+        },
+        "numbering": {
+          "$ref": "#/definitions/numbering"
+        },
+        "slotCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "table": {
+          "not": {}
+        }
+      },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "spacer"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "slotCount"
+        ]
+      },
+      "else": {
+        "if": {
+          "properties": {
+            "type": {
+              "const": "table"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "table"
+          ]
+        },
+        "else": {
+          "properties": {
+            "table": {
+              "not": {}
+            }
           }
         }
       }

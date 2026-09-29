@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -105,9 +106,9 @@ public sealed class NoteGenerationService
     {
         message = string.Empty;
         if (limits == null) return false;
-        if (document.Blocks != null && document.Blocks.Count > limits.MaxBlocks)
+        if (document.Blocks != null && DocumentBlocks.All(document.Blocks).Count() > limits.MaxBlocks)
         {
-            message = "段落块数 " + document.Blocks.Count + " 超过单次上限 " + limits.MaxBlocks + "。请拆小说明或提高限额。";
+            message = "段落块数 " + DocumentBlocks.All(document.Blocks).Count() + " 超过单次上限 " + limits.MaxBlocks + "。请拆小说明或提高限额。";
             return true;
         }
 

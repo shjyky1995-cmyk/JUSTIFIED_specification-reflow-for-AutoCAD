@@ -5,6 +5,8 @@ namespace Justified.SpecificationReflow.AutoCAD.Contracts.Documents;
 public sealed class TableData
 {
     public List<double> ColumnWidths { get; set; } = new List<double>();
+    public bool AutoColumnWidths { get; set; }
+    public bool ShouldSerializeAutoColumnWidths() => AutoColumnWidths;
     public int RowCount { get; set; }
     public int HeaderRows { get; set; }
     public List<TableCellData> Cells { get; set; } = new List<TableCellData>();

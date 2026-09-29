@@ -4,6 +4,7 @@
 - 桌面端交付终点是可编辑 DOCX；用户可在 Word/WPS 修改最终文件，再自行用 CAD 插件 `DSS` 选择导入。桌面端不连接、不启动、不同步 CAD，CAD 图纸实测不是桌面阶段的验收关卡。
 - 桌面端六专业共用编制、保存、预览和导出流程；非结构专业不显示结构参数。专业标准正文后补，缺数据标明待核定，不用演示文字冒充正式结论。Figma ZIP/截图的核对见 [设计参考](docs/FIGMA_DESIGN_REFERENCE.md)。
 - [旧桌面 D0 PRD](docs/DESKTOP_WORKBENCH_PRD_V1.md) 只保留技术决策与历史背景；与新桌面 PRD 冲突时按新 PRD。CAD 已发布功能及回归边界见 [CAD V1 PRD](CAD_DesignNote_PRD_V1.0.md)。
+- 用户新增 CAD 表格阶段 T28 按 [表格方案](docs/CAD_TABLES_PLAN.md) 独立推进；这是新增能力，不重做旧 CAD 验收，也不改变桌面到 DOCX 的边界。
 - CAD 正式入口为 `DSS`：每次选 DOCX、图幅，核对单位比例，再点一次图面左上角；模板由管理员为每图幅维护唯一有效版本。无警告不追问；未知单位不猜，不按文件名换标准。
 - 开始顺序：检查 Git 状态 → 阅读 [任务清单](docs/TASKS.md) → [架构](docs/ARCHITECTURE.md) → [固定流程](docs/WORKFLOW.md) / [当前接续](docs/NEXT_AGENT.md) → 当前任务日志、相关 PRD 条款及接口/测试。
 - 按大阶段交付（见 WORKFLOW）；阶段内自主连续完成实现、修复、检查与提交，不为微小步骤反复要求用户确认；只在阶段完成、真正阻塞或必要讨论时交还。

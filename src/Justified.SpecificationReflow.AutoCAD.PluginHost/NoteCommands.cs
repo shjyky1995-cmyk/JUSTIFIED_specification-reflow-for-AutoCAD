@@ -452,7 +452,7 @@ public class NoteCommands
             }
 
             RenderReport report;
-            editor.WriteMessage("\n正在写入文字；提交前可取消，提交时正在完成。\n");
+            editor.WriteMessage("\n正在写入文字和表格线条；提交前可取消，提交时正在完成。\n");
             renderTimer.Start();
             using (document.LockDocument())
                 report = new DbTextWriter().Write(database, generated.Texts, generated.Lines, wcs.Z, cancellation.Token);
