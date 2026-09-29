@@ -79,11 +79,7 @@ internal static class Program
         var projectName = Required(project.Name, "工程名称", 120);
 
         var lines = new List<(string Style, string Text)> { ("Heading1", title) };
-        if (document.LayoutMode == "source")
-        {
-            lines.Add(("Normal", "资料状态：旧工程候选文字，项目取值、规范版本与适用性须由设计人员核定。"));
-        }
-        else
+        if (document.LayoutMode != "source")
         {
             lines.Add(("Normal", "专业：" + discipline));
             lines.Add(("Normal", "工程名称：" + projectName));
@@ -133,7 +129,7 @@ internal static class Program
                 foreach (var block in section.Blocks)
                 {
                     if (block.Kind == "paragraph") lines.Add(("Normal", Trim(block.Text ?? string.Empty, MaxSectionCharacters, "正文段落")));
-                    else if (block.Kind == "table" && block.Rows is { Count: > 0 }) lines.Add(("TableJson", JsonSerializer.Serialize(block.Rows)));
+                    else if (block.Kind == "table" && block.Rows is { Count: > 0 }) lines.Add(("TableJson", JsonSerializer.Serialize(block)));
                     else throw new ArgumentException("章节「" + heading + "」包含无效内容块。");
                 }
             }
@@ -219,10 +215,12 @@ internal static class Program
             stylesPart.Styles.Save();
             var body = new Body();
             foreach (var (style, text) in lines)
-                body.Append(style == "TableJson" ? MakeTable(JsonSerializer.Deserialize<List<List<string>>>(text) ?? throw new InvalidDataException("表格数据无效。")) : Paragraph(style, text));
+                body.Append(style == "TableJson" ? MakeTable(JsonSerializer.Deserialize<WorkerBlock>(text) ?? throw new InvalidDataException("表格数据无效。")) : Paragraph(style, text));
             body.Append(new SectionProperties(new PageSize { Width = 11906, Height = 16838 }, new PageMargin { Top = 1417, Bottom = 1417, Left = 1134, Right = 1134 }));
             main.Document = new DocumentFormat.OpenXml.Wordprocessing.Document(body);
             main.Document.Save();
+            var errors = new DocumentFormat.OpenXml.Validation.OpenXmlValidator().Validate(word).Take(3).ToArray();
+            if (errors.Length > 0) throw new InvalidDataException("DOCX 结构检查失败：" + string.Join("；", errors.Select(error => error.Description)));
             word.PackageProperties.Title = lines.Count > 0 ? lines[0].Text : null;
         }
         return stream.ToArray();
@@ -240,21 +238,49 @@ internal static class Program
     private static Paragraph Paragraph(string style, string text)
     {
         var paragraph = new Paragraph(new ParagraphProperties(new ParagraphStyleId { Val = style }));
-        if (text.Length > 0) paragraph.Append(new Run(new Text(text) { Space = SpaceProcessingModeValues.Preserve }));
+        if (style is "Heading1" or "Heading2") paragraph.ParagraphProperties!.Append(new KeepNext());
+        var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        {
+            if (lineIndex > 0) paragraph.Append(new Run(new Break()));
+            var parts = lines[lineIndex].Split('\t');
+            for (var partIndex = 0; partIndex < parts.Length; partIndex++)
+            {
+                if (partIndex > 0) paragraph.Append(new Run(new TabChar()));
+                if (parts[partIndex].Length > 0) paragraph.Append(new Run(new Text(parts[partIndex]) { Space = SpaceProcessingModeValues.Preserve }));
+            }
+        }
         return paragraph;
     }
 
-    private static Table MakeTable(List<List<string>> rows)
+    private static Table MakeTable(WorkerBlock block)
     {
-        if (rows.Count == 0 || rows.Count > 100 || rows.Any(row => row.Count == 0 || row.Count > 12)) throw new ArgumentException("表格行列数无效。");
-        var table = new Table(new TableProperties(new TableBorders(
-            new TopBorder { Val = BorderValues.Single, Size = 4 }, new BottomBorder { Val = BorderValues.Single, Size = 4 },
-            new LeftBorder { Val = BorderValues.Single, Size = 4 }, new RightBorder { Val = BorderValues.Single, Size = 4 },
-            new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4 }, new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 })));
-        foreach (var row in rows)
+        var rows = block.Rows ?? throw new ArgumentException("表格缺少行。");
+        if (rows.Count == 0 || rows.Count > 100 || rows.Any(row => row.Count == 0 || row.Count > 12 || row.Count != rows[0].Count)) throw new ArgumentException("表格行列数无效。");
+        var ratios = block.ColumnWidths ?? Enumerable.Repeat(1d, rows[0].Count).ToList();
+        if (ratios.Count != rows[0].Count || ratios.Any(value => !double.IsFinite(value) || value <= 0) || !double.IsFinite(ratios.Sum())) throw new ArgumentException("表格列宽无效。");
+        const int availableWidth = 9638;
+        var widths = ratios.Select(value => Math.Max(1, (int)Math.Floor(value / ratios.Sum() * availableWidth))).ToArray();
+        widths[^1] = availableWidth - widths.Take(widths.Length - 1).Sum();
+        if (widths[^1] <= 0) throw new ArgumentException("表格列宽比例无效。");
+        var table = new Table(new TableProperties(
+            new TableWidth { Width = availableWidth.ToString(), Type = TableWidthUnitValues.Dxa },
+            new TableBorders(new TopBorder { Val = BorderValues.Single, Size = 4 }, new LeftBorder { Val = BorderValues.Single, Size = 4 },
+                new BottomBorder { Val = BorderValues.Single, Size = 4 }, new RightBorder { Val = BorderValues.Single, Size = 4 },
+                new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4 }, new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 }),
+            new TableLayout { Type = TableLayoutValues.Fixed }));
+        table.Append(new TableGrid(widths.Select(width => new GridColumn { Width = width.ToString() })));
+        for (var r = 0; r < rows.Count; r++)
         {
-            var tableRow = new TableRow();
-            foreach (var cell in row) tableRow.Append(new TableCell(Paragraph("Normal", Trim(cell, 1000, "表格单元格")), new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Auto })));
+            var properties = new TableRowProperties(new CantSplit());
+            if (r == 0) properties.Append(new TableHeader());
+            var tableRow = new TableRow(properties);
+            for (var c = 0; c < rows[r].Count; c++)
+            {
+                var cell = new TableCell(new TableCellProperties(new TableCellWidth { Width = widths[c].ToString(), Type = TableWidthUnitValues.Dxa }));
+                foreach (var line in Trim(rows[r][c], 10000, "表格单元格").Replace("\r\n", "\n").Split('\n')) cell.Append(Paragraph("Normal", line));
+                tableRow.Append(cell);
+            }
             table.Append(tableRow);
         }
         return table;
@@ -268,8 +294,8 @@ internal static class Program
         var headings = body.Elements<Paragraph>().Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value is "Heading1" or "Heading2").Select(p => p.InnerText).ToArray();
         var blocks = body.Elements().Count(element => element is DocumentFormat.OpenXml.Wordprocessing.Paragraph or Table);
         if (headings.Length < 2 || !body.Elements<Table>().Any()) throw new InvalidDataException("DOCX 章节或表格结构无效。");
-        return new WorkerResult(true, "含可编辑表格的 DOCX 已生成；当前 CAD 插件尚不支持表格导入。", path, blocks, headings,
-            new[] { new WorkerDiagnostic("W_TABLE_CAD_UNSUPPORTED", "warning", "当前 CAD 插件不能导入含表格的 DOCX；请在 Word/WPS 完成审查，CAD 适配另行处理。") });
+        return new WorkerResult(true, "含可编辑表格的 DOCX 已生成；CAD 表格导入请使用另行验收的 T28 候选版。", path, blocks, headings,
+            new[] { new WorkerDiagnostic("W_TABLE_CAD_UNSUPPORTED", "warning", "已发布 CAD v0.1.0 不支持表格；T28 候选版的表格导入仍需单独验收。") });
     }
 
     private static DocumentParseResult Parse(IDocumentSource source)
@@ -353,6 +379,7 @@ internal sealed class WorkerBlock
     public string? Kind { get; set; }
     public string? Text { get; set; }
     public List<List<string>>? Rows { get; set; }
+    public List<double>? ColumnWidths { get; set; }
 }
 
 internal sealed record WorkerResult(bool Success, string Message, string? Path, int Blocks, IReadOnlyList<string> Headings, IReadOnlyList<WorkerDiagnostic> Diagnostics);

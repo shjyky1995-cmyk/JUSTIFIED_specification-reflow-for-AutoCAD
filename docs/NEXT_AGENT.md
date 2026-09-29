@@ -2,13 +2,18 @@
 
 更新：2026-09-29。CAD v0.1.0 已由用户签收、合入 `main`、推送 GitHub **公开**仓库并上传 ZIP。发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。T12/T13 被用户免除的补充验收数据仍不得写成实测；详见任务日志与 BUILD.json。
 
-## 当前：T27/B 水池原稿版式基准待真实窗口与 Word/WPS 核对
+## 当前：T29/B 七套原稿完整编制，待用户视觉与专业核定
 
-- 分支 `task/T27-reference-note` 复用 G 盘 `artifacts/t26-auto-content-worktree`，从 T26 继续；原有测试夹具 `tests/Justified.SpecificationReflow.AutoCAD.Core.Tests/Fixtures/test-note-standard.json` 是此前未提交的他人改动，未暂存。T18/T24/T25/T26 依赖分支仍未顺序集成 main，本任务也不直接合 main。
-- G 盘私有 `content-library/private/pool-layout.json` 已由原构筑物 DOCX 与候选包生成，按原件 8 章/158 章内段/7 表装配到水池模板。02B 可改段落与表格，03 按同序预览，DOCX 写出可编辑表格。2 处旧工程事实阻断改写、9 段和 1 张表要求适用性确认，2 张带工程值的表要求填写；原地下水/近场效应判断已改为按本工程资料核定。规范版本与专业内容仍未批准。
-- 已验证桌面构建、worker 构建、`test:pool`、T26 自动装配和六专业 worker/flow/content 回归；`python-docx` 读回 8 章、7 表、A4、无已知旧项目地名字样。测试文档 `content-library/private/水池说明_版式核对_测试值.docx` 只含测试值，不是工程成品。
-- 本机无 LibreOffice/Word/WPS，文档渲染工具缺 `soffice.exe`；视觉分页、表格宽度与 Word/WPS 实际编辑尚未验证。当前 CAD V1 不支持表格，含表格 DOCX 的桌面读回只表示 OOXML 结构有效，绝不表示 CAD 导入通过。桌面工作进程返回 `W_TABLE_CAD_UNSUPPORTED`。
-- 用户待办：在真实窗口选结构→水池，查看 8 章及表格可编辑；打开上述私有测试 DOCX，用 Word/WPS 看分页、字号、表格和长段是否正常。反馈具体异常即可；没有安装应用或打不开文件时说明现象。无需 CAD 操作。
+- 分支 `task/T29-desktop-source-fidelity`，worktree仍为G盘 `artifacts/t26-auto-content-worktree`，基于T27 `6ca2781`。T18/T24/T25/T26/T27依赖尚未顺序集成，不合main。
+- 七套原件1355章内段、29表按原顺序进入编辑、预览、DOCX。工程取值集中填写并含表内字段；正文不再因候选筛选丢失。表格按原列宽比例限制页内、重复表头、保留换行，生成文件通过OpenXmlValidator。
+- 私有 `source-layouts.json`、`source-fidelity-audit.json` 与 `source-export-tests.json` 在项目根 `content-library/private`；均不上传。独立源文字/输出核对、七模板导出、六专业回归和构建通过，详见 `devlog/T29.md`。
+- 用户待办：方便时按 `DESKTOP_SOURCE_ACCEPTANCE.md` 重新选模板查看，再用Word/WPS核对分页与可编辑性。原有草稿不自动覆盖。当前无文档渲染组件，真实窗口与Word视觉未实测；规范和工程条件仍待专业核定。
+- CAD T28在主工作区 `task/T28-cad-tables`，用户正在测试；两个候选分支单独推送备份，不把桌面导出当成CAD验收。
+- 用户本轮明确要求完成后推GitHub，再10分钟关机；只在远端确认后安排一次。后续轮次不要重复关机。
+
+## 历史：T27 水池原稿基准
+
+T27已实现8章158段7表，但其他专业仍筛选候选、编辑区表格集中末尾，T29现按七份原稿完整顺序替代新建流程。T27原始日志与旧版式兼容保留。
 
 ## 历史：T26/B 编制导出流程已由用户试用，内容与格式需深化
 
@@ -28,6 +33,6 @@
 
 ## 唯一下一动作
 
-收集用户对 T27 水池版式基准的真实窗口与 Word/WPS 反馈；有缺陷先修，并开展水池内容、规范及适用性的专业核定。水池通过后再复用到框架和水池＋框架，另行解决 CAD 表格兼容。T18 已获用户认可，可作为基础独立集成；T26/T27 内容成果在达到基准前不作为完成的 B 阶段合入 main。私有资料不入库。用户 2026-09-28 要求的 10 分钟关机已于当次交付执行，不在新一轮工作中重复设置。
+收集七套模板真实窗口与Word/WPS反馈，修正具体版式和工程变量，再推进专业内容核定。无需重复CAD实测作为桌面前置。旧工程源文件、测试结果不入公开仓库，已有测试夹具行尾差异保持未暂存。
 
 原工作目录的用户业务 DOCX、截图/PDF 结果与测试夹具换行差异保持未暂存；不得带入公开仓库。

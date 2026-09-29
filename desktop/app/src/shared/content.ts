@@ -33,8 +33,8 @@ export type ContentCatalog = {
 
 export type ContentLayoutBlock =
   | { kind: 'paragraph'; sourcePara: number; template: string; clauseIds: string[]; fieldIds: string[]; reviewNote: string }
-  | { kind: 'table'; sourcePara: number; rows: string[][]; reviewNote: string }
-export type ContentLayout = { schemaVersion: 1; templateId: string; sourceId: string; sourceFile: string; sections: { id: string; title: string; sourcePara: number; blocks: ContentLayoutBlock[] }[] }
+  | { kind: 'table'; sourcePara: number; rows: string[][]; columnWidths?: number[]; reviewNote: string }
+export type ContentLayout = { schemaVersion: 1; templateId: string; sourceId: string; sourceFile: string; sourceTitle?: string; sourceHash?: string; fields?: ContentField[]; sections: { id: string; title: string; sourcePara: number; blocks: ContentLayoutBlock[] }[] }
 
 export function parseContentLayout(value: unknown): ContentLayout {
   const raw = object(value, '版式')
@@ -45,13 +45,13 @@ export function parseContentLayout(value: unknown): ContentLayout {
       const block = object(value, '版式内容块')
       if (!Number.isInteger(block.sourcePara) || (block.sourcePara as number) < 0) throw new Error('版式来源段号无效。')
       if (block.kind === 'paragraph') return { kind: 'paragraph' as const, sourcePara: block.sourcePara as number, template: string(block.template, '版式段落'), clauseIds: strings(block.clauseIds, '条款编号'), fieldIds: strings(block.fieldIds, '字段编号'), reviewNote: string(block.reviewNote, '核定提示') }
-      if (block.kind === 'table' && Array.isArray(block.rows) && block.rows.length > 0 && block.rows.every(row => Array.isArray(row) && row.length > 0 && row.every(cell => typeof cell === 'string'))) return { kind: 'table' as const, sourcePara: block.sourcePara as number, rows: block.rows as string[][], reviewNote: string(block.reviewNote, '核定提示') }
+      if (block.kind === 'table' && Array.isArray(block.rows) && block.rows.length > 0 && block.rows.every(row => Array.isArray(row) && row.length > 0 && row.length === (block.rows as unknown[][])[0].length && row.every(cell => typeof cell === 'string'))) return { kind: 'table' as const, sourcePara: block.sourcePara as number, rows: block.rows as string[][], columnWidths: parseColumnWidths(block.columnWidths, (block.rows[0] as string[]).length), reviewNote: string(block.reviewNote, '核定提示') }
       throw new Error('版式内容块类型无效。')
     }) : []
     return { id: string(section.id, '版式章节编号'), title: string(section.title, '版式章节标题'), sourcePara: section.sourcePara as number, blocks }
   }) : []
   if (sections.length === 0 || sections.some(section => section.blocks.length === 0)) throw new Error('版式章节缺少内容。')
-  return { schemaVersion: 1, templateId: string(raw.templateId, '模板编号'), sourceId: string(raw.sourceId, '来源编号'), sourceFile: string(raw.sourceFile, '来源文件'), sections }
+  return { schemaVersion: 1, templateId: string(raw.templateId, '模板编号'), sourceId: string(raw.sourceId, '来源编号'), sourceFile: string(raw.sourceFile, '来源文件'), sourceTitle: typeof raw.sourceTitle === 'string' ? raw.sourceTitle : undefined, sourceHash: typeof raw.sourceHash === 'string' ? raw.sourceHash : undefined, fields: Array.isArray(raw.fields) ? raw.fields.map(value => { const field = object(value, '原稿字段'); return { id: string(field.id, '字段编号'), label: string(field.label, '字段名称'), unit: typeof field.unit === 'string' ? field.unit : '', scope: '', reviewStatus: 'pending', aliases: [] } }) : [], sections }
 }
 
 export type SelectedModule = {
@@ -133,7 +133,7 @@ export function parseContentCatalog(value: unknown): ContentCatalog {
   const layouts = Array.isArray(raw.layouts) ? raw.layouts.map(parseContentLayout) : []
   for (const layout of layouts) {
     if (!sourceIds.has(layout.sourceId)) throw new Error(`版式 ${layout.templateId} 的来源不存在。`)
-    if (layout.sections.some(section => section.blocks.some(block => block.kind === 'paragraph' && block.fieldIds.some(id => !fieldIds.has(id))))) throw new Error(`版式 ${layout.templateId} 使用了未定义字段。`)
+    if (layout.sections.some(section => section.blocks.some(block => (block.kind === 'paragraph' ? block.fieldIds : [...block.rows.flat().join(' ').matchAll(/\{([a-z][a-z0-9_]*)\}/g)].map(match => match[1])).some(id => !fieldIds.has(id))))) throw new Error(`版式 ${layout.templateId} 使用了未定义字段。`)
   }
   return {
     schemaVersion: 1,
@@ -171,12 +171,28 @@ export function selectedModule(clause: ContentClause, catalog: ContentCatalog): 
 }
 
 export function renderModule(module: SelectedModule, values: Record<string, string>, labels: Record<string, string> = {}): { text: string; missing: string[] } {
+  return renderTemplate(module.template, values, labels)
+}
+
+export function renderTemplate(template: string, values: Record<string, string>, labels: Record<string, string> = {}): { text: string; missing: string[] } {
   const missing: string[] = []
-  const text = module.template.replace(/\{([a-z][a-z0-9_]*)\}/g, (_match, id: string) => {
-    const value = values[id]?.trim()
-    if (value) return value
+  const text = template.replace(/\{([a-z][a-z0-9_]*)\}/g, (_match, id: string, offset: number) => {
+    let value = values[id]?.trim()
+    if (value) {
+      const suffix = template.slice(offset + _match.length)
+      if (id === 'seismic_intensity') value = value.replace(/[（(].*$/, '').trim()
+      if (id === 'seismic_intensity' && /^\s*度/.test(suffix)) value = value.replace(/\s*度$/, '')
+      if (id === 'design_life' && /^\s*年/.test(suffix)) value = value.replace(/\s*年$/, '')
+      return value
+    }
     missing.push(id)
     return `【待填写：${labels[id] ?? id}】`
   })
   return { text, missing: [...new Set(missing)] }
+}
+
+export function parseColumnWidths(value: unknown, columns: number): number[] | undefined {
+  if (value === undefined) return undefined
+  if (!Array.isArray(value) || value.length !== columns || !value.every(item => typeof item === 'number' && Number.isFinite(item) && item > 0)) throw new Error('表格列宽无效。')
+  return value
 }

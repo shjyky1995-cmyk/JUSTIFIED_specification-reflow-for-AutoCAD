@@ -1363,3 +1363,8 @@ textarea:focus-visible {
 .content-candidate p { margin: 6px 0; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .content-candidate .content-note { display: block; margin-top: 4px; overflow-wrap: anywhere; }
 .content-candidate button { flex: none; }
+
+/* 原稿表格按列宽比例排版，长说明在单元格内换行。 */
+.layout-table { table-layout: fixed; }
+.layout-table td { overflow-wrap: anywhere; white-space: pre-wrap; }
+.layout-table details { white-space: normal; margin-top: 6px; font-size: 12px; }

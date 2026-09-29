@@ -1,6 +1,6 @@
 // 设计说明桌面端共享领域模型：专业、结构参数、章节库、模板、当前说明、校验与导出映射。
 // 约束：仅使用可擦除语法（无枚举/命名空间/参数属性），供 Electron 主进程、渲染进程与 Node 测试共同引用。
-import { renderModule, type SelectedModule } from './content.ts'
+import { renderModule, renderTemplate, parseColumnWidths, type SelectedModule } from './content.ts'
 
 export const LIBRARY_VERSION = '1.0.1'
 
@@ -176,7 +176,7 @@ export function customTemplateId(discipline: DisciplineCode): string {
   return `tpl-${discipline}-custom`
 }
 
-export type LayoutBlock = { kind: 'paragraph'; moduleId: string } | { kind: 'table'; rows: string[][]; sourcePara: number; reviewNote: string; confirmedForNote?: boolean }
+export type LayoutBlock = { kind: 'paragraph'; moduleId: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[]; sourcePara: number; reviewNote: string; confirmedForNote?: boolean }
 export type NoteSection = { id: string; title: string; body: string; custom: boolean; modules?: SelectedModule[]; layoutBlocks?: LayoutBlock[] }
 
 export type Note = {
@@ -355,6 +355,13 @@ export function findIssues(note: Note): NoteIssue[] {
   }
   for (const section of note.sections) {
     for (const block of section.layoutBlocks ?? []) {
+      if (block.kind === 'paragraph' && !section.modules?.some(module => module.id === block.moduleId)) issues.push({ level: 'error', sectionId: section.id, message: '原稿段落缺失，请重新选择模板或恢复草稿。' })
+      if (block.kind === 'table') for (const cell of block.rows.flat()) {
+        const rendered = renderTemplate(cell, effectiveFieldValues(note))
+        for (const id of rendered.missing) issues.push({ level: 'error', sectionId: section.id, field: id, message: `表格缺少「${note.fieldDefinitions[id]?.label ?? id}」。` })
+        for (const match of cell.matchAll(/\{([a-z][a-z0-9_]*)\}/g)) if (!note.fieldDefinitions[match[1]]) issues.push({ level: 'error', sectionId: section.id, message: '表格使用了未定义的工程取值。' })
+      }
+
       if (block.kind === 'table' && block.rows.some(row => row.some(cell => cell.includes('【待核定：本工程取值】')))) issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」表格仍有本工程取值待填写。` })
       if (block.kind === 'table' && block.reviewNote.startsWith('条件') && !block.confirmedForNote) issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」第 ${block.sourcePara} 处表格的适用条件尚未确认。` })
     }
@@ -391,7 +398,7 @@ export type DocumentBlock =
   | { kind: 'meta'; text: string }
   | { kind: 'heading'; text: string }
   | { kind: 'paragraph'; text: string }
-  | { kind: 'table'; rows: string[][]; reviewNote: string }
+  | { kind: 'table'; rows: string[][]; columnWidths?: number[]; reviewNote: string }
 
 export type BuiltDocument = { blocks: DocumentBlock[]; notices: string[] }
 
@@ -400,7 +407,7 @@ export function buildDocument(note: Note): BuiltDocument {
   const notices: string[] = []
   const sourceLayout = note.sections.some(section => section.layoutBlocks?.length)
   blocks.push({ kind: 'title', text: note.title.trim() })
-  if (sourceLayout) blocks.push({ kind: 'meta', text: '资料状态：旧工程候选文字，项目取值、规范版本与适用性须由设计人员核定。' })
+  if (sourceLayout) notices.push('项目取值、规范版本与适用性须由设计人员核定。')
   else if (note.assemblyPackageId) blocks.push({ kind: 'meta', text: '资料状态：旧工程候选初稿，规范版本与适用性待核定' })
   if (!sourceLayout) blocks.push({ kind: 'meta', text: '专业：' + disciplineLabel(note.discipline) })
   const project = note.project
@@ -431,7 +438,7 @@ export function buildDocument(note: Note): BuiltDocument {
     if (section.layoutBlocks?.length) {
       const byId = new Map((section.modules ?? []).map(module => [module.id, module]))
       for (const block of section.layoutBlocks) {
-        if (block.kind === 'table') blocks.push({ kind: 'table', rows: block.rows, reviewNote: block.reviewNote })
+        if (block.kind === 'table') blocks.push({ kind: 'table', rows: block.rows.map(row => row.map(cell => renderTemplate(cell, effectiveFieldValues(note), labels).text)), columnWidths: block.columnWidths, reviewNote: block.reviewNote })
         else {
           const module = byId.get(block.moduleId)
           if (module) blocks.push({ kind: 'paragraph', text: renderModule(module, effectiveFieldValues(note), labels).text })
@@ -465,29 +472,29 @@ export type ExportRequest = {
       protectionExtra: string
       seismicIntensity: string
     } | null
-    sections: { title: string; body: string; blocks?: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][] })[] }[]
+    sections: { title: string; body: string; blocks?: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[] })[] }[]
     layoutMode?: 'source'
   }
 }
 
 export function toExportRequest(note: Note, path: string): ExportRequest {
-  if (note.sections.some(section => (section.modules?.length ?? 0) > 0)) {
+  if (note.sections.some(section => (section.modules?.length ?? 0) > 0 || (section.layoutBlocks?.length ?? 0) > 0)) {
     const blocking = findIssues(note).filter(issue => issue.level === 'error')
     if (blocking.length > 0) throw new Error(blocking[0].message)
   }
   const document = buildDocument(note)
-  const sections: { title: string; body: string; blocks?: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][] })[] }[] = []
+  const sections: { title: string; body: string; blocks?: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[] })[] }[] = []
   for (const block of document.blocks) {
     if (block.kind !== 'heading') continue
     if (block.text === '结构设计参数') continue
     const index = document.blocks.indexOf(block)
     const body: string[] = []
-    const sectionBlocks: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][] })[] = []
+    const sectionBlocks: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[] })[] = []
     for (let cursor = index + 1; cursor < document.blocks.length; cursor += 1) {
       const next = document.blocks[cursor]
       if (next.kind === 'heading' || next.kind === 'title') break
       if (next.kind === 'paragraph') { body.push(next.text); sectionBlocks.push({ kind: 'paragraph', text: next.text }) }
-      if (next.kind === 'table') sectionBlocks.push({ kind: 'table', rows: next.rows })
+      if (next.kind === 'table') sectionBlocks.push({ kind: 'table', rows: next.rows, columnWidths: next.columnWidths })
     }
     sections.push({ title: block.text, body: body.join('\n'), blocks: sectionBlocks })
   }
@@ -564,7 +571,7 @@ export function parseNote(value: unknown): Note {
       ...(Array.isArray(section.layoutBlocks) ? { layoutBlocks: section.layoutBlocks.flatMap<LayoutBlock>(value => {
         const block = (value ?? {}) as Record<string, unknown>
         if (block.kind === 'paragraph' && typeof block.moduleId === 'string') return [{ kind: 'paragraph' as const, moduleId: block.moduleId }]
-        if (block.kind === 'table' && Array.isArray(block.rows) && block.rows.every(row => Array.isArray(row) && row.every(cell => typeof cell === 'string'))) return [{ kind: 'table' as const, rows: block.rows as string[][], sourcePara: asNumber(block.sourcePara, 0), reviewNote: asString(block.reviewNote, '待核定'), confirmedForNote: block.confirmedForNote === true }]
+        if (block.kind === 'table' && Array.isArray(block.rows) && block.rows.every(row => Array.isArray(row) && row.every(cell => typeof cell === 'string'))) return [{ kind: 'table' as const, rows: block.rows as string[][], columnWidths: parseColumnWidths(block.columnWidths, (block.rows[0] as string[] | undefined)?.length ?? 0), sourcePara: asNumber(block.sourcePara, 0), reviewNote: asString(block.reviewNote, '待核定'), confirmedForNote: block.confirmedForNote === true }]
         return []
       }) } : {}),
     }

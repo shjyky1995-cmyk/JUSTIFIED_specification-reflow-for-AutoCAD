@@ -56,19 +56,20 @@ export function assembleNote(note: Note, templateId: string, catalog: ContentCat
       const layoutBlocks: NonNullable<NoteSection['layoutBlocks']> = []
       for (const block of section.blocks) {
         if (block.kind === 'table') {
-          layoutBlocks.push({ kind: 'table', rows: block.rows.map(row => [...row]), sourcePara: block.sourcePara, reviewNote: block.reviewNote, confirmedForNote: false })
+          layoutBlocks.push({ kind: 'table', rows: block.rows.map(row => [...row]), columnWidths: block.columnWidths, sourcePara: block.sourcePara, reviewNote: block.reviewNote, confirmedForNote: false })
           continue
         }
-        const id = `pool-p${block.sourcePara}`
+        const id = `${layout.sourceId}-p${block.sourcePara}`
         modules.push({ id, clauseId: block.clauseIds.join('+') || `原稿段落${block.sourcePara}`, packageId: catalog.packageId, template: block.template, baseTemplate: block.template, edited: false, fieldIds: block.fieldIds, sourceRefs: [{ sourceId: source.id, para: block.sourcePara, file: source.file }], refs: [], flags: block.reviewNote.startsWith('阻断') ? ['requires_rewrite'] : block.reviewNote.startsWith('条件') ? ['requires_applicability_review'] : [], reviewStatus: 'pending', confirmedForNote: false })
         layoutBlocks.push({ kind: 'paragraph', moduleId: id })
       }
       return { id: `lib-${section.id}`, title: section.title, body: '', custom: false, modules, layoutBlocks }
     })
     const usedFields = new Set(sections.flatMap(section => section.modules?.flatMap(module => module.fieldIds) ?? []))
+    for (const section of sections) for (const block of section.layoutBlocks ?? []) if (block.kind === 'table') for (const cell of block.rows.flat()) for (const match of cell.matchAll(/\{([a-z][a-z0-9_]*)\}/g)) usedFields.add(match[1])
     const definitions: Note['fieldDefinitions'] = {}
-    for (const field of catalog.fields) if (usedFields.has(field.id)) definitions[field.id] = { label: field.label, unit: field.unit }
-    return { note: { ...empty, title: '结构设计说明（构筑物）', sections, fieldDefinitions: definitions, assemblyPackageId: catalog.packageId }, selectedClauses: sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0), excludedClauses: related.length - sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0), sourceFile: source.file }
+    for (const field of [...catalog.fields, ...(layout.fields ?? [])]) if (usedFields.has(field.id)) definitions[field.id] = { label: field.label, unit: field.unit }
+    return { note: { ...empty, title: layout.sourceTitle || source.file.replace(/\.docx$/i, ''), sections, fieldDefinitions: definitions, assemblyPackageId: catalog.packageId }, selectedClauses: sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0), excludedClauses: Math.max(0, related.length - sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0)), sourceFile: source.file }
   }
   const chosen = related.filter(clause => eligible(clause, profile))
   const sections: NoteSection[] = catalog.chapters.flatMap(chapter => {

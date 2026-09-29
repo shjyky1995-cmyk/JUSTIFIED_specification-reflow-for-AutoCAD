@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowLeft, ArrowRight, BriefcaseBusiness, FileText, FolderOpen, MoreHorizontal, PieChart, Plus, Search, Sparkles, X } from 'lucide-react'
 import productIcon from '../../../branding/product-icon.png'
-import { renderModule, type ContentCatalog } from './shared/content'
+import { renderModule, renderTemplate, type ContentCatalog } from './shared/content'
 import { assembleNote } from './shared/assembly'
 import {
   buildDocument,
@@ -214,7 +214,7 @@ function App() {
       {route === 'step02a' && note && <Step02A note={note} catalogReady={Boolean(catalog)} catalogError={catalogError} onBack={() => setRoute('step01')} onSelect={templateId => {
         const current = noteRef.current
         if (!current) return
-        const hasEdits = Object.keys(current.fieldValues).length > 0 || current.sections.some(section => section.custom || section.modules?.some(module => module.edited) || section.body.trim() !== resetSectionBody(section).trim())
+        const hasEdits = Object.keys(current.fieldValues).length > 0 || current.sections.some(section => section.custom || (section.layoutBlocks?.length ?? 0) > 0 || section.modules?.some(module => module.edited) || section.body.trim() !== resetSectionBody(section).trim())
         const apply = () => {
           const assembled = assembleNote(current, templateId, catalog)
           if (catalog && !assembled.sourceFile && !templateId.endsWith('-custom') && !['tpl-struct-steel', 'tpl-other-standard'].includes(templateId)) {
@@ -565,7 +565,9 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
   }
 
   const chapterId = selected?.id.startsWith('lib-CH') ? selected.id.slice(4) : ''
-  const usedFields = [...new Set((selected?.modules ?? []).flatMap(module => module.fieldIds))]
+  const usedFields = [...new Set([...(selected?.modules ?? []).flatMap(module => module.fieldIds), ...(selected?.layoutBlocks ?? []).flatMap(block => block.kind === 'table' ? [...block.rows.flat().join(' ').matchAll(/\{([a-z][a-z0-9_]*)\}/g)].map(match => match[1]) : [])])]
+  const orderedBlocks = selected?.layoutBlocks?.length ? selected.layoutBlocks : (selected?.modules ?? []).map(module => ({ kind: 'paragraph' as const, moduleId: module.id }))
+  const fieldLabels = Object.fromEntries(Object.entries(note.fieldDefinitions).map(([id, definition]) => [id, definition.label]))
 
   return <div className="workspace editor-workspace">
     <div className="editor-shell">
@@ -595,17 +597,23 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
           <div className="editor-head">
             <div><h2>{selected.title}</h2><p>{selected.custom ? '当前说明专用章节，不写回标准库' : '标准章节 · 可改为本说明正文'}</p></div>
           </div>
-          {(chapterId || (selected.modules?.length ?? 0) > 0) && <div className="content-modules">
-            <p className="content-guidance">本章已按模板自动装配。请核对文字、规范引用与适用性，并填写本工程取值；有疑问的条款可移除或修改。</p>
-            {(selected.modules ?? []).map(module => <div key={module.id} className="content-module">
-              <div className="content-module-head"><strong>{module.clauseId}</strong><span>{module.edited ? '本份文字已改写' : module.refs.length > 0 ? '规范引用待核对' : '来源待核定'}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).filter(item => item.id !== module.id) } : section) } : currentNote)}>移除</button></div>
+          {(chapterId || (selected.modules?.length ?? 0) > 0 || orderedBlocks.length > 0) && <div className="content-modules">
+            <p className="content-guidance">原说明正文和表格按原顺序完整展开。先填写本章工程取值，再核对规范与适用性；通用文字无需重复录入。</p>
+            {usedFields.length > 0 && <div className="content-field-grid">{usedFields.map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={effectiveFieldValues(note)[fieldId] ?? ''} readOnly={LINKED_FIELD_IDS.has(fieldId)} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={LINKED_FIELD_IDS.has(fieldId) ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
+            {orderedBlocks.map(block => {
+              if (block.kind === 'paragraph') {
+                const module = selected.modules?.find(item => item.id === block.moduleId)
+                if (!module) return <p key={block.moduleId}>段落缺失，请恢复草稿。</p>
+                return <div key={module.id} className="content-module">
+              <div className="content-module-head"><strong>{module.clauseId}</strong><span>{module.edited ? '本份文字已改写' : module.refs.length > 0 ? '规范引用待核对' : '来源待核定'}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).filter(item => item.id !== module.id), layoutBlocks: section.layoutBlocks?.filter(item => item.kind !== 'paragraph' || item.moduleId !== module.id) } : section) } : currentNote)}>移除</button></div>
               <p>{renderModule(module, effectiveFieldValues(note), Object.fromEntries(Object.entries(note.fieldDefinitions).map(([id, definition]) => [id, definition.label]))).text}</p>
               <small>来源：{module.sourceRefs.map(source => `${source.file ?? source.sourceId} 第 ${source.para} 段`).join('；')}{module.refs.length > 0 ? ` · 引用 ${module.refs.join('、')}` : ''}</small>
               <details className="content-edit"><summary>修改这份说明中的条款文字</summary><textarea value={module.template} maxLength={10000} onChange={event => onUpdate(currentNote => currentNote ? setModuleTemplate(currentNote, selected.id, module.id, event.target.value) : currentNote)} /><small>修改后需重新确认；来源只用于追溯原候选，不代表改写文字已经全局核定。</small><button className="text-link" disabled={!module.edited} onClick={() => onUpdate(currentNote => currentNote ? setModuleTemplate(currentNote, selected.id, module.id, module.baseTemplate) : currentNote)}>恢复选入时文字</button></details>
               {(!note.assemblyPackageId || module.flags.includes('requires_applicability_review')) && <label className="content-confirm"><input type="checkbox" checked={module.confirmedForNote} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).map(item => item.id === module.id ? { ...item, confirmedForNote: event.target.checked } : item) } : section) } : currentNote)} /> 已核对本条适用于当前工程</label>}
-            </div>)}
-            {(selected.layoutBlocks ?? []).filter(block => block.kind === 'table').map(block => block.kind === 'table' && <div key={`table-${block.sourcePara}`} className="content-module"><div className="content-module-head"><strong>原稿第 {block.sourcePara} 处表格</strong><span>{block.reviewNote}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.filter(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara) }) } : currentNote)}>移除表格</button></div><div className="layout-table-wrap"><table className="layout-table"><tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, columnIndex) => <td key={columnIndex}><input aria-label={`表格 ${block.sourcePara} 第 ${rowIndex + 1} 行第 ${columnIndex + 1} 列`} value={cell} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara ? item : { ...item, confirmedForNote: false, rows: item.rows.map((tableRow, ri) => tableRow.map((value, ci) => ri === rowIndex && ci === columnIndex ? event.target.value : value)) }) }) } : currentNote)} /></td>)}</tr>)}</tbody></table></div>{block.reviewNote.startsWith('条件') && <label className="content-confirm"><input type="checkbox" checked={block.confirmedForNote === true} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind === 'table' && item.sourcePara === block.sourcePara ? { ...item, confirmedForNote: event.target.checked } : item) }) } : currentNote)} /> 本工程包含该类构件，表格适用</label>}</div>)}
-            {usedFields.length > 0 && <div className="content-field-grid">{usedFields.map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={effectiveFieldValues(note)[fieldId] ?? ''} readOnly={LINKED_FIELD_IDS.has(fieldId)} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={LINKED_FIELD_IDS.has(fieldId) ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
+            </div>
+              }
+              return <div key={`table-${block.sourcePara}`} className="content-module"><div className="content-module-head"><strong>原稿第 {block.sourcePara} 处表格</strong><span>{block.reviewNote}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.filter(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara) }) } : currentNote)}>移除表格</button></div><div className="layout-table-wrap"><table className="layout-table">{block.columnWidths && <colgroup>{block.columnWidths.map((width, index) => <col key={index} style={{ width: `${width / block.columnWidths!.reduce((sum, value) => sum + value, 0) * 100}%` }} />)}</colgroup>}<tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, columnIndex) => <td key={columnIndex}><span>{renderTemplate(cell, effectiveFieldValues(note), fieldLabels).text}</span><details><summary>修改文字</summary><input aria-label={`表格 ${block.sourcePara} 第 ${rowIndex + 1} 行第 ${columnIndex + 1} 列`} value={cell} placeholder={renderTemplate(cell, effectiveFieldValues(note), fieldLabels).text} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara ? item : { ...item, confirmedForNote: false, rows: item.rows.map((tableRow, ri) => tableRow.map((value, ci) => ri === rowIndex && ci === columnIndex ? event.target.value : value)) }) }) } : currentNote)} /></details></td>)}</tr>)}</tbody></table></div>{block.reviewNote.startsWith('条件') && <label className="content-confirm"><input type="checkbox" checked={block.confirmedForNote === true} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind === 'table' && item.sourcePara === block.sourcePara ? { ...item, confirmedForNote: event.target.checked } : item) }) } : currentNote)} /> 本工程包含该类构件，表格适用</label>}</div>})}
+
           </div>}
           <textarea className="section-editor" value={selected.body} maxLength={100000} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: event.target.value } : section) } : currentNote)} placeholder={findSectionDefinition(selected.id)?.body ?? '可在这里补充或改写本章的纯文本正文。'} />
           <div className="editor-foot">
@@ -706,7 +714,7 @@ function Step03({ note, issues, blocking, exportState, setExportState, onUpdate,
               : block.kind === 'heading'
                 ? <h2 key={index} className="paper-heading">{block.text}</h2>
                 : block.kind === 'table'
-                  ? <div key={index} className="layout-table-wrap"><table className="layout-table"><tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, columnIndex) => <td key={columnIndex}>{cell}</td>)}</tr>)}</tbody></table><small>{block.reviewNote}</small></div>
+                  ? <div key={index} className="layout-table-wrap"><table className="layout-table">{block.columnWidths && <colgroup>{block.columnWidths.map((width, index) => <col key={index} style={{ width: `${width / block.columnWidths!.reduce((sum, value) => sum + value, 0) * 100}%` }} />)}</colgroup>}<tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, columnIndex) => <td key={columnIndex}>{cell}</td>)}</tr>)}</tbody></table><small>{block.reviewNote}</small></div>
                 : <p key={index} className="paper-paragraph">{block.text}</p>)}
         </div>
       </section>

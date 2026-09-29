@@ -137,13 +137,19 @@ export function createStore(root: string, projectCatalogPath?: string): DesktopS
       const path = projectCatalogPath === undefined ? catalogFile : projectCatalogPath
       if (!path || !existsSync(path)) return null
       const catalog = parseContentCatalog(JSON.parse(readJsonFile(path)))
-      const layoutFile = join(projectCatalogPath ? join(path, '..') : catalogDir, 'pool-layout.json')
-      if (existsSync(layoutFile)) {
-        const layout = parseContentLayout(JSON.parse(readJsonFile(layoutFile)))
-        if (layout.sourceId !== catalog.sourceDigest.find(source => source.file === layout.sourceFile)?.id) throw new Error('水池版式来源与资料包不一致。')
-        catalog.layouts = [layout]
+      const directory = projectCatalogPath ? join(path, '..') : catalogDir
+      const sourcesFile = join(directory, 'source-layouts.json')
+      const legacyFile = join(directory, 'pool-layout.json')
+      const layouts = existsSync(sourcesFile)
+        ? (JSON.parse(readJsonFile(sourcesFile)) as unknown[]).map(parseContentLayout)
+        : existsSync(legacyFile) ? [parseContentLayout(JSON.parse(readJsonFile(legacyFile)))] : catalog.layouts ?? []
+      const fields = new Map(catalog.fields.map(field => [field.id, field]))
+      for (const layout of layouts) {
+        const source = catalog.sourceDigest.find(source => source.file === layout.sourceFile)
+        if (source?.id !== layout.sourceId || (layout.sourceHash && source.sha256 !== layout.sourceHash)) throw new Error('原稿版式来源与资料包不一致。')
+        for (const field of layout.fields ?? []) if (!fields.has(field.id)) fields.set(field.id, field)
       }
-      return catalog
+      return parseContentCatalog({ ...catalog, fields: [...fields.values()], layouts })
     },
 
     importCatalog(path) {
