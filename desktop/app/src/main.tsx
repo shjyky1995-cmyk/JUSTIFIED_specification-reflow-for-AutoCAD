@@ -119,7 +119,7 @@ function App() {
 
   useEffect(() => {
     if (!window.workbench?.beforeClose) return
-    return window.workbench.beforeClose(async () => !noteRef.current || await commitSave())
+    return window.workbench.beforeClose(flushSave)
   }, [])
 
   useEffect(() => {
@@ -164,6 +164,16 @@ function App() {
     return operation
   }
 
+  async function flushSave(): Promise<boolean> {
+    // 等待保存期间仍可能收到最后一次输入；保存到引用稳定后才能离开。
+    let snapshot: Note | null
+    do {
+      snapshot = noteRef.current
+      if (!(await commitSave())) return false
+    } while (noteRef.current !== snapshot)
+    return true
+  }
+
   function updateNote(mutate: NoteMutation) {
     const previous = noteRef.current
     const next = mutate(previous)
@@ -189,7 +199,7 @@ function App() {
   }
 
   async function startNew() {
-    if (!(await commitSave())) return
+    if (!(await flushSave())) return
     setWorkingNote(null)
     setSave({ status: 'idle', message: '' })
     setSelectedSectionId(null)
@@ -201,7 +211,7 @@ function App() {
 
   async function openNote(id: string) {
     if (!window.workbench) return
-    if (!(await commitSave())) return
+    if (!(await flushSave())) return
     try {
       const loaded = await window.workbench.noteLoad(id)
       setWorkingNote(loaded)
@@ -229,7 +239,7 @@ function App() {
   const blocking = issues.some(issue => issue.level === 'error')
 
   async function goHome() {
-    if (!(await commitSave())) return
+    if (!(await flushSave())) return
     setRoute('home')
     refreshHome()
   }
@@ -313,7 +323,7 @@ function App() {
     </main>
     {!canUseDesktop && route !== 'home' && <p className="browser-note">网页预览只展示界面；请从桌面程序中保存与导出文件。</p>}
     {save.status === 'error' && <div className="app-error" role="alert">{save.message}<button className="text-link" onClick={() => void commitSave()}>重试保存</button></div>}
-    {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onSave={commitSave} onRefresh={() => { refreshHome() }} onCatalog={next => { setCatalog(next); setCatalogError('') }} />}
+    {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onSave={flushSave} onRefresh={() => { refreshHome() }} onCatalog={next => { setCatalog(next); setCatalogError('') }} />}
     {confirm && <ConfirmDialog state={confirm} onCancel={() => setConfirm(null)} />}
   </div>
 }
