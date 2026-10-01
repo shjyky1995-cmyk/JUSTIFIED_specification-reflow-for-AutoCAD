@@ -1,4 +1,6 @@
-# T30 参数、滚动和腐蚀方案试用
+# T30 参数、滚动和腐蚀方案试用（历史）
+
+T31 已按用户新要求允许缺项草稿导出；当前入口和验收请按 DESKTOP_CLIENT_ACCEPTANCE.md，本记录不再作为导出阻断规则。
 
 2026-10-02。关闭旧窗口，双击项目根 `content-library/private/启动自动说明试用.cmd`。启动脚本仍指向 `artifacts/t26-auto-content-worktree`，分支已切到 `task/T30-project-parameters`。
 
