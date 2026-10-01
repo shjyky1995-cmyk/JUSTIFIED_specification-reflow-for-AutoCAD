@@ -1,0 +1,32 @@
+// 仅使用候选包自带 Electron 的 Node 模式，验证成品内编译代码和数据存取；不打开用户界面。
+const { resolve, join } = require('node:path')
+const { pathToFileURL } = require('node:url')
+const fs = require('node:fs')
+const assert = require('node:assert/strict')
+
+async function check() {
+  assert.ok(process.versions.electron, '应由候选包的 EngiSpace.exe 在 Node 模式运行')
+  const root = resolve(process.argv[2])
+  const app = join(root, 'resources/app')
+  const output = resolve(process.argv[3])
+  fs.mkdirSync(output, { recursive: true })
+  const model = await import(pathToFileURL(join(app, 'dist-electron/src/shared/model.js')))
+  const { createStore } = await import(pathToFileURL(join(app, 'dist-electron/src/shared/store.js')))
+  const packageInfo = JSON.parse(fs.readFileSync(join(app, 'package.json'), 'utf8'))
+  assert.ok(fs.existsSync(join(app, packageInfo.main)))
+  assert.ok(fs.existsSync(join(app, 'electron/preload.cjs')))
+  assert.ok(fs.existsSync(join(app, 'dist/index.html')))
+  const store = createStore(join(output, 'packaged-data'), join(root, 'resources/content-library/catalog.json'))
+  const catalog = store.loadCatalog()
+  assert.equal(catalog.layouts.length, 7)
+  const note = model.createNote('electrical', 'tpl-elec-custom', { name: '', number: '', owner: '', location: '' })
+  note.sections = [{ id: 'custom-1', title: '说明', body: '客户端编译代码验证。', custom: true }]
+  assert.equal(store.saveNote(note).ok, true)
+  const copy = store.duplicateNote(note.id)
+  assert.notEqual(copy.id, note.id)
+  const request = model.toExportRequest(store.loadNote(note.id), join(output, 'packaged.docx'))
+  assert.equal(request.document.exportMode, 'draft')
+  fs.writeFileSync(join(output, 'packaged-request.json'), JSON.stringify(request))
+  console.log(JSON.stringify({ status: 'PACKAGED_RUNTIME_OK', version: packageInfo.version, electron: process.versions.electron, templates: catalog.layouts.length, output }))
+}
+check().catch(error => { console.error(error); process.exitCode = 1 })

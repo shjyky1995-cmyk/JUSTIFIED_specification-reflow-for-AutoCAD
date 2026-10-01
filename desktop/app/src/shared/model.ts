@@ -291,7 +291,7 @@ export function effectiveFieldValues(note: Note): Record<string, string> {
       foundation_design_grade: note.structural.foundationGrade,
       seismic_intensity: note.structural.seismicIntensity,
       site_class: note.structural.siteCategory,
-      design_life: `${note.structural.designLifeYears}年`,
+      design_life: Number.isInteger(note.structural.designLifeYears) && note.structural.designLifeYears >= 1 && note.structural.designLifeYears <= 200 ? `${note.structural.designLifeYears}年` : '',
       seismic_fortification_category: note.structural.seismicGrade,
       seismic_acceleration: note.structural.seismicIntensity.match(/([0-9.]+)g/)?.[1] ? note.structural.seismicIntensity.match(/([0-9.]+)g/)![1] + 'g' : '',
     } : {}),
@@ -366,6 +366,7 @@ export function findIssues(note: Note): NoteIssue[] {
     issues.push({ level: 'error', message: '所有章节都是空的，请至少填写一个章节正文。' })
   }
   for (const section of note.sections) {
+    if (!section.title.trim()) issues.push({ level: 'error', sectionId: section.id, message: '有章节尚未填写标题。' })
     for (const block of section.layoutBlocks ?? []) {
       if (block.kind === 'paragraph' && !section.modules?.some(module => module.id === block.moduleId)) issues.push({ level: 'error', sectionId: section.id, message: '原稿段落缺失，请重新选择模板或恢复草稿。' })
       if (block.kind === 'table') for (const cell of block.rows.flat()) {
@@ -448,7 +449,7 @@ export function buildDocument(note: Note): BuiltDocument {
     blocks.push({ kind: 'paragraph', text: '抗震设防类别：' + parameter(structural.seismicGrade, '抗震设防类别') + '（设防烈度：' + (structural.seismicIntensity.trim() || SEISMIC_INTENSITY_PENDING) + '）' })
     blocks.push({ kind: 'paragraph', text: '结构安全等级：' + parameter(structural.safetyLevel, '结构安全等级') })
     blocks.push({ kind: 'paragraph', text: '地基基础设计等级：' + parameter(structural.foundationGrade, '地基基础设计等级') })
-    blocks.push({ kind: 'paragraph', text: '设计使用年限：' + String(structural.designLifeYears || 50) + ' 年' })
+    blocks.push({ kind: 'paragraph', text: '设计使用年限：' + (values.design_life || '【待核定：设计使用年限】') })
     if (structural.corrosion.trim().length > 0) blocks.push({ kind: 'paragraph', text: '水土腐蚀性：' + structural.corrosion.trim() })
     const scheme = parameter(structural.protectionScheme, '材料/防腐方案')
     const extra = structural.protectionExtra.trim()
@@ -460,7 +461,7 @@ export function buildDocument(note: Note): BuiltDocument {
       notices.push(`章节「${section.title}」为空，未写入文档。`)
       continue
     }
-    blocks.push({ kind: 'heading', text: section.title.trim() })
+    blocks.push({ kind: 'heading', text: section.title.trim() || '未命名章节' })
     if (section.layoutBlocks?.length) {
       const byId = new Map((section.modules ?? []).map(module => [module.id, module]))
       for (const block of section.layoutBlocks) {
@@ -549,7 +550,7 @@ export function toExportRequest(note: Note, path: string, exportMode: 'draft' | 
             seismicGrade: note.structural.seismicGrade.trim(),
             safetyLevel: note.structural.safetyLevel.trim(),
             foundationGrade: note.structural.foundationGrade.trim(),
-            designLifeYears: note.structural.designLifeYears || 50,
+            designLifeYears: Number.isInteger(note.structural.designLifeYears) ? note.structural.designLifeYears : 0,
             corrosion: note.structural.corrosion.trim(),
             protectionScheme: note.structural.protectionScheme.trim(),
             protectionExtra: note.structural.protectionExtra.trim(),

@@ -124,6 +124,7 @@ function App() {
 
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void commitSave(); return }
       if (route === 'home' && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         document.querySelector<HTMLInputElement>('.home-search')?.focus()
@@ -689,7 +690,7 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
           <div className="editor-utility"><span className={'save-state ' + save.status}>{saveStatusText(save)}</span>{!selected.custom && <button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: resetSectionBody(section) } : section) } : currentNote)}>清空手写正文</button>}</div>
           <div className="editor-scroll" key={selected.id} tabIndex={0} role="region" aria-label="章节正文，可向下滚动">
           <div className="editor-head">
-            <div><h2>{selected.title}</h2><p>{selected.custom ? '当前说明专用章节，不写回标准库' : '标准章节 · 可改为本说明正文'}</p></div>
+            <div><input className="chapter-title-input" aria-label="章节标题" value={selected.title} maxLength={120} placeholder="章节标题" onChange={event => onUpdate(current => current ? { ...current, sections: current.sections.map(section => section.id === selected.id ? { ...section, title: event.target.value } : section) } : current)} /><p>{selected.custom ? '当前说明专用章节，不写回标准库' : '标准章节 · 可改为本说明正文'}</p></div>
           </div>
           {(chapterId || (selected.modules?.length ?? 0) > 0 || orderedBlocks.length > 0) && <div className="content-modules">
             <p className="content-guidance">原说明正文和表格按原顺序完整展开。项目共用参数在 01 统一填写；本章只填写专属取值，再核对规范与适用性。固定文字可展开手改。</p>

@@ -36,6 +36,7 @@ New-Item -ItemType Directory -Path $outputRoot | Out-Null
 $clientRoot = Join-Path $outputRoot 'client'
 Copy-Item -LiteralPath $electronDirectory -Destination $clientRoot -Recurse
 Rename-Item -LiteralPath (Join-Path $clientRoot 'electron.exe') -NewName 'EngiSpace.exe'
+Copy-Item -LiteralPath (Join-Path $projectRoot 'src/Justified.SpecificationReflow.AutoCAD.Setup/Assets/app.ico') -Destination (Join-Path $clientRoot 'product-icon.ico')
 $runtimeApp = Join-Path $clientRoot 'resources/app'
 New-Item -ItemType Directory -Path $runtimeApp | Out-Null
 foreach ($folder in @('dist', 'dist-electron')) { Copy-Item -LiteralPath (Join-Path $appDirectory $folder) -Destination (Join-Path $runtimeApp $folder) -Recurse }

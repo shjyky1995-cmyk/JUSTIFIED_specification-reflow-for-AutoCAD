@@ -143,7 +143,7 @@ internal static class Program
             key.SetValue("DisplayVersion", File.ReadAllText(Path.Combine(InstallRoot, "VERSION.txt")).Trim());
             key.SetValue("Publisher", "EngiSpace");
             key.SetValue("InstallLocation", InstallRoot);
-            key.SetValue("DisplayIcon", Path.Combine(InstallRoot, "EngiSpace.exe"));
+            key.SetValue("DisplayIcon", Path.Combine(InstallRoot, "product-icon.ico"));
             key.SetValue("UninstallString", "\"" + Path.Combine(InstallRoot, "DesktopSetup.exe") + "\" --uninstall");
             key.SetValue("NoModify", 1);
             key.SetValue("NoRepair", 1);
@@ -170,6 +170,7 @@ internal static class Program
         shortcutType.InvokeMember("TargetPath", BindingFlags.SetProperty, null, shortcut, new object[] { Path.Combine(InstallRoot, "EngiSpace.exe") });
         shortcutType.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, shortcut, new object[] { InstallRoot });
         shortcutType.InvokeMember("Description", BindingFlags.SetProperty, null, shortcut, new object[] { "离线编制并导出可编辑的设计说明" });
+        shortcutType.InvokeMember("IconLocation", BindingFlags.SetProperty, null, shortcut, new object[] { Path.Combine(InstallRoot, "product-icon.ico") });
         shortcutType.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, Array.Empty<object>());
         System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shortcut);
         System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shell);

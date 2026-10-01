@@ -71,11 +71,11 @@ export function createStore(root: string, projectCatalogPath?: string): DesktopS
     listNotes() {
       if (!existsSync(notesDir)) return []
       const summaries: NoteSummary[] = []
-      for (const fileName of readdirSync(notesDir)) {
-        if (!fileName.endsWith('.json')) continue
+      const candidates = [...new Set(readdirSync(notesDir).filter(name => name.endsWith('.json') || name.endsWith('.json.previous')).map(name => name.replace(/\.previous$/, '')))]
+      for (const fileName of candidates) {
         try {
-          const note = deserializeNote(readJsonFile(join(notesDir, fileName)))
-          summaries.push(summarizeNote(note))
+          const note = this.loadNote(fileName.replace(/\.json$/, ''))
+          summaries.push({ ...summarizeNote(note), ...(note.recoveryMessage ? { title: (note.title || '未命名说明') + '（可恢复）' } : {}) })
         } catch {
           summaries.push({
             id: fileName.replace(/\.json$/, ''),
@@ -95,12 +95,12 @@ export function createStore(root: string, projectCatalogPath?: string): DesktopS
 
     loadNote(id) {
       const path = notePath(id)
-      if (!existsSync(path)) throw new Error('找不到说明文件：' + id)
+      if (!existsSync(path) && !existsSync(path + '.previous')) throw new Error('找不到说明文件：' + id)
       try { return deserializeNote(readJsonFile(path)) }
       catch {
         if (!existsSync(path + '.previous')) throw new Error('说明文件损坏，且没有可恢复的上一版本。请导入备份。')
         const recovered = deserializeNote(readJsonFile(path + '.previous'))
-        return { ...recovered, recoveryMessage: '文件损坏，已恢复上一次保存的内容；请核对并重新保存。' }
+        return { ...recovered, recoveryMessage: '文件损坏或缺失，已恢复上一次保存的内容；请核对并重新保存。' }
       }
     },
 
@@ -128,7 +128,9 @@ export function createStore(root: string, projectCatalogPath?: string): DesktopS
 
     deleteNote(id) {
       const path = notePath(id)
-      if (existsSync(path)) renameSync(path, path + '.' + Date.now().toString(36) + '.deleted')
+      const suffix = '.' + randomUUID() + '.deleted'
+      if (existsSync(path)) renameSync(path, path + suffix)
+      if (existsSync(path + '.previous')) renameSync(path + '.previous', path + '.previous' + suffix)
     },
 
     listProjects() {

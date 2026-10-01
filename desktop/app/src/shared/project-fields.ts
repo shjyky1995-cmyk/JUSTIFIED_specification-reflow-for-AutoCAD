@@ -42,7 +42,7 @@ export function projectFields(note: Note): ProjectField[] {
     const canonical = field.id
     const existing = fields.find(item => item.id === canonical)
     // 旧草稿存在不同值时分别呈现，不能悄悄合并或覆盖。
-    const values = [...new Set([canonical, id, ...(existing?.aliases ?? [])].map(key => note.fieldValues[key]?.trim()).filter(Boolean))]
+    const values = [...new Set([canonical, id, ...(existing?.aliases ?? [])].map(key => note.fieldValues?.[key]?.trim()).filter(Boolean))]
     if (existing && values.length < 2) existing.aliases = [...(existing.aliases ?? []), id]
     else fields.push({ ...field, id: values.length > 1 ? id : canonical, aliases: [id], ...(values.length > 1 ? { label: `${field.label}（已有不同取值：${id}）` } : {}) })
     ids.add(id)
@@ -59,7 +59,8 @@ export function canonicalProjectField(id: string): string {
 export function projectFieldValues(note: Note): Record<string, string> {
   const values = { ...note.fieldValues }
   for (const field of projectFields(note)) {
-    const value = values[field.id] ?? field.aliases?.map(id => values[id]).find(value => value !== undefined)
+    const candidates = [field.id, ...(field.aliases ?? [])].map(id => values[id])
+    const value = candidates.find(value => value?.trim()) ?? candidates.find(value => value !== undefined)
     if (value === undefined) continue
     values[field.id] = value
     for (const alias of field.aliases ?? []) values[alias] = value

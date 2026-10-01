@@ -103,13 +103,14 @@ internal static class Program
             if (!draft && intensity == "待核定") throw new ArgumentException("请手工选择抗震设防烈度，或导出 Word 草稿。");
             if (!draft && !new[] { "6度（0.05g）", "7度（0.10g）", "7度（0.15g）", "8度（0.20g）", "8度（0.30g）", "9度（0.40g）" }.Contains(intensity))
                 throw new ArgumentException("抗震设防烈度不在可选范围内，请重新选择。");
-            var life = structural.DesignLifeYears > 0 ? structural.DesignLifeYears : 50;
+            var validLife = structural.DesignLifeYears >= 1 && structural.DesignLifeYears <= 200;
+            if (!draft && !validLife) throw new ArgumentException("设计使用年限应为1～200年。");
             lines.Add(("Heading2", "结构设计参数"));
             lines.Add(("Normal", "场地类别：" + site));
             lines.Add(("Normal", "抗震设防类别：" + grade + "（设防烈度：" + intensity + "）"));
             lines.Add(("Normal", "结构安全等级：" + safety));
             lines.Add(("Normal", "地基基础设计等级：" + foundation));
-            lines.Add(("Normal", "设计使用年限：" + life + " 年"));
+            lines.Add(("Normal", "设计使用年限：" + (validLife ? structural.DesignLifeYears + "年" : "【待核定：设计使用年限】")));
             if (!string.IsNullOrWhiteSpace(structural.Corrosion))
                 lines.Add(("Normal", "水土腐蚀性：" + Trim(structural.Corrosion, MaxCorrosionCharacters, "水土腐蚀性")));
             lines.Add(("Normal", "材料与防腐方案：" + scheme + (string.IsNullOrWhiteSpace(structural.ProtectionExtra) ? string.Empty : "（附加措施：" + Trim(structural.ProtectionExtra, 120, "附加措施") + "）")));
