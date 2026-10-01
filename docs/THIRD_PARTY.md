@@ -1,4 +1,7 @@
 # 第三方依赖与分发边界
+
+2026-10-02 T31 桌面候选包继续使用锁定依赖：Electron 44.4.5（附其 LICENSE 与 Chromium notices）、React/ReactDOM 19.3.0（MIT）、Lucide React 1.48.0（本机包 ISC license）、既有 Noto Sans SC 字体（OFL），以及自包含 .NET 10.0.12 runtime 和既有 Open XML/Newtonsoft。打包时复制本机已安装包及仓库的许可原文到成品目录，不复制开发SDK、测试工具或AutoCAD库；资料库只在本机资料版显式加入，不能公开分发业务来源。具体包版本仍以各锁文件为准。
+
 M0 采用精确版本并提交 NuGet lock 文件；不是对“最新版本”的承诺。
 依赖元数据核对与加载结果见 T02；升级必须重新验证 net48 和宿主加载。
 
