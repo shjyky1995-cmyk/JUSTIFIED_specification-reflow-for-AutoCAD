@@ -4,6 +4,9 @@ import { ArrowLeft, ArrowRight, BriefcaseBusiness, FileText, FolderOpen, MoreHor
 import productIcon from '../../../branding/product-icon.png'
 import { renderModule, renderTemplate, type ContentCatalog } from './shared/content'
 import { assembleNote } from './shared/assembly'
+import { projectFields, isProjectField, CORE_FIELD_IDS } from './shared/project-fields'
+import { applyCorrosionScheme, isCorrosionField, CORROSION_FIELD_LABELS } from './shared/corrosion'
+import { CORROSION_SOURCES } from './shared/corrosion-rules'
 import {
   buildDocument,
   createNote,
@@ -54,7 +57,7 @@ const STEP_LABELS: { route: Route; label: string }[] = [
   { route: 'step03', label: '03 生成说明' },
 ]
 
-const LINKED_FIELD_IDS = new Set(['project_name', 'project_location', 'structural_safety_level', 'foundation_design_grade', 'seismic_intensity', 'site_class', 'design_life', 'seismic_fortification_category'])
+const LINKED_FIELD_IDS = CORE_FIELD_IDS
 
 function formatTime(iso: string): string {
   if (!iso) return ''
@@ -146,6 +149,14 @@ function App() {
     const next = mutate(previous)
     if (!next) return
     if (previous?.assemblyReviewConfirmed && next.assemblyReviewConfirmed) next.assemblyReviewConfirmed = false
+    if (previous) {
+      const before = effectiveFieldValues(previous), after = effectiveFieldValues(next)
+      const changed = new Set([...Object.keys(before), ...Object.keys(after)].filter(id => before[id] !== after[id]))
+      next.sections = next.sections.map(section => ({ ...section,
+        modules: section.modules?.map(module => module.fieldIds.some(id => changed.has(id)) ? { ...module, confirmedForNote: false } : module),
+        layoutBlocks: section.layoutBlocks?.map(block => block.kind === 'table' && [...block.rows.flat().join(' ').matchAll(/\{([a-z][a-z0-9_]*)\}/g)].some(match => changed.has(match[1])) ? { ...block, confirmedForNote: false } : block),
+      }))
+    }
     next.updatedAt = nowIso()
     noteRef.current = next
     setNote(next)
@@ -205,11 +216,11 @@ function App() {
     }} />}
     <main className={'main-area route-' + route}>
       {route === 'home' && <HomePage notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={startNew} onContinue={id => void openNote(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
-      {route === 'step01' && <Step01 note={note} projects={projects} linkedProjectId={linkedProjectId} setLinkedProjectId={setLinkedProjectId} onUpdate={updateNote} onConfirm={askConfirm} onDone={async () => {
+      {route === 'step01' && <Step01 note={note} catalog={catalog} projects={projects} linkedProjectId={linkedProjectId} setLinkedProjectId={setLinkedProjectId} onUpdate={updateNote} onConfirm={askConfirm} onDone={async () => {
         if (!noteRef.current) setWorkingNote(createNote('structural', customTemplateId('structural'), { name: '', number: '', owner: '', location: '' }, defaultTitle('structural')))
         if (!(await commitSave())) return
         if (noteRef.current) await rememberProject(noteRef.current, projects, setProjects)
-        setRoute('step02a')
+        setRoute(noteRef.current?.sections.length ? 'step02b' : 'step02a')
       }} />}
       {route === 'step02a' && note && <Step02A note={note} catalogReady={Boolean(catalog)} catalogError={catalogError} onBack={() => setRoute('step01')} onSelect={templateId => {
         const current = noteRef.current
@@ -242,7 +253,7 @@ function App() {
         }
         apply()
       }} />}
-      {route === 'step02b' && note && <Step02B note={note} save={save} selectedSectionId={selectedSectionId} setSelectedSectionId={setSelectedSectionId} libraryOpen={libraryOpen} setLibraryOpen={setLibraryOpen} onUpdate={updateNote} onBack={() => setRoute('step02a')} onConfirm={askConfirm} onGenerate={async () => {
+      {route === 'step02b' && note && <Step02B note={note} save={save} selectedSectionId={selectedSectionId} setSelectedSectionId={setSelectedSectionId} libraryOpen={libraryOpen} setLibraryOpen={setLibraryOpen} onUpdate={updateNote} onBack={() => setRoute('step02a')} onParameters={() => setRoute('step01')} onConfirm={askConfirm} onGenerate={async () => {
         if (!(await commitSave())) return
         setExportState({ busy: false, result: null, error: null })
         setRoute('step03')
@@ -332,8 +343,9 @@ function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onDele
   </div>
 }
 
-function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate, onConfirm, onDone }: {
+function Step01({ note, catalog, projects, linkedProjectId, setLinkedProjectId, onUpdate, onConfirm, onDone }: {
   note: Note | null
+  catalog: ContentCatalog | null
   projects: StoredProject[]
   linkedProjectId: string | null
   setLinkedProjectId: (id: string | null) => void
@@ -345,6 +357,12 @@ function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate,
   const project = note?.project ?? { name: '', number: '', owner: '', location: '' }
   const title = note?.title ?? defaultTitle(discipline)
   const structural = note?.structural ?? null
+  const baseForFields = note ?? createNote(discipline, customTemplateId(discipline), project, title)
+  const sourceFields = catalog?.layouts?.filter(layout => templatesFor(discipline).some(template => template.id === layout.templateId)).flatMap(layout => layout.fields ?? []) ?? []
+  const fieldNote = { ...baseForFields, fieldDefinitions: { ...Object.fromEntries(sourceFields.map(field => [field.id, { label: field.label, unit: field.unit }])), ...baseForFields.fieldDefinitions } }
+  const parameterFields = projectFields(fieldNote)
+  const parameterGroups = [...new Set(parameterFields.map(field => field.group))]
+  const materialFields = Object.entries(baseForFields.fieldDefinitions).filter(([id]) => isCorrosionField(id) || id === 'external_anticorrosion_coating')
 
   function ensureBase(code: DisciplineCode): Note {
     return note ?? createNote(code, customTemplateId(code), project, title)
@@ -384,6 +402,13 @@ function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate,
     onUpdate(current => {
       const base = current ?? createNote(discipline, customTemplateId(discipline), project, title)
       return { ...base, project: { ...base.project, ...patch } }
+    })
+  }
+
+  function changeParameter(id: string, value: string, label: string, unit: string) {
+    onUpdate(current => {
+      const base = current ?? createNote(discipline, customTemplateId(discipline), project, title)
+      return setFieldValue({ ...base, fieldDefinitions: { ...base.fieldDefinitions, [id]: { label, unit } } }, id, value)
     })
   }
 
@@ -479,15 +504,25 @@ function Step01({ note, projects, linkedProjectId, setLinkedProjectId, onUpdate,
           </select>
         </label>
         <label className="field"><span>抗震设防烈度</span><select value={structural?.seismicIntensity === SEISMIC_INTENSITY_PENDING ? '' : structural?.seismicIntensity ?? ''} onChange={event => changeStructural({ seismicIntensity: event.target.value })}><option value="">请选择当地取值</option>{SEISMIC_INTENSITIES.map(item => <option key={item} value={item}>{item}</option>)}</select></label>
-        <label className="field"><span>设计使用年限</span><input value="50 年" readOnly /></label>
+        <label className="field"><span>设计使用年限</span><input type="number" min={1} max={200} value={structural?.designLifeYears ?? 50} onChange={event => changeStructural({ designLifeYears: Number(event.target.value) })} /></label>
       </div>
-      <div className="structural-subsection"><p className="group-label">水土腐蚀性</p><textarea value={structural?.corrosion ?? ''} maxLength={4000} onChange={event => changeStructural({ corrosion: event.target.value })} placeholder="请粘贴地勘报告中的水土腐蚀性结论……" rows={3} /></div>
-      <div className="structural-subsection"><p className="group-label">材料与防腐方案</p><div className="corrosion-options">{PROTECTION_SCHEMES.map(item => <button type="button" key={item} className={'corrosion-option ' + (structural?.protectionScheme === item ? 'active' : '')} onClick={() => changeStructural({ protectionScheme: item })}><span className="radio-dot" />{item}腐蚀</button>)}</div><label className="field extra-field"><span>附加防腐措施 (可选)</span><input value={structural?.protectionExtra ?? ''} maxLength={120} onChange={event => changeStructural({ protectionExtra: event.target.value })} placeholder="按工程实际填写" /></label></div>
+      <div className="structural-subsection"><p className="group-label">地勘水土腐蚀性完整结论</p><textarea value={structural?.corrosion ?? ''} maxLength={4000} onChange={event => changeStructural({ corrosion: event.target.value })} placeholder="请粘贴地勘报告中的水土腐蚀性结论……" rows={3} /></div>
+      <div className="structural-subsection"><p className="group-label">材料与防腐方案</p><div className="corrosion-options">{PROTECTION_SCHEMES.map(item => <button type="button" key={item} className={'corrosion-option ' + (structural?.protectionScheme === item ? 'active' : '')} onClick={() => onUpdate(current => applyCorrosionScheme(current ?? createNote(discipline, customTemplateId(discipline), project, title), item))}><span className="radio-dot" />{item}腐蚀</button>)}</div><p className="content-guidance">微、弱、中、强按地勘及介质分别判定；此处选择受腐蚀部位的控制等级。弱/中/强自动生成50年普通钢筋混凝土候选要求，保留原稿更严格取值；微腐蚀需按环境类别另行核定。池内介质、抗渗、抗冻、抗硫酸盐及预应力、桩基另核定。</p>
+      {(baseForFields.corrosionDesign || materialFields.length > 0) && <div className="corrosion-design">
+        <p>当前方案：{structural?.protectionScheme}腐蚀。下列材料参数供核对和手改，后续正文自动引用。</p>
+        <div className="content-field-grid">{[...new Map([...Object.entries(CORROSION_FIELD_LABELS), ...materialFields].map(([id, definition]) => [id, definition])).entries()].map(([id, definition]) => <label className="field" key={id}><span>{definition.label}{definition.unit ? `（${definition.unit}）` : ''}</span><input value={baseForFields.fieldValues[id] ?? ''} onChange={event => changeParameter(id, event.target.value, definition.label, definition.unit)} placeholder="未提供依据，请核定后填写" /></label>)}</div>
+        <p className="content-guidance">来源：GB/T 50046-2018 表4.2.3、4.2.5、4.8.5-1；垫层为候选做法，需核定耐腐蚀材料与厚度，保护层按受腐蚀部位及构件类别取值。<a href={CORROSION_SOURCES.materials} target="_blank" rel="noreferrer">材料与保护层依据</a> · <a href={CORROSION_SOURCES.foundation} target="_blank" rel="noreferrer">基础与垫层依据</a></p>
+        {baseForFields.corrosionDesign && <label className="content-confirm"><input type="checkbox" checked={baseForFields.corrosionDesign.scopeConfirmed} onChange={event => onUpdate(current => current?.corrosionDesign ? { ...current, corrosionDesign: { ...current.corrosionDesign, scopeConfirmed: event.target.checked }, assemblyReviewConfirmed: false } : current)} /> 已核对本方案用于50年普通钢筋混凝土的受腐蚀部位，材料、垫层及表面防护适用（非预应力、非桩基）</label>}
+      </div>}
+      <label className="field extra-field"><span>附加防腐措施 (可选)</span><input value={structural?.protectionExtra ?? ''} maxLength={120} onChange={event => changeStructural({ protectionExtra: event.target.value })} placeholder="按工程实际填写" /></label></div>
     </section>}
+
+    {parameterGroups.map(group => <section className="panel project-parameter-panel" key={group}><div className="panel-head"><div><h2>{group} · 项目共用参数</h2><p>在这里手填一次，各章节、预览和导出自动引用；修改参数会保留已编辑正文。</p></div></div><div className="form-grid">{parameterFields.filter(field => field.group === group).map(field => <label className="field" key={field.id}><span>{field.label}{field.unit ? `（${field.unit}）` : ''}</span><input value={baseForFields.fieldValues[field.id] ?? ''} maxLength={4000} onChange={event => changeParameter(field.id, event.target.value, field.label, field.unit)} placeholder="按本工程资料手填" /></label>)}</div></section>)}
+    {discipline === 'structural' && <section className="panel"><label className="field"><span>设计基本地震加速度（与所选烈度对应）</span><input value={effectiveFieldValues(baseForFields).seismic_acceleration ?? ''} readOnly placeholder="请先选择设防烈度" /></label></section>}
 
     <div className="action-bar">
       <div className="action-buttons">
-        <button className="primary-button" onClick={onDone}>下一步：选择模板 <ArrowRight size={15} /></button>
+        <button className="primary-button" onClick={onDone}>{note?.sections.length ? '返回章节编制' : '下一步：选择模板'} <ArrowRight size={15} /></button>
       </div>
     </div>
   </div>
@@ -508,7 +543,7 @@ function Step02A({ note, catalogReady, catalogError, onBack, onSelect }: { note:
   </div>
 }
 
-function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryOpen, setLibraryOpen, onUpdate, onBack, onConfirm, onGenerate }: {
+function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryOpen, setLibraryOpen, onUpdate, onBack, onParameters, onConfirm, onGenerate }: {
   note: Note
   save: { status: SaveStatus; message: string }
   selectedSectionId: string | null
@@ -519,6 +554,7 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
   onBack: () => void
   onConfirm: (state: NonNullable<ConfirmState>) => void
   onGenerate: () => void
+  onParameters: () => void
 }) {
   const selected = note.sections.find(section => section.id === selectedSectionId) ?? null
   const available = librarySections(note.discipline).filter(section => !note.sections.some(item => item.id === section.id))
@@ -594,12 +630,14 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
       <section className="editor-panel panel">
         {selected ? <div className="editor-body">
           <div className="editor-utility"><span className={'save-state ' + save.status}>{saveStatusText(save)}</span>{!selected.custom && <button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: resetSectionBody(section) } : section) } : currentNote)}>清空手写正文</button>}</div>
+          <div className="editor-scroll" key={selected.id} tabIndex={0} role="region" aria-label="章节正文，可向下滚动">
           <div className="editor-head">
             <div><h2>{selected.title}</h2><p>{selected.custom ? '当前说明专用章节，不写回标准库' : '标准章节 · 可改为本说明正文'}</p></div>
           </div>
           {(chapterId || (selected.modules?.length ?? 0) > 0 || orderedBlocks.length > 0) && <div className="content-modules">
-            <p className="content-guidance">原说明正文和表格按原顺序完整展开。先填写本章工程取值，再核对规范与适用性；通用文字无需重复录入。</p>
-            {usedFields.length > 0 && <div className="content-field-grid">{usedFields.map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={effectiveFieldValues(note)[fieldId] ?? ''} readOnly={LINKED_FIELD_IDS.has(fieldId)} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={LINKED_FIELD_IDS.has(fieldId) ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
+            <p className="content-guidance">原说明正文和表格按原顺序完整展开。项目共用参数在 01 统一填写；本章只填写专属取值，再核对规范与适用性。固定文字可展开手改。</p>
+            {usedFields.some(id => isProjectField(id, note.fieldDefinitions[id]?.label) || isCorrosionField(id)) && <button className="secondary-button" onClick={onParameters}>查看 / 修改 01 项目参数</button>}
+            {usedFields.some(id => !isProjectField(id, note.fieldDefinitions[id]?.label) && !((isCorrosionField(id) || id === 'external_anticorrosion_coating'))) && <div className="content-field-grid">{usedFields.filter(id => !isProjectField(id, note.fieldDefinitions[id]?.label) && !((isCorrosionField(id) || id === 'external_anticorrosion_coating'))).map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={effectiveFieldValues(note)[fieldId] ?? ''} readOnly={LINKED_FIELD_IDS.has(fieldId)} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={LINKED_FIELD_IDS.has(fieldId) ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
             {orderedBlocks.map(block => {
               if (block.kind === 'paragraph') {
                 const module = selected.modules?.find(item => item.id === block.moduleId)
@@ -618,6 +656,7 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
           <textarea className="section-editor" value={selected.body} maxLength={100000} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: event.target.value } : section) } : currentNote)} placeholder={findSectionDefinition(selected.id)?.body ?? '可在这里补充或改写本章的纯文本正文。'} />
           <div className="editor-foot">
             <span className="char-count">{selected.body.length} 字</span>
+          </div>
           </div>
         </div> : <div className="editor-empty"><p>从左侧选择章节开始编辑，或添加新章节。</p></div>}
       </section>

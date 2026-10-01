@@ -1,5 +1,14 @@
 # 当前接续状态（所有 Agent 共用）
 
+## 2026-10-02 当前：T30 参数、滚动与腐蚀关联待验收
+
+- 分支 `task/T30-project-parameters`，基于T29 `da92611`；桌面工作区仍为G盘 `artifacts/t26-auto-content-worktree`。启动入口不变。
+- 用户三张截图需求已实现：红框共用参数移01手填，后续自动引用；长章节独立滚动；蓝框恢复原稿固定文字；黄色参数按腐蚀控制等级关联候选材料与防护。修改01后可直接返回章节，保留人工正文。
+- 构建、参数回归、隐藏Electron两尺寸六组滚动与参数修改保存返回、七模板1355段29表核对、三结构模板四等级12份DOCX生成、六专业及兼容回归通过。真实工程/Word视觉与专业核定仍pending；规则与边界见 `CORROSION_DESIGN_RULES.md`、日志T30。
+- 本轮本地提交；不合main、不发正式版。私有资料和原有他人夹具差异不入库，CAD T28仍独立待验收，不重新安排关机。
+- 用户待办：按 `DESKTOP_PARAMETERS_ACCEPTANCE.md` 重新启动并新建说明；旧草稿不会自动重建。唯一下一步：有反馈先修参数、版式或规则适用性，否则继续专业内容核定。依赖分支尚未顺序集成。
+
+
 更新：2026-09-29。CAD v0.1.0 已由用户签收、合入 `main`、推送 GitHub **公开**仓库并上传 ZIP。发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。T12/T13 被用户免除的补充验收数据仍不得写成实测；详见任务日志与 BUILD.json。
 
 ## 当前：T29/B 七套原稿完整编制，待用户视觉与专业核定

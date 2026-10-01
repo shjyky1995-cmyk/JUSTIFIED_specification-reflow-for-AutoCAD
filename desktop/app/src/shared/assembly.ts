@@ -1,6 +1,8 @@
 // 将本机候选资料按模板装配成可编辑初稿。来源关系和排除规则集中在此，避免界面逐条选取。
 import { selectedModule, type ContentCatalog, type ContentClause } from './content.ts'
 import { rebuildSections, type Note, type NoteSection } from './model.ts'
+import { isProjectField } from './project-fields.ts'
+import { applyCorrosionScheme, isCorrosionField } from './corrosion.ts'
 
 type Profile = { sourceFile: string; extraFacts: string[] }
 
@@ -44,7 +46,7 @@ export type AssemblyResult = { note: Note; selectedClauses: number; excludedClau
 
 export function assembleNote(note: Note, templateId: string, catalog: ContentCatalog | null): AssemblyResult {
   const profile = PROFILES[templateId]
-  const empty = { ...note, templateId, sections: rebuildSections(note, templateId), fieldDefinitions: {}, fieldValues: {}, assemblyReviewConfirmed: false, assemblyPackageId: '' }
+  const empty = { ...note, templateId, sections: rebuildSections(note, templateId), fieldDefinitions: {}, fieldValues: Object.fromEntries(Object.entries(note.fieldValues).filter(([id]) => isProjectField(id, note.fieldDefinitions[id]?.label) || isCorrosionField(id) || id === 'external_anticorrosion_coating')), corrosionDesign: note.corrosionDesign, sourceReferenceValues: {}, assemblyReviewConfirmed: false, assemblyPackageId: '' }
   if (!profile || !catalog) return { note: empty, selectedClauses: 0, excludedClauses: 0, sourceFile: null }
   const source = catalog.sourceDigest.find(item => item.file === profile.sourceFile)
   if (!source) return { note: empty, selectedClauses: 0, excludedClauses: 0, sourceFile: null }
@@ -69,7 +71,9 @@ export function assembleNote(note: Note, templateId: string, catalog: ContentCat
     for (const section of sections) for (const block of section.layoutBlocks ?? []) if (block.kind === 'table') for (const cell of block.rows.flat()) for (const match of cell.matchAll(/\{([a-z][a-z0-9_]*)\}/g)) usedFields.add(match[1])
     const definitions: Note['fieldDefinitions'] = {}
     for (const field of [...catalog.fields, ...(layout.fields ?? [])]) if (usedFields.has(field.id)) definitions[field.id] = { label: field.label, unit: field.unit }
-    return { note: { ...empty, title: layout.sourceTitle || source.file.replace(/\.docx$/i, ''), sections, fieldDefinitions: definitions, assemblyPackageId: catalog.packageId }, selectedClauses: sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0), excludedClauses: Math.max(0, related.length - sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0)), sourceFile: source.file }
+    const populated: Note = { ...empty, title: layout.sourceTitle || source.file.replace(/\.docx$/i, ''), sections, fieldDefinitions: definitions, sourceReferenceValues: layout.referenceValues, assemblyPackageId: catalog.packageId }
+    const result = note.structural?.protectionScheme ? applyCorrosionScheme(populated, note.structural?.protectionScheme ?? '') : populated
+    return { note: result, selectedClauses: sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0), excludedClauses: Math.max(0, related.length - sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0)), sourceFile: source.file }
   }
   const chosen = related.filter(clause => eligible(clause, profile))
   const sections: NoteSection[] = catalog.chapters.flatMap(chapter => {

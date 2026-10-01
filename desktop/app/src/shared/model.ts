@@ -1,6 +1,7 @@
 // 设计说明桌面端共享领域模型：专业、结构参数、章节库、模板、当前说明、校验与导出映射。
 // 约束：仅使用可擦除语法（无枚举/命名空间/参数属性），供 Electron 主进程、渲染进程与 Node 测试共同引用。
 import { renderModule, renderTemplate, parseColumnWidths, type SelectedModule } from './content.ts'
+import { corrosionIssues, corrosionSupplement } from './corrosion.ts'
 
 export const LIBRARY_VERSION = '1.0.1'
 
@@ -70,7 +71,7 @@ export const SITE_CATEGORIES = ['I0', 'I1', 'II', 'III', 'IV']
 export const SEISMIC_GRADES = ['甲', '乙', '丙', '丁']
 export const SAFETY_LEVELS = ['一级', '二级', '三级']
 export const FOUNDATION_GRADES = ['甲级', '乙级', '丙级']
-export const PROTECTION_SCHEMES = ['弱', '中', '强']
+export const PROTECTION_SCHEMES = ['微', '弱', '中', '强']
 
 export const STRUCTURAL_REQUIRED_FIELDS: { key: keyof StructuralParams; label: string }[] = [
   { key: 'siteCategory', label: '场地类别' },
@@ -190,6 +191,8 @@ export type Note = {
   sections: NoteSection[]
   fieldValues: Record<string, string>
   fieldDefinitions: Record<string, { label: string; unit: string }>
+  sourceReferenceValues?: Record<string, string>
+  corrosionDesign?: { ruleVersion: string; level: string; scopeConfirmed: boolean; autoValues: Record<string, string> }
   assemblyPackageId?: string
   assemblyReviewConfirmed?: boolean
   createdAt: string
@@ -266,6 +269,7 @@ export function setFieldValue(note: Note, fieldId: string, value: string): Note 
     ...note,
     fieldValues: { ...note.fieldValues, [fieldId]: value },
     assemblyReviewConfirmed: false,
+    ...(note.corrosionDesign ? { corrosionDesign: { ...note.corrosionDesign, scopeConfirmed: false } } : {}),
     sections: note.sections.map(section => ({
       ...section,
       modules: section.modules?.map(module => module.fieldIds.includes(fieldId) ? { ...module, confirmedForNote: false } : module),
@@ -278,6 +282,8 @@ export function effectiveFieldValues(note: Note): Record<string, string> {
     ...note.fieldValues,
     project_name: note.project.name,
     project_location: note.project.location,
+    project_number: note.project.number,
+    project_owner: note.project.owner,
     ...(note.structural ? {
       structural_safety_level: note.structural.safetyLevel,
       foundation_design_grade: note.structural.foundationGrade,
@@ -285,6 +291,7 @@ export function effectiveFieldValues(note: Note): Record<string, string> {
       site_class: note.structural.siteCategory,
       design_life: `${note.structural.designLifeYears}年`,
       seismic_fortification_category: note.structural.seismicGrade,
+      seismic_acceleration: note.structural.seismicIntensity.match(/([0-9.]+)g/)?.[1] ? note.structural.seismicIntensity.match(/([0-9.]+)g/)![1] + 'g' : '',
     } : {}),
   }
 }
@@ -332,7 +339,7 @@ export function summarizeNote(note: Note): NoteSummary {
 }
 
 export function findIssues(note: Note): NoteIssue[] {
-  const issues: NoteIssue[] = []
+  const issues: NoteIssue[] = corrosionIssues(note).map(issue => ({ level: 'error', ...issue }))
   const assembled = Boolean(note.assemblyPackageId)
   if (assembled && !note.assemblyReviewConfirmed) issues.push({ level: 'error', message: '请核对自动生成的整篇说明及规范引用，再确认适用于本工程。' })
   if (assembled) issues.push({ level: 'warning', message: '自动初稿来自旧工程候选资料；规范版本与适用条件尚未逐项核定。' })
@@ -340,6 +347,7 @@ export function findIssues(note: Note): NoteIssue[] {
   if (note.project.name.trim().length === 0) issues.push({ level: 'error', field: 'project.name', message: '请填写工程名称。' })
   if (note.discipline === 'structural') {
     const structural = note.structural ?? defaultStructuralParams()
+    if (!Number.isInteger(structural.designLifeYears) || structural.designLifeYears < 1 || structural.designLifeYears > 200) issues.push({ level: 'error', field: 'structural.designLifeYears', message: '请填写有效的设计使用年限（1～200年）。' })
     for (const required of STRUCTURAL_REQUIRED_FIELDS) {
       if (String(structural[required.key] ?? '').trim().length === 0 || (required.key === 'seismicIntensity' && structural.seismicIntensity === SEISMIC_INTENSITY_PENDING)) {
         issues.push({ level: 'error', field: `structural.${required.key}`, message: `结构参数缺少「${required.label}」，请回到 01 步补齐。` })
@@ -428,6 +436,7 @@ export function buildDocument(note: Note): BuiltDocument {
     const extra = structural.protectionExtra.trim()
     blocks.push({ kind: 'paragraph', text: '材料与防腐方案：' + scheme + (extra.length > 0 ? '（附加措施：' + extra + '）' : '') })
   }
+  let supplementWritten = false
   for (const section of note.sections) {
     if (isSectionEmpty(section)) {
       notices.push(`章节「${section.title}」为空，未写入文档。`)
@@ -442,6 +451,11 @@ export function buildDocument(note: Note): BuiltDocument {
         else {
           const module = byId.get(block.moduleId)
           if (module) blocks.push({ kind: 'paragraph', text: renderModule(module, effectiveFieldValues(note), labels).text })
+          if (!supplementWritten && module?.fieldIds.includes('concrete_grade_main')) {
+            const supplement = corrosionSupplement(note)
+            if (supplement) blocks.push({ kind: 'paragraph', text: supplement })
+            supplementWritten = true
+          }
         }
       }
     } else for (const module of section.modules ?? []) {
@@ -610,6 +624,13 @@ export function parseNote(value: unknown): Note {
     sections,
     fieldValues: stringRecord(raw.fieldValues),
     fieldDefinitions: definitionRecord(raw.fieldDefinitions),
+    sourceReferenceValues: stringRecord(raw.sourceReferenceValues),
+    ...(raw.corrosionDesign && typeof raw.corrosionDesign === 'object' ? { corrosionDesign: {
+      ruleVersion: asString((raw.corrosionDesign as Record<string, unknown>).ruleVersion, ''),
+      level: asString((raw.corrosionDesign as Record<string, unknown>).level, ''),
+      scopeConfirmed: (raw.corrosionDesign as Record<string, unknown>).scopeConfirmed === true,
+      autoValues: stringRecord((raw.corrosionDesign as Record<string, unknown>).autoValues),
+    } } : {}),
     assemblyPackageId: asString(raw.assemblyPackageId, ''),
     assemblyReviewConfirmed: raw.assemblyReviewConfirmed === true,
     createdAt: asString(raw.createdAt, nowIso()),

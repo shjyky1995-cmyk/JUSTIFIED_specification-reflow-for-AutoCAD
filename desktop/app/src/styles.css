@@ -1368,3 +1368,16 @@ textarea:focus-visible {
 .layout-table { table-layout: fixed; }
 .layout-table td { overflow-wrap: anywhere; white-space: pre-wrap; }
 .layout-table details { white-space: normal; margin-top: 6px; font-size: 12px; }
+
+/* 长章节使用独立滚动区，工具栏及目录不随正文滑走。 */
+.editor-body { min-height: 0; overflow: hidden; }
+.editor-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.editor-scroll .content-modules { padding: 0 32px 16px; }
+.editor-scroll .section-editor { display: block; min-height: 180px; resize: vertical; flex: none; }
+.editor-utility { flex-shrink: 0; }
+.editor-head { flex-shrink: 0; }
+.corrosion-design { border: 1px solid #d9e2f1; border-radius: 8px; padding: 14px; margin: 14px 0; }
+.corrosion-design > p { font-size: 13px; line-height: 1.7; }
+.corrosion-design .content-confirm { align-items: flex-start; line-height: 1.7; }
+.project-parameter-panel .panel-head p { font-size: 12px; color: #667085; }
+@media (max-height: 760px) { .editor-shell { min-height: 420px; height: calc(100dvh - 170px); } }

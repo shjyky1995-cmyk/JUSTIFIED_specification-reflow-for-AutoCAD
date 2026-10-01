@@ -13,7 +13,10 @@
     "test:content": "node ../../scripts/test-content-library.mjs",
     "test:auto": "node ../../scripts/test-auto-assembly.mjs",
     "test:source": "node ../../scripts/test-source-fidelity.mjs",
-    "test:pool": "node ../../scripts/test-pool-reference.mjs"
+    "test:pool": "node ../../scripts/test-pool-reference.mjs",
+    "test:parameters": "node ../../scripts/test-desktop-parameters.mjs",
+    "test:scroll": "node ../../scripts/run-desktop-scroll.mjs",
+    "test:corrosion": "node ../../scripts/test-corrosion-source.mjs"
   },
   "dependencies": {
     "lucide-react": "1.48.0",

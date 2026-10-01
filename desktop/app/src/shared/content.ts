@@ -34,7 +34,7 @@ export type ContentCatalog = {
 export type ContentLayoutBlock =
   | { kind: 'paragraph'; sourcePara: number; template: string; clauseIds: string[]; fieldIds: string[]; reviewNote: string }
   | { kind: 'table'; sourcePara: number; rows: string[][]; columnWidths?: number[]; reviewNote: string }
-export type ContentLayout = { schemaVersion: 1; templateId: string; sourceId: string; sourceFile: string; sourceTitle?: string; sourceHash?: string; fields?: ContentField[]; sections: { id: string; title: string; sourcePara: number; blocks: ContentLayoutBlock[] }[] }
+export type ContentLayout = { schemaVersion: 1; templateId: string; sourceId: string; sourceFile: string; sourceTitle?: string; sourceHash?: string; referenceValues?: Record<string, string>; fields?: ContentField[]; sections: { id: string; title: string; sourcePara: number; blocks: ContentLayoutBlock[] }[] }
 
 export function parseContentLayout(value: unknown): ContentLayout {
   const raw = object(value, '版式')
@@ -51,7 +51,7 @@ export function parseContentLayout(value: unknown): ContentLayout {
     return { id: string(section.id, '版式章节编号'), title: string(section.title, '版式章节标题'), sourcePara: section.sourcePara as number, blocks }
   }) : []
   if (sections.length === 0 || sections.some(section => section.blocks.length === 0)) throw new Error('版式章节缺少内容。')
-  return { schemaVersion: 1, templateId: string(raw.templateId, '模板编号'), sourceId: string(raw.sourceId, '来源编号'), sourceFile: string(raw.sourceFile, '来源文件'), sourceTitle: typeof raw.sourceTitle === 'string' ? raw.sourceTitle : undefined, sourceHash: typeof raw.sourceHash === 'string' ? raw.sourceHash : undefined, fields: Array.isArray(raw.fields) ? raw.fields.map(value => { const field = object(value, '原稿字段'); return { id: string(field.id, '字段编号'), label: string(field.label, '字段名称'), unit: typeof field.unit === 'string' ? field.unit : '', scope: '', reviewStatus: 'pending', aliases: [] } }) : [], sections }
+  return { schemaVersion: 1, templateId: string(raw.templateId, '模板编号'), sourceId: string(raw.sourceId, '来源编号'), sourceFile: string(raw.sourceFile, '来源文件'), sourceTitle: typeof raw.sourceTitle === 'string' ? raw.sourceTitle : undefined, sourceHash: typeof raw.sourceHash === 'string' ? raw.sourceHash : undefined, referenceValues: raw.referenceValues && typeof raw.referenceValues === 'object' ? Object.fromEntries(Object.entries(raw.referenceValues).filter(([, value]) => typeof value === 'string')) as Record<string, string> : {}, fields: Array.isArray(raw.fields) ? raw.fields.map(value => { const field = object(value, '原稿字段'); return { id: string(field.id, '字段编号'), label: string(field.label, '字段名称'), unit: typeof field.unit === 'string' ? field.unit : '', scope: '', reviewStatus: 'pending', aliases: [] } }) : [], sections }
 }
 
 export type SelectedModule = {
@@ -183,6 +183,8 @@ export function renderTemplate(template: string, values: Record<string, string>,
       if (id === 'seismic_intensity') value = value.replace(/[（(].*$/, '').trim()
       if (id === 'seismic_intensity' && /^\s*度/.test(suffix)) value = value.replace(/\s*度$/, '')
       if (id === 'design_life' && /^\s*年/.test(suffix)) value = value.replace(/\s*年$/, '')
+      const unit = suffix.match(/^\s*(mm|kPa|kg\/m[³3]|kN\/m[²2]|μm|%|g|m|s)/)?.[1]
+      if (unit && value.endsWith(unit)) value = value.slice(0, -unit.length).trim()
       return value
     }
     missing.push(id)

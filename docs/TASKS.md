@@ -1,4 +1,6 @@
 # 任务清单
+
+2026-10-02 当前桌面：T30/B 参数、章节滚动与腐蚀候选关联已实现，自动检查通过，状态**待验收**；基于T29，工作区及用户步骤见NEXT_AGENT和DESKTOP_PARAMETERS_ACCEPTANCE。下方T26/T27登记保留为历史，不覆盖本条。
 CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 通用编制框架→B 标准内容与专业深化→C 成品交付连续推进。T 编号用于追踪，不要求用户逐个小步确认。固定交付/验收按 [WORKFLOW](WORKFLOW.md)，唯一下一步读 [NEXT_AGENT](NEXT_AGENT.md)。任务范围不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。

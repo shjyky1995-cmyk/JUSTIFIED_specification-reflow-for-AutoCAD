@@ -29,6 +29,7 @@ FIELD = re.compile(r"\{([a-z][a-z0-9_]*)\}")
 ADJACENT = re.compile(r"(?:\{[a-z][a-z0-9_]*\}){2,}")
 CHAPTER = re.compile(r"^[一二三四五六七八九十百]+、")
 NUMBERING = re.compile(r"^\s*(?:\d+[、.)）]|[（(]\d+[)）])\s*")
+FIXED_FIELDS = {'main_rebar_grades','embedded_part_steel_grade','welding_electrode_grades','rebar_grade_hpb','rebar_grade_hrb','electrode_grade_hpb','electrode_grade_hrb'}
 OLD_NAMES = re.compile(r"塔城地区乌苏市|济南起步区|济南新旧动能转换起步区|济南市|尉犁县|腊山河|兴济河|乌苏市|XXXX|山东省|新疆(?:维吾尔自治区)?")
 
 def units(path: Path):
@@ -74,11 +75,47 @@ def build(catalog_file: Path, source_dir: Path, output_dir: Path):
             spans = []
             norm, positions = normalized(raw)
             def add(a, b, field):
+                if field in FIXED_FIELDS: return False
+                # Units stay in fixed text; step 01 accepts the numeric value.
+                unit = definitions.get(field, {}).get('unit', '')
+                value = raw[a:b].strip()
+                if unit and re.fullmatch(r'[≤≥]?\s*[0-9.]+\s*'+re.escape(unit), value):
+                    b = a + raw[a:b].rfind(unit)
+                    while b > a and raw[b-1].isspace(): b -= 1
                 if a >= b or any(a < y and b > x for x, y, _ in spans): return False
                 spans.append((a, b, field)); return True
             if force_value_label and raw:
                 add(0, len(raw), local(force_value_label, index, suffix))
             else:
+                # Split the old combined project/name and elevation fields explicitly.
+                if template_id.startswith('tpl-struct'):
+                    name = re.search(r'本工程为(.+?)\s+(\S+)\s*分项', raw)
+                    if name:
+                        add(name.start(1), name.end(1), 'project_name')
+                        add(name.start(2), name.end(2), 'subproject_name')
+                    elevation = re.search(r'相当于\s*(.+?高程基准)\s+([^，。；]+?)m(?=[。；，]|$)', raw)
+                    if elevation:
+                        add(elevation.start(1), elevation.end(1), 'elevation_datum')
+                        add(elevation.start(2), elevation.end(2), 'elevation_zero')
+                    # Keep independent facts separate instead of swallowing a seismic conclusion.
+                    soil = re.search(r'场地土对建筑材料具([^；。]+)', raw)
+                    if soil: add(soil.start(1), soil.end(1), 'soil_corrosiveness')
+                    coating = re.search(r'地面以下构筑物外表面(涂刷[^；。]+)', raw)
+                    if coating: add(coating.start(1), coating.end(1), 'external_anticorrosion_coating')
+                    if raw.startswith('混凝土：'):
+                        patterns = [
+                            (r'基础垫层\s*([^；]+)', 'concrete_grade_pad'),
+                            (r'(C\d+)\s*[，,]水胶比', 'concrete_grade_main'),
+                            (r'水胶比不大于\s*([0-9.]+)', 'concrete_water_binder_ratio'),
+                            (r'水溶性氯离子最大含量\s*([0-9.]+)', 'concrete_chloride_max_content'),
+                            (r'最大碱含量\s*([0-9.]+)', 'concrete_max_alkali_content'),
+                            (r'抗硫酸盐等级\s*(KS\d+)', 'concrete_sulfate_resistance_grade'),
+                            (r'56d 电通量（C）\s*(≤[0-9]+)', 'concrete_56d_coulomb'),
+                            (r'膨胀加强带\s*(C\d+)', 'concrete_strength_expansion_strip'),
+                        ]
+                        for pattern, field in patterns:
+                            match = re.search(pattern, raw)
+                            if match: add(match.start(1), match.end(1), field)
                 for clause in sorted(candidates, key=lambda c: len(c['template']), reverse=True):
                     text = clause['template']
                     # Adjacent fields cannot be separated reliably from an old value.
@@ -101,7 +138,7 @@ def build(catalog_file: Path, source_dir: Path, output_dir: Path):
                 # A specific fact with no reusable variables is itself an editable
                 # project statement, not a reason to discard surrounding paragraphs.
                 for n, clause in enumerate(candidates):
-                    if clause['kind'] != '单项目事实' or clause['fieldIds']: continue
+                    if clause['kind'] != '单项目事实' or clause['fieldIds'] or '建设单位提供的设计任务书' in clause['template']: continue
                     text, _ = normalized(clause['template'])
                     a = norm.find(text)
                     if text and a >= 0:
@@ -176,10 +213,18 @@ def build(catalog_file: Path, source_dir: Path, output_dir: Path):
                 sections[-1]['blocks'].append({"kind":"table", "sourcePara":index, "rows":updated, "columnWidths":widths, "reviewNote":"来源表格；填写工程取值后核对指标与适用性"})
                 table_count += 1
         used = set(FIELD.findall(json.dumps(sections, ensure_ascii=False)))
-        all_fields = {**definitions, **local_fields}
+        all_fields = {**definitions, **local_fields,
+            'subproject_name': {'id':'subproject_name','label':'分项 / 单体名称','unit':'','scope':'project','reviewStatus':'pending','aliases':[]},
+            'elevation_zero': {'id':'elevation_zero','label':'±0.000 对应高程','unit':'m','scope':'project','reviewStatus':'pending','aliases':[]},
+            'external_anticorrosion_coating': {'id':'external_anticorrosion_coating','label':'地下外表面防护做法','unit':'','scope':'note','reviewStatus':'pending','aliases':[]},
+        }
         missing = used-all_fields.keys()
         if missing: raise ValueError(f'字段未定义：{missing}')
-        layout = {"schemaVersion":1,"templateId":template_id,"sourceId":source['id'],"sourceFile":filename,"sourceTitle":title,"sourceHash":source['sha256'],"fields":[all_fields[k] for k in sorted(used)],"sections":sections}
+        reference_values = {}
+        for position in evidence:
+            for key, value in position['oldValues'].items():
+                reference_values.setdefault(key, value)
+        layout = {"referenceValues": reference_values, "schemaVersion":1,"templateId":template_id,"sourceId":source['id'],"sourceFile":filename,"sourceTitle":title,"sourceHash":source['sha256'],"fields":[all_fields[k] for k in sorted(used)],"sections":sections}
         layouts.append(layout)
         reports.append({"templateId":template_id,"sourceFile":filename,"chapters":len(sections),"paragraphs":para_count,"tables":table_count,"fields":len(used),"fixedTextExact":True,"positions":evidence})
     output_dir.mkdir(parents=True, exist_ok=True)
