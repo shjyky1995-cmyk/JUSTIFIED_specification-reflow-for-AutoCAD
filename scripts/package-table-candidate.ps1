@@ -28,7 +28,7 @@ try {
         Copy-Item -LiteralPath $_.FullName -Destination $contents
     }
     Copy-Item -LiteralPath (Join-Path $binaryDir 'fonts') -Destination $contents -Recurse
-    Copy-Item -LiteralPath 'docs/INSTALL.md','docs/THIRD_PARTY.md','docs/CAD_TABLES_ACCEPTANCE.md' -Destination $bundle
+    Copy-Item -LiteralPath 'docs/INSTALL.md','docs/THIRD_PARTY.md','docs/CAD_TABLES_ACCEPTANCE.md','docs/CAD_TABLES_AUTOMATED_CHECKS.md' -Destination $bundle
     Copy-Item -LiteralPath 'third-party','schemas' -Destination $bundle -Recurse
     Copy-Item -LiteralPath 'scripts/verify-package.ps1' -Destination $bundle
     $published = Join-Path $contents 'standards/published'
