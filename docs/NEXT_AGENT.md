@@ -1,5 +1,17 @@
 # 当前接续状态（所有 Agent 共用）
 
+## 2026-10-02 本对话：T28 CAD 界面与留边修复候选
+
+- 当前分支仍为 `task/T28-cad-tables`，状态待验收。用户反馈白块/字体模糊及表格碰图签，要求 Agent 先做后台测试、生成图片自行检查。
+- 模板 1.2.1 恢复 A1/A2/A3 距纸底 41.63/50/52 mm 的共用安全区，槽数 68/43/25；此前说明区下移 60 mm 时底边也下移，导致留白被侵占。正文与表格共同修正，旧发布资产不覆盖；旧候选模板移到 t28-preview1 历史目录，不随新版打包。
+- CAD 窗口采用系统 Microsoft YaHei UI / GDI 点数字体；卡片图形按控件尺寸缩放，统一背景、移除标签重叠与输入框白块。后台实际控件四档模拟缩放预览通过；CAD 内真实 DPI/多屏未验。
+- 完整构建 0 警告/0 错误，net8.0/net48 各 190/190。复杂脱敏表：6 不等宽列、两层表头、组合合并、120 条唯一条目、长文字/多段/上标。AutoCAD 2021 后台 TEXTBOX 捕获 328 条真实 SHX 边界，禁止模拟补值后双框架三图幅各通过；A1/A2/A3 为 2/3/7 页。12 张排版检查图和三图幅首张真实 CAD 核心 PDF 转图已查看。
+- 本机证据 `artifacts/t28-preview2-build-final.log`、`artifacts/t28-host-final.log`、`artifacts/t28-visual`、`artifacts/t28-host-font-plots`；方法见 `docs/CAD_TABLES_AUTOMATED_CHECKS.md`。测试结果/测量缓存/DOCX 不入库。Core Console NETLOAD 失败，后台 DXF 出图不等于 DSS 导入、事务或一次撤销通过。
+- 新包版本 `0.2.0-table-preview.2`，交付目录 `测试文件/CAD表格试用`；安装后以 DSS 导入 `复杂工程表格试用.docx`。未安装到用户 CAD、未改当前业务图、未合 main/打标签；本轮本地提交，不推送正式发布。
+- 唯一下一动作：用户方便时集中验证新版窗口、实际工程图框下部留白、复杂表格和一次 U；出现反馈先修，明确通过后按 WORKFLOW 集成/标签/远端备份。无需再让用户重复 Agent 已完成的自动测试。
+- 桌面 T29 仍在独立 `artifacts/t26-auto-content-worktree` 接续，下方记录保留；不把它带入 CAD 分支，不重复关机任务。
+
+
 ## 2026-10-02 当前桌面接续：T30 参数、滚动与腐蚀关联待验收
 
 - 最新桌面工作区仍为 `artifacts/t26-auto-content-worktree`，分支已切到 `task/T30-project-parameters`，实现提交 `8250295`（基于T29 `da92611`）。不要在根目录重复实现或回切旧T29启动代码。

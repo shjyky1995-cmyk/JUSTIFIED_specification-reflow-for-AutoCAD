@@ -288,6 +288,168 @@ public class TableTests
         return b.Build();
     }
 
+    // 脱敏材料/设备表：六个不等宽列、两层表头、横纵组合合并、多段与上下标。
+    private static byte[] ComplexSample()
+    {
+        var b = new DocxFixtureBuilder();
+        b.Styles.Add(DocxFixtureBuilder.ParagraphStyle("Normal", "Normal", null, true));
+        b.Body.Add(DocxFixtureBuilder.Paragraph("Normal", DocxFixtureBuilder.TextRun("复杂工程表格试用：全部数值仅为测试，不作为工程结论。")));
+        var header = "<w:tblHeader/>";
+        var rows = Row(Cell("材料统计", "<w:gridSpan w:val=\"3\"/>") + Cell("设计取值及说明", "<w:gridSpan w:val=\"3\"/>"), header)
+            + Row(Cell("分组") + Cell("编号") + Cell("构件名称") + Cell("材料") + Cell("数量") + Cell("备注"), header);
+        for (int group = 1; group <= 40; group++)
+        {
+            for (int row = 0; row < 3; row++)
+            {
+                var merge = row == 0 ? "<w:vMerge w:val=\"restart\"/>" : "<w:vMerge/>";
+                var note = Cell("长文字检查：尺寸及施工要求应完整换行，保持原有字号。");
+                if (row == 1)
+                    note = "<w:tc><w:tcPr/><w:p><w:r><w:t>面积 m</w:t></w:r><w:r><w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr><w:t>2</w:t></w:r></w:p><w:p><w:r><w:t>第二段核对留白。</w:t></w:r></w:p></w:tc>";
+                var key = "K" + group.ToString("D2") + row;
+                rows += Row(Cell(row == 0 ? "G" + group.ToString("D2") : "", merge)
+                    + Cell(key) + Cell(row == 2 ? "连续合并构件名称与材料" : "墙板及连接构件", row == 2 ? "<w:gridSpan w:val=\"2\"/>" : "")
+                    + (row == 2 ? "" : Cell("C30")) + Cell("12") + note);
+            }
+        }
+        var xml = Xml(rows);
+        var table = new Table { InnerXml = xml };
+        table.GetFirstChild<TableGrid>()!.Remove();
+        table.InsertAt(new TableGrid(new[] { 600, 900, 1800, 900, 800, 2000 }
+            .Select(w => new GridColumn { Width = w.ToString() })), 1);
+        b.Body.Add(table);
+        b.Body.Add(DocxFixtureBuilder.Paragraph("Normal", DocxFixtureBuilder.TextRun("复杂表格后的正文：核对顺序与下边距。")));
+        return b.Build();
+    }
+
+    [TestCase("A1", "jsr-A1-three-column", 41.63, 68)]
+    [TestCase("A2", "jsr-A2-three-column", 50, 43)]
+    [TestCase("A3", "jsr-A3-two-column", 52, 25)]
+    public void ComplexEngineeringTableAndTextShareSafeMargins(string paper, string id, double margin, int rows)
+    {
+        var catalog = new Standards.DirectoryPackageCatalog(Path.Combine(Root(), "standards", "candidates", "t28"), false);
+        var standard = catalog.Load(new StandardRef { Id = "jsr-note", Version = "1.1.0" }, CancellationToken.None).Standard!;
+        var template = catalog.Load(new TemplateRef { Id = id, Version = "1.2.1" }, CancellationToken.None).Template!;
+        var bytes = ComplexSample();
+        var measure = new InspectionMeasure();
+        var result = new NoteGenerationService(FullParser(), LayoutSamples.Engine(), measure)
+            .Generate(new DocxBytesSource("complex.docx", bytes), standard, template, new RenderTransform { UnitScale = 1 }, CancellationToken.None);
+        Assert.That(result.Success, Is.True, string.Join(";", result.Diagnostics.Select(d => d.Message)));
+        Assert.That(result.Layout!.Pages.Count, Is.GreaterThan(1));
+        Assert.That(result.Texts.Last().Text, Does.Contain("复杂表格后的正文"));
+        foreach (var page in result.Layout.Pages) foreach (var column in page.Columns)
+        {
+            var g = template.Columns[column.ColumnIndex];
+            Assert.That(g.RowCount, Is.EqualTo(rows));
+            Assert.That(g.Bottom - template.PageBounds.Bottom, Is.EqualTo(margin).Within(1e-8));
+            foreach (var edge in column.Lines)
+                foreach (var point in new[] { edge.Start, edge.End })
+                {
+                    Assert.That(point.X, Is.InRange(-1e-8, g.Right - g.Left + 1e-8));
+                    Assert.That(point.Y, Is.InRange(g.Bottom - 1e-8, g.Top + 1e-8));
+                }
+            var texts = column.TableTexts.Concat(column.Rows.Where(r => r.VisualLine != null)).ToArray();
+            foreach (var text in texts)
+            {
+                var ink = text.VisualLine!.InkBounds;
+                Assert.That(text.Baseline + ink.MinY, Is.GreaterThanOrEqualTo(g.Bottom - 1e-8));
+                Assert.That(text.Baseline + ink.MaxY, Is.LessThanOrEqualTo(g.Top + 1e-8));
+                Assert.That(ink.MinX, Is.GreaterThanOrEqualTo(-1e-8));
+                Assert.That(ink.MaxX, Is.LessThanOrEqualTo(g.Right - g.Left + 1e-8));
+            }
+            for (int a = 0; a < texts.Length; a++) for (int c = a + 1; c < texts.Length; c++)
+            {
+                var x = texts[a].VisualLine!.InkBounds; var y = texts[c].VisualLine!.InkBounds;
+                bool overlaps = x.MinX < y.MaxX - 1e-8 && x.MaxX > y.MinX + 1e-8
+                    && texts[a].Baseline + x.MinY < texts[c].Baseline + y.MaxY - 1e-8
+                    && texts[a].Baseline + x.MaxY > texts[c].Baseline + y.MinY + 1e-8;
+                Assert.That(overlaps, Is.False, "单元格或后续正文文字不得互相覆盖。");
+            }
+        }
+        for (int group = 1; group <= 40; group++) for (int row = 0; row < 3; row++)
+            Assert.That(result.Texts.Count(t => t.Text == "K" + group.ToString("D2") + row), Is.EqualTo(1), "正文条目不得丢失或重复。");
+        var output = Environment.GetEnvironmentVariable("T28_VISUAL_OUTPUT");
+        if (!string.IsNullOrWhiteSpace(output))
+        {
+            Directory.CreateDirectory(output);
+            File.WriteAllBytes(Path.Combine(output, "复杂工程表格试用.docx"), bytes);
+            File.WriteAllText(Path.Combine(output, paper + "-layout.json"), JsonProtocol.Default.SaveLayoutResult(result.Layout));
+            File.WriteAllText(Path.Combine(output, paper + "-template.json"), Newtonsoft.Json.JsonConvert.SerializeObject(template));
+            File.WriteAllText(Path.Combine(output, paper + "-measure-requests.json"), Newtonsoft.Json.JsonConvert.SerializeObject(measure.Requests.Values));
+        }
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("T28_HOST_MEASUREMENTS"))
+            && Environment.GetEnvironmentVariable("T28_COLLECT_MEASUREMENTS") != "1")
+            Assert.That(measure.Missing, Is.Zero, "真实字宽复核不得混用模拟值；先补齐测量请求。");
+    }
+
+    private sealed class InspectionMeasure : ITextMeasureService
+    {
+        public sealed class Entry
+        {
+            public string Key { get; set; } = string.Empty;
+            public string Text { get; set; } = string.Empty;
+            public double Height { get; set; }
+            public double WidthFactor { get; set; }
+            public Bounds2? Ink { get; set; }
+        }
+        public readonly Dictionary<string, Entry> Requests = new Dictionary<string, Entry>();
+        private readonly Dictionary<string, Entry> _host = new Dictionary<string, Entry>();
+        private readonly FakeMeasure _fallback = new FakeMeasure { Unit = 1.7, Cjk = 3.375, InkDescent = 0.8 };
+        public int Missing { get; private set; }
+        public InspectionMeasure()
+        {
+            var path = Environment.GetEnvironmentVariable("T28_HOST_MEASUREMENTS");
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+            foreach (var e in Newtonsoft.Json.JsonConvert.DeserializeObject<List<Entry>>(File.ReadAllText(path))!) _host[e.Key] = e;
+        }
+        public TextMeasurement Measure(IReadOnlyList<TextRun> runs, ResolvedStyle style, CancellationToken cancellation)
+        {
+            var text = runs[0].Text;
+            var key = style.TextHeight.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "|" + text;
+            Requests[key] = new Entry { Key = key, Text = text, Height = style.TextHeight, WidthFactor = style.WidthFactor };
+            if (_host.TryGetValue(key, out var measured) && measured.Ink != null)
+                return new TextMeasurement(new[] { new RunMeasurement(measured.Ink.Value.MaxX, measured.Ink.Value) }, Array.Empty<Contracts.Diagnostics.Diagnostic>());
+            Missing++;
+            return _fallback.Measure(runs, style, cancellation);
+        }
+    }
+
+    [Test]
+    public void TableBottomUsesActualEdgeAndMovesWholeRowBeforeReservedArea()
+    {
+        var template = LayoutSamples.Columns(new[] { 40d, 40d }, 3, 7.2, 90);
+        // 表格比文字基线多占底部空间：第3行基线可用，但其底线已在安全区外。
+        foreach (var g in template.Columns) { g.Top = 100; g.Bottom = 75; }
+        var result = LayoutSamples.Engine().Layout(Doc(Grid(3)), Standard(), template, new FakeMeasure { InkDescent = 0.8 }, CancellationToken.None);
+        Assert.That(result.Diagnostics, Is.Empty, Errors(result));
+        Assert.That(result.Pages.Single().Columns.Count, Is.EqualTo(2));
+        Assert.That(result.Pages[0].Columns[0].TableTexts.Count, Is.EqualTo(4));
+        Assert.That(result.Pages[0].Columns[1].TableTexts.Count, Is.EqualTo(2));
+        Assert.That(result.Pages.SelectMany(p => p.Columns).SelectMany(c => c.Lines).Min(e => e.Start.Y), Is.GreaterThanOrEqualTo(75));
+    }
+
+    [TestCase("jsr-A1-three-column")]
+    [TestCase("jsr-A2-three-column")]
+    [TestCase("jsr-A3-two-column")]
+    public void FullTextColumnsUseTheSameSafeRegionAsTables(string id)
+    {
+        var catalog = new Standards.DirectoryPackageCatalog(Path.Combine(Root(), "standards", "candidates", "t28"), false);
+        var standard = catalog.Load(new StandardRef { Id = "jsr-note", Version = "1.1.0" }, CancellationToken.None).Standard!;
+        var template = catalog.Load(new TemplateRef { Id = id, Version = "1.2.1" }, CancellationToken.None).Template!;
+        var doc = Doc(Enumerable.Range(0, 250).Select(i => LayoutSamples.Text(i, "纯文字留边检查" + i)).ToArray());
+        var result = LayoutSamples.Engine().Layout(doc, standard, template, new FakeMeasure { InkDescent = 0.8 }, CancellationToken.None);
+        Assert.That(result.Diagnostics, Is.Empty, Errors(result));
+        Assert.That(LayoutSamples.Lines(result).Length, Is.EqualTo(250));
+        foreach (var page in result.Pages) foreach (var column in page.Columns)
+        {
+            var g = template.Columns[column.ColumnIndex];
+            foreach (var row in column.Rows.Where(r => r.VisualLine != null))
+            {
+                Assert.That(row.Baseline + row.VisualLine!.InkBounds.MinY, Is.GreaterThanOrEqualTo(g.Bottom - 1e-8));
+                Assert.That(row.Baseline + row.VisualLine.InkBounds.MaxY, Is.LessThanOrEqualTo(g.Top + 1e-8));
+            }
+        }
+    }
+
     [Test]
     public void CandidateStandardsAndThreePaperSizesProduceBoundedEditableObjects()
     {
@@ -297,7 +459,7 @@ public class TableTests
         Assert.That(s.Success, Is.True);
         foreach (var id in new[] { "jsr-A1-three-column", "jsr-A2-three-column", "jsr-A3-two-column" })
         {
-            var template = catalog.Load(new TemplateRef { Id = id, Version = "1.2.0" }, CancellationToken.None);
+            var template = catalog.Load(new TemplateRef { Id = id, Version = "1.2.1" }, CancellationToken.None);
             Assert.That(template.Success, Is.True);
             var svc = new NoteGenerationService(FullParser(), LayoutSamples.Engine(), new FakeMeasure { Unit = 1.7, Cjk = 3.375 });
             var result = svc.Generate(new DocxBytesSource("sample.docx", bytes), s.Standard!, template.Template!, new RenderTransform { UnitScale = 1 }, CancellationToken.None);
@@ -331,7 +493,7 @@ public class TableTests
         var standard = catalog.Load(new StandardRef { Id = "jsr-note", Version = "1.1.0" }, CancellationToken.None).Standard!;
         foreach (var id in new[] { "jsr-A1-three-column", "jsr-A2-three-column", "jsr-A3-two-column" })
         {
-            var template = catalog.Load(new TemplateRef { Id = id, Version = "1.2.0" }, CancellationToken.None).Template!;
+            var template = catalog.Load(new TemplateRef { Id = id, Version = "1.2.1" }, CancellationToken.None).Template!;
             var result = new NoteGenerationService(FullParser(), LayoutSamples.Engine(), new FakeMeasure { Unit = 1.7, Cjk = 3.375 })
                 .Generate(new DocxFileSource(path!), standard, template, new RenderTransform { UnitScale = 1 }, CancellationToken.None, GenerationLimits.Default);
             Assert.That(result.Success, Is.True, string.Join(";", result.Diagnostics.Select(d => d.Message)));

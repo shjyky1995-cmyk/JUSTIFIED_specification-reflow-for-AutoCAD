@@ -8,7 +8,7 @@ try {
     if (-not $SkipBuild) {
         & (Join-Path $PSScriptRoot 'build.ps1') -Target All -AutoCadDir $AutoCadDir
     }
-    $version = '0.2.0-table-preview.1'
+    $version = '0.2.0-table-preview.2'
     $commit = (& git rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source commit.' }
     $changes = @(& git diff --name-only --ignore-space-at-eol HEAD -- src schemas scripts standards packaging tests docs)
@@ -42,8 +42,8 @@ try {
         classification = 'candidate'; version = $version; sourceCommit = $commit; workingTreeDirty = $false
         builtUtc = [DateTime]::UtcNow.ToString('o'); supportedHost = 'AutoCAD 2021 R24.0 / Windows x64 / .NET Framework 4.8'
         productionReady = $false
-        acceptanceBasis = 'T28 automated core checks; inherited text template geometry. Table host checks pending.'
-        pending = @('表格真实字体与线条位置核对','A1/A2/A3 的 DSS 导入及一次撤销','表格打印核对')
+        acceptanceBasis = 'T28 190/190 per framework; safe-margin template 1.2.1; offscreen UI checks; recorded AutoCAD TEXTBOX geometry and prepared-DXF plots. Full DSS host checks pending.'
+        pending = @('CAD 内真实 DPI 与窗口核对','A1/A2/A3 的 DSS 导入及一次撤销','实际工程图框与打印核对')
     }
     $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $bundle 'BUILD.json') -Encoding UTF8
     Get-ChildItem -LiteralPath $bundle -Recurse -File | Get-FileHash -Algorithm SHA256 |

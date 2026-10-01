@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -20,10 +19,9 @@ internal sealed class NotePickerForm : Form
     private static readonly Color Muted = Color.FromArgb(99, 111, 133);
     private static readonly Color Blue = Color.FromArgb(19, 101, 230);
     private static readonly Color Line = Color.FromArgb(210, 220, 235);
-    // 从插件包加载字体，不依赖使用者电脑是否安装 Noto Sans SC。
-    private static readonly PrivateFontCollection BundledFonts = LoadBundledFonts();
-    private static readonly FontFamily UiFontFamily = BundledFonts.Families.First(family =>
-        string.Equals(family.Name, "Noto Sans SC", StringComparison.Ordinal));
+    // 原生控件与 TextRenderer 都用 GDI 可见的系统字体，避免私有字体回退后字形不一致。
+    private static readonly FontFamily UiFontFamily = new FontFamily("Microsoft YaHei UI");
+    private static readonly Color Surface = Color.FromArgb(247, 249, 252);
     private readonly string _root;
     private readonly TextBox _docx = new TextBox();
     private readonly TextBox _scale = new TextBox();
@@ -49,7 +47,7 @@ internal sealed class NotePickerForm : Form
         MinimizeBox = false;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.CenterScreen;
-        Font = new Font(UiFontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+        Font = UiFont(14F);
         BackColor = Color.White;
         ForeColor = Ink;
         DoubleBuffered = true;
@@ -69,7 +67,7 @@ internal sealed class NotePickerForm : Form
         subtitle.ForeColor = Muted;
         EnableDragging(subtitle);
         var close = AddButton("×", 700, 12, 30, 30, () => { DialogResult = DialogResult.Cancel; Close(); });
-        close.Font = new Font(Font.FontFamily, 18F, FontStyle.Regular, GraphicsUnit.Pixel);
+        close.Font = UiFont(18F);
         close.ForeColor = Muted;
         close.BackColor = Color.White;
         Divider(64);
@@ -83,7 +81,8 @@ internal sealed class NotePickerForm : Form
         _docx.SetBounds(52, 13, 415, 24);
         _docx.Text = previous?.DocumentPath ?? string.Empty;
         _docx.BorderStyle = BorderStyle.None;
-        _docx.Font = new Font(Font.FontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+        _docx.Font = UiFont(14F);
+        _docx.BackColor = Surface;
         wordBox.Controls.Add(_docx);
         AddButton("更换", 486, 8, 88, 34, BrowseDocx, wordBox);
 
@@ -103,7 +102,8 @@ internal sealed class NotePickerForm : Form
         var scaleBox = Box(142, 269, 270, 46);
         _scale.SetBounds(16, 11, 238, 24);
         _scale.BorderStyle = BorderStyle.None;
-        _scale.Font = new Font(Font.FontFamily, 14F, FontStyle.Regular, GraphicsUnit.Pixel);
+        _scale.Font = UiFont(14F);
+        _scale.BackColor = Surface;
         _scale.Text = previous == null ? string.Empty : previous.UnitScale.ToString("G17", CultureInfo.InvariantCulture);
         scaleBox.Controls.Add(_scale);
         var presets = new[] { "1", "10", "100", "1000" };
@@ -111,14 +111,14 @@ internal sealed class NotePickerForm : Form
         {
             var preset = presets[i];
             var chip = AddButton(preset + "×", 438 + i * 76, 277, 64, 30, () => _scale.Text = preset);
-            chip.Font = new Font(Font.FontFamily, 12F, FontStyle.Bold, GraphicsUnit.Pixel);
+            chip.Font = UiFont(12F, true);
         }
         var hint = Label("按图纸单位核对：1:1 填 1，1:100 填 100", 142, 320, 480, 20, 11F, false);
         hint.ForeColor = Muted;
 
         _status.SetBounds(142, 345, 588, 22);
         _status.ForeColor = Muted;
-        _status.Font = new Font(Font.FontFamily, 12F, FontStyle.Regular, GraphicsUnit.Pixel);
+        _status.Font = UiFont(12F);
         Controls.Add(_status);
         Divider(376);
         Label("① 选择", 24, 393, 70, 24, 13F, true).ForeColor = Blue;
@@ -127,7 +127,7 @@ internal sealed class NotePickerForm : Form
         _continue.SetBounds(452, 386, 196, 42);
         _continue.BackColor = Blue;
         _continue.ForeColor = Color.White;
-        _continue.Font = new Font(Font.FontFamily, 14F, FontStyle.Bold, GraphicsUnit.Pixel);
+        _continue.Font = UiFont(14F, true);
         _continue.FlatStyle = FlatStyle.Flat;
         _continue.FlatAppearance.BorderSize = 0;
         _continue.Click += (_, _) => Confirm();
@@ -287,18 +287,9 @@ internal sealed class NotePickerForm : Form
         return new Bitmap(original);
     }
 
-    private static PrivateFontCollection LoadBundledFonts()
-    {
-        var directory = Path.GetDirectoryName(typeof(NotePickerForm).Assembly.Location)
-            ?? AppDomain.CurrentDomain.BaseDirectory;
-        var path = Path.Combine(directory, "fonts", "NotoSansSC-VF.ttf");
-        if (!File.Exists(path)) throw new FileNotFoundException("缺少程序界面字体 Noto Sans SC。", path);
-        var fonts = new PrivateFontCollection();
-        fonts.AddFontFile(path);
-        if (!fonts.Families.Any(family => string.Equals(family.Name, "Noto Sans SC", StringComparison.Ordinal)))
-            throw new InvalidDataException("程序界面字体文件不是预期的 Noto Sans SC。");
-        return fonts;
-    }
+    // 设计尺寸按 96 DPI 像素定义；用点数让 WinForms 在高 DPI 下同步缩放文字。
+    private static Font UiFont(float pixels, bool bold = false) =>
+        new Font(UiFontFamily, pixels * 0.75F, bold ? FontStyle.Bold : FontStyle.Regular, GraphicsUnit.Point);
 
     private void EnableDragging(Control target)
     {
@@ -324,16 +315,17 @@ internal sealed class NotePickerForm : Form
         var panel = new RoundedPanel
         {
             Left = left, Top = top, Width = width, Height = height,
-            BackColor = Color.White, Radius = 8
+            BackColor = Surface, Radius = 8
         };
         Controls.Add(panel);
         return panel;
     }
-    private void Section(string text, int top) => Label(text, 22, top, 125, 24, 14F, true);
+    private void Section(string text, int top) => Label(text, 24, top, 104, 24, 14F, true);
     private Label Label(string text, int left, int top, int width, int height, float size, bool bold, Control? parent = null)
     {
         var label = new Label { Text = text, Left = left, Top = top, Width = width, Height = height,
-            Font = new Font(Font.FontFamily, size, bold ? FontStyle.Bold : FontStyle.Regular, GraphicsUnit.Pixel) };
+            BackColor = Color.Transparent, TextAlign = ContentAlignment.MiddleLeft,
+            Font = UiFont(size, bold) };
         (parent ?? this).Controls.Add(label);
         return label;
     }
@@ -343,7 +335,7 @@ internal sealed class NotePickerForm : Form
         {
             Text = text, Left = left, Top = top, Width = width, Height = height,
             BackColor = Color.FromArgb(245, 248, 253), ForeColor = Blue, FlatStyle = FlatStyle.Flat,
-            Font = new Font(Font.FontFamily, 13F, FontStyle.Bold, GraphicsUnit.Pixel)
+            Font = UiFont(13F, true), UseCompatibleTextRendering = false
         };
         button.FlatAppearance.BorderSize = 0;
         button.Click += (_, _) => click();
@@ -359,6 +351,7 @@ internal sealed class NotePickerForm : Form
             Detail = detail;
             Cursor = Cursors.Hand;
             DoubleBuffered = true;
+            Font = UiFont(14F, true);
             TabStop = true;
             AccessibleRole = AccessibleRole.PushButton;
             AccessibleName = paper + " " + detail;
@@ -374,13 +367,17 @@ internal sealed class NotePickerForm : Form
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
-            g.Clear(Color.White);
+            g.Clear(Parent?.BackColor ?? Color.White);
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using var fillPath = Rounded(new Rectangle(0, 0, Width - 1, Height - 1), 8);
-            using (var fill = new SolidBrush(Color.White))
+            var scale = Width / 135F;
+            int S(int pixels) => (int)Math.Round(pixels * scale);
+            using var fillPath = Rounded(new Rectangle(S(1), S(1), Width - S(2) - 1, Height - S(2) - 1), S(8));
+            using (var fill = new SolidBrush(Selected ? Color.FromArgb(239, 246, 255) : Surface))
                 g.FillPath(fill, fillPath);
-            using (var border = new Pen(Selected ? Blue : Line, Selected ? 2F : 1F))
+            using (var border = new Pen(Selected ? Blue : Line, (Selected ? 2F : 1F) * scale))
                 g.DrawPath(border, fillPath);
+            var saved = g.Save();
+            g.ScaleTransform(scale, scale);
             var color = Available ? Ink : Muted;
             if (Paper == "更多")
             {
@@ -399,17 +396,19 @@ internal sealed class NotePickerForm : Form
                 if (Selected)
                 {
                     using var dot = new SolidBrush(Blue);
-                    g.FillEllipse(dot, Width - 26, 8, 18, 18);
+                    g.FillEllipse(dot, 135 - 26, 8, 18, 18);
                     using var tick = new Pen(Color.White, 2F);
-                    g.DrawLines(tick, new[] { new Point(Width - 22, 15), new Point(Width - 17, 20), new Point(Width - 9, 10) });
+                    g.DrawLines(tick, new[] { new Point(135 - 22, 15), new Point(135 - 17, 20), new Point(135 - 9, 10) });
                 }
             }
-            using var mainFont = new Font(UiFontFamily, 16F, FontStyle.Bold, GraphicsUnit.Pixel);
-            using var detailFont = new Font(UiFontFamily, 11F, FontStyle.Regular, GraphicsUnit.Pixel);
-            TextRenderer.DrawText(g, Paper, mainFont,
-                new Rectangle(4, 58, Width - 8, 24), color, TextFormatFlags.HorizontalCenter);
-            TextRenderer.DrawText(g, Detail, detailFont,
-                new Rectangle(4, 84, Width - 8, 18), Muted, TextFormatFlags.HorizontalCenter);
+            g.Restore(saved);
+            TextRenderer.DrawText(g, Paper, Font,
+                new Rectangle(S(4), S(58), Width - S(8), S(25)), color,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, Detail, Font,
+                new Rectangle(S(4), S(84), Width - S(8), S(22)), Muted,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -425,6 +424,7 @@ internal sealed class NotePickerForm : Form
 
     private sealed class RoundedPanel : Panel
     {
+        public RoundedPanel() { DoubleBuffered = true; }
         public int Radius { get; set; } = 8;
 
         protected override void OnPaintBackground(PaintEventArgs e)
@@ -435,8 +435,8 @@ internal sealed class NotePickerForm : Form
         protected override void OnPaint(PaintEventArgs e)
         {
             if (Width <= 0 || Height <= 0) return;
-            e.Graphics.Clear(Color.White);
-            using var path = Rounded(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
+            e.Graphics.Clear(Parent?.BackColor ?? Color.White);
+            using var path = Rounded(new Rectangle(0, 0, Width - 1, Height - 1), (int)Math.Round(Radius * e.Graphics.DpiX / 96F));
             using (var fill = new SolidBrush(BackColor))
                 e.Graphics.FillPath(fill, path);
             using var pen = new Pen(Line, 1f);
