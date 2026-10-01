@@ -1,7 +1,7 @@
 // 本机桌面参数目录；不改变 CAD 协议。项目参数只在步骤 01 录入。
 import type { Note, DisciplineCode } from './model.ts'
 
-export type ProjectField = { id: string; label: string; unit: string; group: string; disciplines?: DisciplineCode[] }
+export type ProjectField = { id: string; label: string; unit: string; group: string; disciplines?: DisciplineCode[]; aliases?: string[] }
 const structural: DisciplineCode[] = ['structural']
 export const PROJECT_FIELDS: ProjectField[] = [
   { id: 'subproject_name', label: '分项 / 单体名称', unit: '', group: '工程资料' },
@@ -38,8 +38,55 @@ export function projectFields(note: Note): ProjectField[] {
   const ids = new Set(fields.map(field => field.id))
   for (const [id, definition] of Object.entries(note.fieldDefinitions)) {
     if (CORE_FIELD_IDS.has(id) || ids.has(id) || !isProjectField(id, definition.label)) continue
-    fields.push({ id, ...definition, group: '工程资料' })
+    const field = describeProjectField(note, id, definition)
+    const canonical = canonicalProjectField(id)
+    const existing = fields.find(item => item.id === canonical)
+    // 旧草稿存在不同值时分别呈现，不能悄悄合并或覆盖。
+    const values = [...new Set(Object.entries(note.fieldValues).filter(([key, value]) => canonicalProjectField(key) === canonical && value.trim()).map(([, value]) => value.trim()))]
+    if (existing && values.length < 2) existing.aliases = [...(existing.aliases ?? []), id]
+    else fields.push({ ...field, id: values.length > 1 ? id : canonical, aliases: [id], ...(values.length > 1 ? { label: `${field.label}（已有不同取值：${id}）` } : {}) })
     ids.add(id)
   }
   return fields
+}
+
+export function canonicalProjectField(id: string): string {
+  if (/_groundwater_effect$/.test(id)) return 'groundwater_effect'
+  if (/_groundwater_observation$/.test(id)) return 'groundwater_observation'
+  return id
+}
+
+export function projectFieldValues(note: Note): Record<string, string> {
+  const values = { ...note.fieldValues }
+  for (const field of projectFields(note)) {
+    const value = values[field.id] ?? field.aliases?.map(id => values[id]).find(value => value !== undefined)
+    if (value === undefined) continue
+    values[field.id] = value
+    for (const alias of field.aliases ?? []) values[alias] = value
+  }
+  return values
+}
+
+function describeProjectField(note: Note, id: string, definition: { label: string; unit: string }): ProjectField {
+  if (/_groundwater_effect$/.test(id)) return { id, label: '地下水对基础的影响结论', unit: '', group: '勘察与地基' }
+  if (/_groundwater_observation$/.test(id)) return { id, label: '地下水勘察情况', unit: '', group: '勘察与地基' }
+  if (definition.label === '本工程对应名称或地区') {
+    for (const section of note.sections) {
+      for (const block of section.layoutBlocks ?? []) {
+        if (block.kind !== 'table') continue
+        const row = block.rows.find(row => row.some(cell => cell.includes(`{${id}}`)))
+        if (row && row.some(cell => cell.includes('标高'))) return { id, label: `${row[0].trim()}标高`, unit: 'm', group: '荷载' }
+      }
+      const template = section.modules?.find(module => module.fieldIds.includes(id))?.template ?? ''
+      const label = /标准图集/.test(template) ? '标准图集适用地区'
+        : /认定证书/.test(template) ? '墙材认定证书签发地区'
+        : /人民政府令/.test(template) ? '墙材管理规定适用地区'
+        : /设计任务书/.test(template) ? '设计任务书项目名称前缀'
+        : /消防设计/.test(template) ? '消防设计指南适用地区'
+        : /公共建筑节能/.test(template) ? '节能标准适用地区'
+        : /绿色建筑/.test(template) ? '绿色建筑标准适用地区' : `工程名称或地区（${section.title}）`
+      if (template) return { id, label, unit: definition.unit, group: '工程资料' }
+    }
+  }
+  return { id, ...definition, group: '工程资料' }
 }

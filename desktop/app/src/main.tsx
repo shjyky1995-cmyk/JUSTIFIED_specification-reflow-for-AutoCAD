@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, BriefcaseBusiness, FileText, FolderOpen, MoreHor
 import productIcon from '../../../branding/product-icon.png'
 import { renderModule, renderTemplate, type ContentCatalog } from './shared/content'
 import { assembleNote } from './shared/assembly'
-import { projectFields, isProjectField, CORE_FIELD_IDS } from './shared/project-fields'
+import { projectFields, projectFieldValues, isProjectField, CORE_FIELD_IDS } from './shared/project-fields'
 import { applyCorrosionScheme, isCorrosionField, CORROSION_FIELD_LABELS } from './shared/corrosion'
 import { CORROSION_SOURCES } from './shared/corrosion-rules'
 import {
@@ -18,6 +18,7 @@ import {
   DISCIPLINES,
   findSectionDefinition,
   findIssues,
+  draftExportIssues,
   FOUNDATION_GRADES,
   isSectionEmpty,
   librarySections,
@@ -358,9 +359,7 @@ function Step01({ note, catalog, projects, linkedProjectId, setLinkedProjectId, 
   const title = note?.title ?? defaultTitle(discipline)
   const structural = note?.structural ?? null
   const baseForFields = note ?? createNote(discipline, customTemplateId(discipline), project, title)
-  const sourceFields = catalog?.layouts?.filter(layout => templatesFor(discipline).some(template => template.id === layout.templateId)).flatMap(layout => layout.fields ?? []) ?? []
-  const fieldNote = { ...baseForFields, fieldDefinitions: { ...Object.fromEntries(sourceFields.map(field => [field.id, { label: field.label, unit: field.unit }])), ...baseForFields.fieldDefinitions } }
-  const parameterFields = projectFields(fieldNote)
+  const parameterFields = projectFields(baseForFields)
   const parameterGroups = [...new Set(parameterFields.map(field => field.group))]
   const materialFields = Object.entries(baseForFields.fieldDefinitions).filter(([id]) => isCorrosionField(id) || id === 'external_anticorrosion_coating')
 
@@ -405,10 +404,12 @@ function Step01({ note, catalog, projects, linkedProjectId, setLinkedProjectId, 
     })
   }
 
-  function changeParameter(id: string, value: string, label: string, unit: string) {
+  function changeParameter(id: string, value: string, label: string, unit: string, aliases: string[] = []) {
     onUpdate(current => {
       const base = current ?? createNote(discipline, customTemplateId(discipline), project, title)
-      return setFieldValue({ ...base, fieldDefinitions: { ...base.fieldDefinitions, [id]: { label, unit } } }, id, value)
+      let next = setFieldValue({ ...base, fieldDefinitions: { ...base.fieldDefinitions, [id]: { label, unit } } }, id, value)
+      for (const alias of aliases) next = setFieldValue(next, alias, value)
+      return next
     })
   }
 
@@ -517,7 +518,7 @@ function Step01({ note, catalog, projects, linkedProjectId, setLinkedProjectId, 
       <label className="field extra-field"><span>附加防腐措施 (可选)</span><input value={structural?.protectionExtra ?? ''} maxLength={120} onChange={event => changeStructural({ protectionExtra: event.target.value })} placeholder="按工程实际填写" /></label></div>
     </section>}
 
-    {parameterGroups.map(group => <section className="panel project-parameter-panel" key={group}><div className="panel-head"><div><h2>{group} · 项目共用参数</h2><p>在这里手填一次，各章节、预览和导出自动引用；修改参数会保留已编辑正文。</p></div></div><div className="form-grid">{parameterFields.filter(field => field.group === group).map(field => <label className="field" key={field.id}><span>{field.label}{field.unit ? `（${field.unit}）` : ''}</span><input value={baseForFields.fieldValues[field.id] ?? ''} maxLength={4000} onChange={event => changeParameter(field.id, event.target.value, field.label, field.unit)} placeholder="按本工程资料手填" /></label>)}</div></section>)}
+    {parameterGroups.map(group => <section className="panel project-parameter-panel" key={group}><div className="panel-head"><div><h2>{group} · 项目共用参数</h2><p>在这里手填一次，各章节、预览和导出自动引用；选模板后显示该模板的补充字段。未填也可导出草稿。</p></div></div><div className="form-grid">{parameterFields.filter(field => field.group === group).map(field => <label className="field" key={field.id}><span>{field.label}{field.unit ? `（${field.unit}）` : ''}</span><input value={projectFieldValues(baseForFields)[field.id] ?? ''} maxLength={4000} onChange={event => changeParameter(field.id, event.target.value, field.label, field.unit, field.aliases)} placeholder="按本工程资料手填（可稍后补充）" /></label>)}</div></section>)}
     {discipline === 'structural' && <section className="panel"><label className="field"><span>设计基本地震加速度（与所选烈度对应）</span><input value={effectiveFieldValues(baseForFields).seismic_acceleration ?? ''} readOnly placeholder="请先选择设防烈度" /></label></section>}
 
     <div className="action-bar">
@@ -726,14 +727,15 @@ function Step03({ note, issues, blocking, exportState, setExportState, onUpdate,
   const document = useMemo(() => buildDocument(note), [note])
   const errors = issues.filter(issue => issue.level === 'error')
   const warnings = issues.filter(issue => issue.level === 'warning')
+  const draftBlocked = draftExportIssues(note).length > 0
 
-  async function exportDocx() {
+  async function exportDocx(mode: 'draft' | 'reviewed' = 'draft') {
     if (!window.workbench) return
     setExportState({ busy: true, result: null, error: null })
     try {
       const path = await window.workbench.chooseSave()
       if (!path) { setExportState({ busy: false, result: null, error: null }); return }
-      const request = toExportRequest(note, path)
+      const request = toExportRequest(note, path, mode)
       const result = await window.workbench.work(request as unknown as Record<string, unknown>)
       setExportState({ busy: false, result, error: null })
       if (result.success) onExported()
@@ -759,14 +761,16 @@ function Step03({ note, issues, blocking, exportState, setExportState, onUpdate,
       </section>
       <aside className="preview-side">
         <details className={'panel side-block issue-disclosure ' + (errors.length > 0 ? 'has-errors' : '')}>
-          <summary>{errors.length > 0 ? `导出前检查：${errors.length} 项待补齐` : warnings.length > 0 ? `导出前检查：${warnings.length} 项提示` : '导出前检查：已通过'}</summary>
+          <summary>{errors.length > 0 ? `待完善：${errors.length} 项（仍可导出草稿）` : warnings.length > 0 ? `导出前检查：${warnings.length} 项提示` : '导出前检查：已通过'}</summary>
           {errors.length === 0 && warnings.length === 0 && <p className="ok-hint">没有发现问题，可以导出。</p>}
           {errors.length > 0 && <ul className="issue-list errors">{errors.map((issue, index) => <li key={index}>{issue.message}</li>)}</ul>}
           {warnings.length > 0 && <ul className="issue-list warnings">{warnings.map((issue, index) => <li key={index}>{issue.message}</li>)}</ul>}
         </details>
         <section className="panel side-block">
           {note.assemblyPackageId && <label className="content-confirm"><input type="checkbox" checked={note.assemblyReviewConfirmed === true} onChange={event => onUpdate(current => current ? { ...current, assemblyReviewConfirmed: event.target.checked } : current)} /> 我已核对本工程的整篇说明、适用条件和规范引用</label>}
-          <button className="primary-button wide" disabled={blocking || exportState.busy} onClick={() => void exportDocx()}>{exportState.busy ? '正在导出…' : '导出 Word'} <span>↗</span></button>
+          <p className="empty-hint">参数可稍后补充。导出草稿保留当前文字、表格和待填写标记，可在 Word/WPS 继续修改。</p>
+          <button className="primary-button wide" disabled={draftBlocked || exportState.busy} onClick={() => void exportDocx()}>{exportState.busy ? '正在导出…' : '导出 Word 草稿'} <span>↗</span></button>
+          <button className="secondary-button wide" disabled={blocking || exportState.busy} onClick={() => void exportDocx('reviewed')}>导出已核对说明</button>
           {exportState.error && <p className="error-hint">{exportState.error}</p>}
           {exportState.result && !exportState.result.success && <div className="export-result failed"><strong>导出未完成</strong><p>{exportState.result.message}</p>{exportState.result.diagnostics.length > 0 && <ul>{exportState.result.diagnostics.map((item, index) => <li key={index}>{item.message}</li>)}</ul>}</div>}
           {exportState.result?.success && <div className="export-result passed"><strong>导出成功</strong><p>{exportState.result.message} 读回检查识别到 {exportState.result.blocks} 个内容块。</p><button className="secondary-button" onClick={() => { if (exportState.result?.path) void window.workbench.openDocx(exportState.result.path) }}>打开这份 DOCX</button></div>}

@@ -2,6 +2,7 @@
 // 约束：仅使用可擦除语法（无枚举/命名空间/参数属性），供 Electron 主进程、渲染进程与 Node 测试共同引用。
 import { renderModule, renderTemplate, parseColumnWidths, type SelectedModule } from './content.ts'
 import { corrosionIssues, corrosionSupplement } from './corrosion.ts'
+import { projectFieldValues } from './project-fields.ts'
 
 export const LIBRARY_VERSION = '1.0.1'
 
@@ -279,7 +280,7 @@ export function setFieldValue(note: Note, fieldId: string, value: string): Note 
 
 export function effectiveFieldValues(note: Note): Record<string, string> {
   return {
-    ...note.fieldValues,
+    ...projectFieldValues(note),
     project_name: note.project.name,
     project_location: note.project.location,
     project_number: note.project.number,
@@ -401,6 +402,16 @@ export function hasBlockingIssue(note: Note): boolean {
   return findIssues(note).some(issue => issue.level === 'error')
 }
 
+// 缺资料和未核定仍可导出草稿；无正文或段落损坏才阻止生成文件。
+export function draftExportIssues(note: Note): NoteIssue[] {
+  const issues: NoteIssue[] = []
+  if (!note.sections.some(section => !isSectionEmpty(section))) issues.push({ level: 'error', message: '请至少填写一个章节正文。' })
+  for (const section of note.sections) for (const block of section.layoutBlocks ?? []) {
+    if (block.kind === 'paragraph' && !section.modules?.some(module => module.id === block.moduleId)) issues.push({ level: 'error', sectionId: section.id, message: '原稿段落缺失，请恢复草稿。' })
+  }
+  return issues
+}
+
 export type DocumentBlock =
   | { kind: 'title'; text: string }
   | { kind: 'meta'; text: string }
@@ -414,25 +425,27 @@ export function buildDocument(note: Note): BuiltDocument {
   const blocks: DocumentBlock[] = []
   const notices: string[] = []
   const sourceLayout = note.sections.some(section => section.layoutBlocks?.length)
-  blocks.push({ kind: 'title', text: note.title.trim() })
+  blocks.push({ kind: 'title', text: note.title.trim() || defaultTitle(note.discipline) })
+  if (findIssues(note).some(issue => issue.level === 'error')) blocks.push({ kind: 'meta', text: '资料状态：待完善草稿，缺项与适用条件待核定；待填写标记已保留。' })
   if (sourceLayout) notices.push('项目取值、规范版本与适用性须由设计人员核定。')
-  else if (note.assemblyPackageId) blocks.push({ kind: 'meta', text: '资料状态：旧工程候选初稿，规范版本与适用性待核定' })
+  if (note.assemblyPackageId && !findIssues(note).some(issue => issue.level === 'error')) blocks.push({ kind: 'meta', text: '资料状态：旧工程候选初稿，规范版本与适用性待核定' })
   if (!sourceLayout) blocks.push({ kind: 'meta', text: '专业：' + disciplineLabel(note.discipline) })
   const project = note.project
-  if (!sourceLayout && project.name.trim().length > 0) blocks.push({ kind: 'meta', text: '工程名称：' + project.name.trim() })
+  if (!sourceLayout) blocks.push({ kind: 'meta', text: '工程名称：' + (project.name.trim() || '【待填写：工程名称】') })
   if (!sourceLayout && project.number.trim().length > 0) blocks.push({ kind: 'meta', text: '工程编号：' + project.number.trim() })
   if (!sourceLayout && project.owner.trim().length > 0) blocks.push({ kind: 'meta', text: '建设单位：' + project.owner.trim() })
   if (!sourceLayout && project.location.trim().length > 0) blocks.push({ kind: 'meta', text: '建设地点：' + project.location.trim() })
   if (note.discipline === 'structural' && note.structural && !sourceLayout) {
     const structural = note.structural
     blocks.push({ kind: 'heading', text: '结构设计参数' })
-    blocks.push({ kind: 'paragraph', text: '场地类别：' + structural.siteCategory.trim() })
-    blocks.push({ kind: 'paragraph', text: '抗震设防类别：' + structural.seismicGrade.trim() + '（设防烈度：' + (structural.seismicIntensity.trim() || SEISMIC_INTENSITY_PENDING) + '）' })
-    blocks.push({ kind: 'paragraph', text: '结构安全等级：' + structural.safetyLevel.trim() })
-    blocks.push({ kind: 'paragraph', text: '地基基础设计等级：' + structural.foundationGrade.trim() })
+    const parameter = (value: string, label: string) => value.trim() || `【待填写：${label}】`
+    blocks.push({ kind: 'paragraph', text: '场地类别：' + parameter(structural.siteCategory, '场地类别') })
+    blocks.push({ kind: 'paragraph', text: '抗震设防类别：' + parameter(structural.seismicGrade, '抗震设防类别') + '（设防烈度：' + (structural.seismicIntensity.trim() || SEISMIC_INTENSITY_PENDING) + '）' })
+    blocks.push({ kind: 'paragraph', text: '结构安全等级：' + parameter(structural.safetyLevel, '结构安全等级') })
+    blocks.push({ kind: 'paragraph', text: '地基基础设计等级：' + parameter(structural.foundationGrade, '地基基础设计等级') })
     blocks.push({ kind: 'paragraph', text: '设计使用年限：' + String(structural.designLifeYears || 50) + ' 年' })
     if (structural.corrosion.trim().length > 0) blocks.push({ kind: 'paragraph', text: '水土腐蚀性：' + structural.corrosion.trim() })
-    const scheme = structural.protectionScheme.trim()
+    const scheme = parameter(structural.protectionScheme, '材料/防腐方案')
     const extra = structural.protectionExtra.trim()
     blocks.push({ kind: 'paragraph', text: '材料与防腐方案：' + scheme + (extra.length > 0 ? '（附加措施：' + extra + '）' : '') })
   }
@@ -488,14 +501,14 @@ export type ExportRequest = {
     } | null
     sections: { title: string; body: string; blocks?: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[] })[] }[]
     layoutMode?: 'source'
+    exportMode: 'draft' | 'reviewed'
+    reviewNotices: string[]
   }
 }
 
-export function toExportRequest(note: Note, path: string): ExportRequest {
-  if (note.sections.some(section => (section.modules?.length ?? 0) > 0 || (section.layoutBlocks?.length ?? 0) > 0)) {
-    const blocking = findIssues(note).filter(issue => issue.level === 'error')
-    if (blocking.length > 0) throw new Error(blocking[0].message)
-  }
+export function toExportRequest(note: Note, path: string, exportMode: 'draft' | 'reviewed' = 'draft'): ExportRequest {
+  const blocking = exportMode === 'reviewed' ? findIssues(note).filter(issue => issue.level === 'error') : draftExportIssues(note)
+  if (blocking.length > 0) throw new Error(blocking[0].message)
   const document = buildDocument(note)
   const sections: { title: string; body: string; blocks?: ({ kind: 'paragraph'; text: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[] })[] }[] = []
   for (const block of document.blocks) {
@@ -516,7 +529,9 @@ export function toExportRequest(note: Note, path: string): ExportRequest {
     operation: 'generate',
     path,
     document: {
-      title: note.title.trim(),
+      title: note.title.trim() || defaultTitle(note.discipline),
+      exportMode,
+      reviewNotices: document.blocks.filter(block => block.kind === 'meta' && block.text.startsWith('资料状态：')).map(block => (block as { text: string }).text),
       discipline: note.discipline,
       project: {
         name: note.project.name.trim(),

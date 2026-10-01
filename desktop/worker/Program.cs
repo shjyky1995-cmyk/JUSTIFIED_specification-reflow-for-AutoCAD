@@ -73,12 +73,15 @@ internal static class Program
         var outputPath = FullDocxPath(request.Path);
         if (File.Exists(outputPath)) throw new IOException("文件已存在，请换一个名称；不会覆盖你修改过的 DOCX。");
         var document = request.Document ?? throw new ArgumentException("说明内容为空。");
+        if (document.ExportMode is not null and not "draft" and not "reviewed") throw new ArgumentException("导出方式无效。");
+        var draft = document.ExportMode == "draft";
         var title = Required(document.Title, "说明标题", 120);
         var discipline = Required(document.Discipline, "专业", 60);
         var project = document.Project ?? new WorkerProject();
-        var projectName = Required(project.Name, "工程名称", 120);
+        var projectName = Parameter(project.Name, "工程名称", 120, draft);
 
         var lines = new List<(string Style, string Text)> { ("Heading1", title) };
+        foreach (var notice in document.ReviewNotices ?? new List<string>()) lines.Add(("Normal", Trim(notice, 500, "资料状态")));
         if (document.LayoutMode != "source")
         {
             lines.Add(("Normal", "专业：" + discipline));
@@ -91,14 +94,14 @@ internal static class Program
         if (document.Structural is not null && document.LayoutMode != "source")
         {
             var structural = document.Structural;
-            var site = Required(structural.SiteCategory, "结构参数「场地类别」", 20);
-            var grade = Required(structural.SeismicGrade, "结构参数「抗震设防类别」", 20);
-            var safety = Required(structural.SafetyLevel, "结构参数「结构安全等级」", 20);
-            var foundation = Required(structural.FoundationGrade, "结构参数「地基基础设计等级」", 20);
-            var scheme = Required(structural.ProtectionScheme, "结构参数「材料/防腐方案」", 20);
-            var intensity = Required(structural.SeismicIntensity, "结构参数「抗震设防烈度」", 24);
-            if (intensity == "待核定") throw new ArgumentException("请手工选择抗震设防烈度，不导出待核定值。");
-            if (!new[] { "6度（0.05g）", "7度（0.10g）", "7度（0.15g）", "8度（0.20g）", "8度（0.30g）", "9度（0.40g）" }.Contains(intensity))
+            var site = Parameter(structural.SiteCategory, "场地类别", 20, draft);
+            var grade = Parameter(structural.SeismicGrade, "抗震设防类别", 20, draft);
+            var safety = Parameter(structural.SafetyLevel, "结构安全等级", 20, draft);
+            var foundation = Parameter(structural.FoundationGrade, "地基基础设计等级", 20, draft);
+            var scheme = Parameter(structural.ProtectionScheme, "材料/防腐方案", 20, draft);
+            var intensity = Parameter(structural.SeismicIntensity, "抗震设防烈度", 24, draft);
+            if (!draft && intensity == "待核定") throw new ArgumentException("请手工选择抗震设防烈度，或导出 Word 草稿。");
+            if (!draft && !new[] { "6度（0.05g）", "7度（0.10g）", "7度（0.15g）", "8度（0.20g）", "8度（0.30g）", "9度（0.40g）" }.Contains(intensity))
                 throw new ArgumentException("抗震设防烈度不在可选范围内，请重新选择。");
             var life = structural.DesignLifeYears > 0 ? structural.DesignLifeYears : 50;
             lines.Add(("Heading2", "结构设计参数"));
@@ -192,6 +195,12 @@ internal static class Program
         if (result.Length == 0) throw new ArgumentException("请填写" + label + "。");
         if (result.Length > maxLength) throw new ArgumentException(label + "过长。");
         return result;
+    }
+
+    private static string Parameter(string? value, string label, int maxLength, bool draft)
+    {
+        if (draft && string.IsNullOrWhiteSpace(value)) return "【待填写：" + label + "】";
+        return Required(value, label, maxLength);
     }
 
     private static string Trim(string value, int maxLength, string label)
@@ -344,6 +353,8 @@ internal sealed class WorkerDocument
     public WorkerStructural? Structural { get; set; }
     public List<WorkerSection>? Sections { get; set; }
     public string? LayoutMode { get; set; }
+    public string? ExportMode { get; set; }
+    public List<string>? ReviewNotices { get; set; }
 }
 
 internal sealed class WorkerProject
