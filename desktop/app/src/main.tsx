@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, FileText, FolderOpen, MoreHorizontal, PieChart, Plus, Search, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Copy, FileText, FolderOpen, MoreHorizontal, PieChart, Plus, Search, Settings, Sparkles, X } from 'lucide-react'
 import productIcon from '../../../branding/product-icon.png'
 import { renderModule, renderTemplate, type ContentCatalog } from './shared/content'
 import { assembleNote } from './shared/assembly'
-import { projectFields, projectFieldValues, isProjectField, CORE_FIELD_IDS } from './shared/project-fields'
+import { projectFields, projectFieldValues, fieldLabelsFor, isProjectField, CORE_FIELD_IDS } from './shared/project-fields'
 import { applyCorrosionScheme, isCorrosionField, CORROSION_FIELD_LABELS } from './shared/corrosion'
 import { CORROSION_SOURCES } from './shared/corrosion-rules'
 import {
@@ -93,8 +93,15 @@ function App() {
   const [catalog, setCatalog] = useState<ContentCatalog | null>(null)
   const [catalogError, setCatalogError] = useState('')
   const saveTimer = useRef<number | null>(null)
+  const saveChain = useRef<Promise<boolean>>(Promise.resolve(true))
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const undoHistory = useRef<Note[]>([])
+  const redoHistory = useRef<Note[]>([])
 
   function setWorkingNote(next: Note | null) {
+    if (saveTimer.current !== null) { window.clearTimeout(saveTimer.current); saveTimer.current = null }
+    undoHistory.current = []
+    redoHistory.current = []
     noteRef.current = next
     setNote(next)
   }
@@ -108,6 +115,11 @@ function App() {
   useEffect(() => {
     refreshHome()
     if (window.workbench) void window.workbench.catalogLoad().then(setCatalog).catch(error => setCatalogError(error instanceof Error ? error.message : '资料库读取失败。'))
+  }, [])
+
+  useEffect(() => {
+    if (!window.workbench?.beforeClose) return
+    return window.workbench.beforeClose(async () => !noteRef.current || await commitSave())
   }, [])
 
   useEffect(() => {
@@ -127,28 +139,35 @@ function App() {
     saveTimer.current = window.setTimeout(() => { void commitSave() }, 800)
   }
 
-  async function commitSave(): Promise<boolean> {
+  function commitSave(): Promise<boolean> {
+    if (saveTimer.current !== null) { window.clearTimeout(saveTimer.current); saveTimer.current = null }
     const current = noteRef.current
-    if (!current || !window.workbench) return false
-    setSave({ status: 'saving', message: '正在保存…' })
-    try {
-      const result = await window.workbench.noteSave(current)
-      if (result.ok) {
-        setSave({ status: 'saved', message: '已保存 ' + formatTime(result.savedAt) })
-        return true
+    if (!current) return Promise.resolve(true)
+    if (!window.workbench) return Promise.resolve(false)
+    const operation = saveChain.current.then(async () => {
+      if (noteRef.current === current) setSave({ status: 'saving', message: '正在保存…' })
+      try {
+        const result = await window.workbench.noteSave(current)
+        if (result.ok) {
+          if (noteRef.current === current) setSave({ status: 'saved', message: '已保存 ' + formatTime(result.savedAt) })
+          return true
+        }
+        if (noteRef.current === current) setSave({ status: 'error', message: result.error })
+        return false
+      } catch (error) {
+        if (noteRef.current === current) setSave({ status: 'error', message: error instanceof Error ? error.message : '保存失败，请重试。' })
+        return false
       }
-      setSave({ status: 'error', message: result.error })
-      return false
-    } catch (error) {
-      setSave({ status: 'error', message: error instanceof Error ? error.message : '保存失败，请重试。' })
-      return false
-    }
+    })
+    saveChain.current = operation
+    return operation
   }
 
   function updateNote(mutate: NoteMutation) {
     const previous = noteRef.current
     const next = mutate(previous)
     if (!next) return
+    if (previous) { undoHistory.current = [...undoHistory.current.slice(-29), previous]; redoHistory.current = [] }
     if (previous?.assemblyReviewConfirmed && next.assemblyReviewConfirmed) next.assemblyReviewConfirmed = false
     if (previous) {
       const before = effectiveFieldValues(previous), after = effectiveFieldValues(next)
@@ -168,7 +187,8 @@ function App() {
     setConfirm(state)
   }
 
-  function startNew() {
+  async function startNew() {
+    if (!(await commitSave())) return
     setWorkingNote(null)
     setSave({ status: 'idle', message: '' })
     setSelectedSectionId(null)
@@ -180,10 +200,11 @@ function App() {
 
   async function openNote(id: string) {
     if (!window.workbench) return
+    if (!(await commitSave())) return
     try {
       const loaded = await window.workbench.noteLoad(id)
       setWorkingNote(loaded)
-      setSave({ status: 'saved', message: '已恢复 ' + formatTime(loaded.updatedAt) })
+      setSave({ status: loaded.recoveryMessage ? 'error' : 'saved', message: loaded.recoveryMessage || '已恢复 ' + formatTime(loaded.updatedAt) })
       setSelectedSectionId(loaded.sections[0]?.id ?? null)
       setExportState({ busy: false, result: null, error: null })
       setRoute(loaded.sections.length > 0 ? 'step02b' : 'step01')
@@ -196,6 +217,7 @@ function App() {
     if (!window.workbench) return
     try {
       await window.workbench.noteDelete(id)
+      if (noteRef.current?.id === id) setWorkingNote(null)
       refreshHome()
     } catch (error) {
       setSave({ status: 'error', message: error instanceof Error ? error.message : '删除失败。' })
@@ -205,18 +227,45 @@ function App() {
   const issues: NoteIssue[] = useMemo(() => (note ? findIssues(note) : []), [note])
   const blocking = issues.some(issue => issue.level === 'error')
 
+  async function goHome() {
+    if (!(await commitSave())) return
+    setRoute('home')
+    refreshHome()
+  }
+
+  function undo(redo = false) {
+    const from = redo ? redoHistory : undoHistory
+    const to = redo ? undoHistory : redoHistory
+    const next = from.current.pop()
+    if (!next || !noteRef.current) return
+    to.current.push(noteRef.current)
+    const restored = { ...next, updatedAt: nowIso() }
+    noteRef.current = restored
+    setNote(restored)
+    scheduleSave()
+  }
+
+  async function duplicate(id: string) {
+    if (!window.workbench || !(await commitSave())) return
+    try {
+      const copied = await window.workbench.duplicateNote(id)
+      refreshHome()
+      await openNote(copied.id)
+    } catch (error) { setSave({ status: 'error', message: error instanceof Error ? error.message : '复制草稿失败。' }) }
+  }
+
   return <div className="app-shell">
     <header className="global-header">
-      <button className="global-brand" onClick={() => { setRoute('home'); refreshHome() }} aria-label="返回首页"><img src={productIcon} alt="产品图标" /><span>EngiSpace</span></button>
-      <div className="global-account"><span>离线工作台</span><span className="global-avatar">设</span></div>
+      <button className="global-brand" onClick={() => void goHome()} aria-label="返回首页"><img src={productIcon} alt="产品图标" /><span>EngiSpace</span></button>
+      <div className="global-account">{note && route !== 'home' && <><button className="text-link" disabled={undoHistory.current.length === 0} onClick={() => undo()}>撤销</button><button className="text-link" disabled={redoHistory.current.length === 0} onClick={() => undo(true)}>重做</button><button className="text-link" onClick={() => void commitSave()}>保存</button></>}<span>离线工作台</span><button className="icon-button" aria-label="设置与备份" onClick={() => setSettingsOpen(true)}><Settings size={18} /></button></div>
     </header>
     {route !== 'home' && <StepNav route={route} note={note} onNavigate={target => {
-      if (target === 'home') { setRoute('home'); refreshHome(); return }
+      if (target === 'home') { void goHome(); return }
       if (!note) return
       setRoute(target)
     }} />}
     <main className={'main-area route-' + route}>
-      {route === 'home' && <HomePage notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={startNew} onContinue={id => void openNote(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
+      {route === 'home' && <HomePage notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={() => void startNew()} onContinue={id => void openNote(id)} onCopy={id => void duplicate(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
       {route === 'step01' && <Step01 note={note} catalog={catalog} projects={projects} linkedProjectId={linkedProjectId} setLinkedProjectId={setLinkedProjectId} onUpdate={updateNote} onConfirm={askConfirm} onDone={async () => {
         if (!noteRef.current) setWorkingNote(createNote('structural', customTemplateId('structural'), { name: '', number: '', owner: '', location: '' }, defaultTitle('structural')))
         if (!(await commitSave())) return
@@ -262,6 +311,8 @@ function App() {
       {route === 'step03' && note && <Step03 note={note} issues={issues} blocking={blocking} exportState={exportState} setExportState={setExportState} onUpdate={updateNote} onReconfigure={() => setRoute('step01')} onBackToEdit={() => setRoute('step02b')} onConfirm={askConfirm} onExported={() => refreshHome()} />}
     </main>
     {!canUseDesktop && route !== 'home' && <p className="browser-note">网页预览只展示界面；请从桌面程序中保存与导出文件。</p>}
+    {save.status === 'error' && <div className="app-error" role="alert">{save.message}<button className="text-link" onClick={() => void commitSave()}>重试保存</button></div>}
+    {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} onSave={commitSave} onRefresh={() => { refreshHome() }} onCatalog={next => { setCatalog(next); setCatalogError('') }} />}
     {confirm && <ConfirmDialog state={confirm} onCancel={() => setConfirm(null)} />}
   </div>
 }
@@ -291,7 +342,7 @@ function StepNav({ route, note, onNavigate }: { route: Route; note: Note | null;
   </header>
 }
 
-function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onDelete }: {
+function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onCopy, onDelete }: {
   notes: NoteSummary[]
   projects: StoredProject[]
   search: string
@@ -299,9 +350,11 @@ function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onDele
   onNew: () => void
   onContinue: (id: string) => void
   onDelete: (id: string) => void
+  onCopy: (id: string) => void
 }) {
   const keyword = search.trim().toLowerCase()
   const recent = keyword.length === 0 ? notes : notes.filter(item => item.title.toLowerCase().includes(keyword) || disciplineLabel(item.discipline).includes(keyword))
+  const visibleProjects = keyword.length === 0 ? projects : projects.filter(item => `${item.name} ${item.number} ${item.owner} ${item.location}`.toLowerCase().includes(keyword))
   return <div className="home">
     <div className="home-search-wrap"><Search size={16} /><input className="home-search" value={search} onChange={event => onSearch(event.target.value)} placeholder="搜索项目、文档或功能..." /><kbd>Ctrl K</kbd></div>
 
@@ -314,14 +367,14 @@ function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onDele
       {['可研报告', '投标文件', '项目管理', 'AI 工程助手'].map(name => <div className="entry-card" key={name}>
         <span className="entry-icon">{name === 'AI 工程助手' ? <Sparkles size={18} /> : name === '项目管理' ? <FolderOpen size={18} /> : name === '可研报告' ? <PieChart size={18} /> : <BriefcaseBusiness size={18} />}</span>
         <strong>{name}</strong>
-        <small>{name === '可研报告' ? '独立起草可行性研究报告' : name === '投标文件' ? '准备和管理项目招投标文件' : name === '项目管理' ? '组织与管理全局项目信息' : '自动化文档校审与检查'}</small>
+        <small>暂未开放</small>
       </div>)}
     </section>
 
     <section className="home-columns">
       <div className="home-panel">
         <div className="panel-head"><div><h2>当前项目</h2></div></div>
-        {projects.length === 0 ? <p className="empty-hint">暂无项目，新建说明时填写</p> : <ul className="recent-list">{projects.slice(0, 4).map(item => <li key={item.id}><span className="list-icon"><FolderOpen size={15} /></span><div className="recent-info"><strong>{item.name}</strong><small>{item.number || '未填写编号'} · {item.owner || '未填写建设单位'}</small></div></li>)}</ul>}
+        {visibleProjects.length === 0 ? <p className="empty-hint">{keyword ? '没有匹配的项目。' : '暂无项目，新建说明时填写'}</p> : <ul className="recent-list">{visibleProjects.slice(0, 4).map(item => <li key={item.id}><span className="list-icon"><FolderOpen size={15} /></span><div className="recent-info"><strong>{item.name}</strong><small>{item.number || '未填写编号'} · {item.owner || '未填写建设单位'}</small></div></li>)}</ul>}
       </div>
       <div className="home-panel wide">
         <div className="panel-head"><div><h2>最近工作</h2></div><span className="panel-count">{recent.length} 份</span></div>
@@ -335,6 +388,7 @@ function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onDele
             <span className="recent-time">{formatDateTime(item.updatedAt)}</span>
             <div className="recent-actions">
               <button className="icon-button" title="继续" onClick={() => onContinue(item.id)}><ArrowRight size={16} /></button>
+              <button className="icon-button" title="复制为新草稿" onClick={() => onCopy(item.id)}><Copy size={15} /></button>
               <button className="icon-button" title="删除" onClick={() => onDelete(item.id)}><X size={15} /></button>
             </div>
           </li>)}
@@ -360,6 +414,7 @@ function Step01({ note, catalog, projects, linkedProjectId, setLinkedProjectId, 
   const structural = note?.structural ?? null
   const baseForFields = note ?? createNote(discipline, customTemplateId(discipline), project, title)
   const parameterFields = projectFields(baseForFields)
+  const parameterValues = projectFieldValues(baseForFields)
   const parameterGroups = [...new Set(parameterFields.map(field => field.group))]
   const materialFields = Object.entries(baseForFields.fieldDefinitions).filter(([id]) => isCorrosionField(id) || id === 'external_anticorrosion_coating')
 
@@ -518,7 +573,7 @@ function Step01({ note, catalog, projects, linkedProjectId, setLinkedProjectId, 
       <label className="field extra-field"><span>附加防腐措施 (可选)</span><input value={structural?.protectionExtra ?? ''} maxLength={120} onChange={event => changeStructural({ protectionExtra: event.target.value })} placeholder="按工程实际填写" /></label></div>
     </section>}
 
-    {parameterGroups.map(group => <section className="panel project-parameter-panel" key={group}><div className="panel-head"><div><h2>{group} · 项目共用参数</h2><p>在这里手填一次，各章节、预览和导出自动引用；选模板后显示该模板的补充字段。未填也可导出草稿。</p></div></div><div className="form-grid">{parameterFields.filter(field => field.group === group).map(field => <label className="field" key={field.id}><span>{field.label}{field.unit ? `（${field.unit}）` : ''}</span><input value={projectFieldValues(baseForFields)[field.id] ?? ''} maxLength={4000} onChange={event => changeParameter(field.id, event.target.value, field.label, field.unit, field.aliases)} placeholder="按本工程资料手填（可稍后补充）" /></label>)}</div></section>)}
+    {parameterGroups.map(group => <section className="panel project-parameter-panel" key={group}><div className="panel-head"><div><h2>{group} · 项目共用参数</h2><p>在这里手填一次，各章节、预览和导出自动引用；选模板后显示该模板的补充字段。未填也可导出草稿。</p></div></div><div className="form-grid">{parameterFields.filter(field => field.group === group).map(field => <label className="field" key={field.id}><span>{field.label}{field.unit ? `（${field.unit}）` : ''}</span><input value={parameterValues[field.id] ?? ''} maxLength={4000} onChange={event => changeParameter(field.id, event.target.value, field.label, field.unit, field.aliases)} placeholder="按本工程资料手填（可稍后补充）" /></label>)}</div></section>)}
     {discipline === 'structural' && <section className="panel"><label className="field"><span>设计基本地震加速度（与所选烈度对应）</span><input value={effectiveFieldValues(baseForFields).seismic_acceleration ?? ''} readOnly placeholder="请先选择设防烈度" /></label></section>}
 
     <div className="action-bar">
@@ -557,6 +612,7 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
   onGenerate: () => void
   onParameters: () => void
 }) {
+  const fieldValues = effectiveFieldValues(note)
   const selected = note.sections.find(section => section.id === selectedSectionId) ?? null
   const available = librarySections(note.discipline).filter(section => !note.sections.some(item => item.id === section.id))
   const filled = note.sections.filter(section => !isSectionEmpty(section)).length
@@ -604,7 +660,7 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
   const chapterId = selected?.id.startsWith('lib-CH') ? selected.id.slice(4) : ''
   const usedFields = [...new Set([...(selected?.modules ?? []).flatMap(module => module.fieldIds), ...(selected?.layoutBlocks ?? []).flatMap(block => block.kind === 'table' ? [...block.rows.flat().join(' ').matchAll(/\{([a-z][a-z0-9_]*)\}/g)].map(match => match[1]) : [])])]
   const orderedBlocks = selected?.layoutBlocks?.length ? selected.layoutBlocks : (selected?.modules ?? []).map(module => ({ kind: 'paragraph' as const, moduleId: module.id }))
-  const fieldLabels = Object.fromEntries(Object.entries(note.fieldDefinitions).map(([id, definition]) => [id, definition.label]))
+  const fieldLabels = fieldLabelsFor(note)
 
   return <div className="workspace editor-workspace">
     <div className="editor-shell">
@@ -638,20 +694,20 @@ function Step02B({ note, save, selectedSectionId, setSelectedSectionId, libraryO
           {(chapterId || (selected.modules?.length ?? 0) > 0 || orderedBlocks.length > 0) && <div className="content-modules">
             <p className="content-guidance">原说明正文和表格按原顺序完整展开。项目共用参数在 01 统一填写；本章只填写专属取值，再核对规范与适用性。固定文字可展开手改。</p>
             {usedFields.some(id => isProjectField(id, note.fieldDefinitions[id]?.label) || isCorrosionField(id)) && <button className="secondary-button" onClick={onParameters}>查看 / 修改 01 项目参数</button>}
-            {usedFields.some(id => !isProjectField(id, note.fieldDefinitions[id]?.label) && !((isCorrosionField(id) || id === 'external_anticorrosion_coating'))) && <div className="content-field-grid">{usedFields.filter(id => !isProjectField(id, note.fieldDefinitions[id]?.label) && !((isCorrosionField(id) || id === 'external_anticorrosion_coating'))).map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={effectiveFieldValues(note)[fieldId] ?? ''} readOnly={LINKED_FIELD_IDS.has(fieldId)} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={LINKED_FIELD_IDS.has(fieldId) ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
+            {usedFields.some(id => !isProjectField(id, note.fieldDefinitions[id]?.label) && !((isCorrosionField(id) || id === 'external_anticorrosion_coating'))) && <div className="content-field-grid">{usedFields.filter(id => !isProjectField(id, note.fieldDefinitions[id]?.label) && !((isCorrosionField(id) || id === 'external_anticorrosion_coating'))).map(fieldId => <label className="field" key={fieldId}><span>{note.fieldDefinitions[fieldId]?.label ?? fieldId}{note.fieldDefinitions[fieldId]?.unit ? `（${note.fieldDefinitions[fieldId].unit}）` : ''}</span><input value={fieldValues[fieldId] ?? ''} readOnly={LINKED_FIELD_IDS.has(fieldId)} onChange={event => onUpdate(currentNote => currentNote ? setFieldValue(currentNote, fieldId, event.target.value) : currentNote)} placeholder={LINKED_FIELD_IDS.has(fieldId) ? '请在 01 参数设置中填写' : '填写本工程取值；请按上方句子核对单位'} /></label>)}</div>}
             {orderedBlocks.map(block => {
               if (block.kind === 'paragraph') {
                 const module = selected.modules?.find(item => item.id === block.moduleId)
                 if (!module) return <p key={block.moduleId}>段落缺失，请恢复草稿。</p>
                 return <div key={module.id} className="content-module">
               <div className="content-module-head"><strong>{module.clauseId}</strong><span>{module.edited ? '本份文字已改写' : module.refs.length > 0 ? '规范引用待核对' : '来源待核定'}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).filter(item => item.id !== module.id), layoutBlocks: section.layoutBlocks?.filter(item => item.kind !== 'paragraph' || item.moduleId !== module.id) } : section) } : currentNote)}>移除</button></div>
-              <p>{renderModule(module, effectiveFieldValues(note), Object.fromEntries(Object.entries(note.fieldDefinitions).map(([id, definition]) => [id, definition.label]))).text}</p>
+              <p>{renderModule(module, fieldValues, fieldLabels).text}</p>
               <small>来源：{module.sourceRefs.map(source => `${source.file ?? source.sourceId} 第 ${source.para} 段`).join('；')}{module.refs.length > 0 ? ` · 引用 ${module.refs.join('、')}` : ''}</small>
               <details className="content-edit"><summary>修改这份说明中的条款文字</summary><textarea value={module.template} maxLength={10000} onChange={event => onUpdate(currentNote => currentNote ? setModuleTemplate(currentNote, selected.id, module.id, event.target.value) : currentNote)} /><small>修改后需重新确认；来源只用于追溯原候选，不代表改写文字已经全局核定。</small><button className="text-link" disabled={!module.edited} onClick={() => onUpdate(currentNote => currentNote ? setModuleTemplate(currentNote, selected.id, module.id, module.baseTemplate) : currentNote)}>恢复选入时文字</button></details>
               {(!note.assemblyPackageId || module.flags.includes('requires_applicability_review')) && <label className="content-confirm"><input type="checkbox" checked={module.confirmedForNote} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, modules: (section.modules ?? []).map(item => item.id === module.id ? { ...item, confirmedForNote: event.target.checked } : item) } : section) } : currentNote)} /> 已核对本条适用于当前工程</label>}
             </div>
               }
-              return <div key={`table-${block.sourcePara}`} className="content-module"><div className="content-module-head"><strong>原稿第 {block.sourcePara} 处表格</strong><span>{block.reviewNote}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.filter(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara) }) } : currentNote)}>移除表格</button></div><div className="layout-table-wrap"><table className="layout-table">{block.columnWidths && <colgroup>{block.columnWidths.map((width, index) => <col key={index} style={{ width: `${width / block.columnWidths!.reduce((sum, value) => sum + value, 0) * 100}%` }} />)}</colgroup>}<tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, columnIndex) => <td key={columnIndex}><span>{renderTemplate(cell, effectiveFieldValues(note), fieldLabels).text}</span><details><summary>修改文字</summary><input aria-label={`表格 ${block.sourcePara} 第 ${rowIndex + 1} 行第 ${columnIndex + 1} 列`} value={cell} placeholder={renderTemplate(cell, effectiveFieldValues(note), fieldLabels).text} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara ? item : { ...item, confirmedForNote: false, rows: item.rows.map((tableRow, ri) => tableRow.map((value, ci) => ri === rowIndex && ci === columnIndex ? event.target.value : value)) }) }) } : currentNote)} /></details></td>)}</tr>)}</tbody></table></div>{block.reviewNote.startsWith('条件') && <label className="content-confirm"><input type="checkbox" checked={block.confirmedForNote === true} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind === 'table' && item.sourcePara === block.sourcePara ? { ...item, confirmedForNote: event.target.checked } : item) }) } : currentNote)} /> 本工程包含该类构件，表格适用</label>}</div>})}
+              return <div key={`table-${block.sourcePara}`} className="content-module"><div className="content-module-head"><strong>原稿第 {block.sourcePara} 处表格</strong><span>{block.reviewNote}</span><button className="text-link" onClick={() => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.filter(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara) }) } : currentNote)}>移除表格</button></div><div className="layout-table-wrap"><table className="layout-table">{block.columnWidths && <colgroup>{block.columnWidths.map((width, index) => <col key={index} style={{ width: `${width / block.columnWidths!.reduce((sum, value) => sum + value, 0) * 100}%` }} />)}</colgroup>}<tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, columnIndex) => <td key={columnIndex}><span>{renderTemplate(cell, fieldValues, fieldLabels).text}</span><details><summary>修改文字</summary><input aria-label={`表格 ${block.sourcePara} 第 ${rowIndex + 1} 行第 ${columnIndex + 1} 列`} value={cell} placeholder={renderTemplate(cell, fieldValues, fieldLabels).text} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind !== 'table' || item.sourcePara !== block.sourcePara ? item : { ...item, confirmedForNote: false, rows: item.rows.map((tableRow, ri) => tableRow.map((value, ci) => ri === rowIndex && ci === columnIndex ? event.target.value : value)) }) }) } : currentNote)} /></details></td>)}</tr>)}</tbody></table></div>{block.reviewNote.startsWith('条件') && <label className="content-confirm"><input type="checkbox" checked={block.confirmedForNote === true} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, assemblyReviewConfirmed: false, sections: currentNote.sections.map(section => section.id !== selected.id ? section : { ...section, layoutBlocks: section.layoutBlocks?.map(item => item.kind === 'table' && item.sourcePara === block.sourcePara ? { ...item, confirmedForNote: event.target.checked } : item) }) } : currentNote)} /> 本工程包含该类构件，表格适用</label>}</div>})}
 
           </div>}
           <textarea className="section-editor" value={selected.body} maxLength={100000} onChange={event => onUpdate(currentNote => currentNote ? { ...currentNote, sections: currentNote.sections.map(section => section.id === selected.id ? { ...section, body: event.target.value } : section) } : currentNote)} placeholder={findSectionDefinition(selected.id)?.body ?? '可在这里补充或改写本章的纯文本正文。'} />
@@ -733,7 +789,7 @@ function Step03({ note, issues, blocking, exportState, setExportState, onUpdate,
     if (!window.workbench) return
     setExportState({ busy: true, result: null, error: null })
     try {
-      const path = await window.workbench.chooseSave()
+      const path = await window.workbench.chooseSave(note.project.name.trim() ? `${note.project.name}-${note.title}` : note.title)
       if (!path) { setExportState({ busy: false, result: null, error: null }); return }
       const request = toExportRequest(note, path, mode)
       const result = await window.workbench.work(request as unknown as Record<string, unknown>)
@@ -782,6 +838,51 @@ function Step03({ note, issues, blocking, exportState, setExportState, onUpdate,
       </aside>
     </div>
   </div>
+}
+
+function SettingsDialog({ onClose, onSave, onRefresh, onCatalog }: { onClose: () => void; onSave: () => Promise<boolean>; onRefresh: () => void; onCatalog: (catalog: ContentCatalog) => void }) {
+  const [info, setInfo] = useState<{ version: string; dataRoot: string; catalogPath: string; packaged: boolean } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  useEffect(() => { if (window.workbench) void window.workbench.appInfo().then(setInfo).catch(error => setMessage(String(error))) }, [])
+
+  async function action(operation: 'backup' | 'restore' | 'catalog' | 'folder') {
+    if (!window.workbench) return
+    setBusy(true)
+    setMessage('')
+    try {
+      if (operation === 'backup') {
+        if (!(await onSave())) throw new Error('当前草稿保存失败，请先重试保存。')
+        const path = await window.workbench.exportBackup()
+        if (path) setMessage('备份已保存：' + path)
+      } else if (operation === 'restore') {
+        if (!(await onSave())) throw new Error('当前草稿保存失败，请先重试保存。')
+        const count = await window.workbench.importBackup()
+        if (count !== null) { setMessage(`已恢复 ${count} 份草稿副本，请在首页最近工作中打开。`); onRefresh() }
+      } else if (operation === 'catalog') {
+        const catalog = await window.workbench.catalogChoose()
+        if (catalog) { onCatalog(catalog); setInfo(await window.workbench.appInfo()); setMessage('资料库已更新；已有草稿保留当前正文，新建说明使用新资料。') }
+      } else {
+        const error = await window.workbench.openDataFolder()
+        if (error) throw new Error(error)
+      }
+    } catch (error) { setMessage(error instanceof Error ? error.message : '操作失败，请重试。') }
+    finally { setBusy(false) }
+  }
+
+  return <div className="modal-mask" onClick={() => { if (!busy) onClose() }}><section className="modal settings-modal" role="dialog" aria-modal="true" aria-label="设置与备份" onClick={event => event.stopPropagation()}>
+    <div className="modal-head"><strong>设置与备份</strong><button className="modal-close" disabled={busy} onClick={onClose}>×</button></div>
+    <div className="settings-body">
+      <p>EngiSpace · 设计说明 {info?.version ?? ''} · {info?.packaged ? '离线客户端' : '开发试用版'}</p>
+      <h3>草稿与项目</h3><p>自动保存到本机，关闭窗口前保存最后修改。备份可转移到另一台电脑，恢复时新增副本。</p>
+      <div className="settings-actions"><button className="secondary-button" disabled={busy} onClick={() => void action('backup')}>导出全部备份</button><button className="secondary-button" disabled={busy} onClick={() => void action('restore')}>从备份恢复</button><button className="text-link" disabled={busy} onClick={() => void action('folder')}>打开数据文件夹</button></div>
+      {info && <small className="local-path">{info.dataRoot}</small>}
+      <h3>正文资料库</h3><p>选择资料库目录中的 catalog.json。来源版式与原稿保存在同一目录；旧工程候选资料仍需逐项核定。</p>
+      <button className="secondary-button" disabled={busy} onClick={() => void action('catalog')}>选择本机资料库</button><small className="local-path">{info?.catalogPath || '未配置；可使用自定义章节编制。'}</small>
+      <h3>使用方法</h3><ol><li>新建设计说明，选专业并填写已知参数。</li><li>选模板，修改章节文字和表格；缺项可以后补充。</li><li>生成预览并导出 Word 草稿，在 Word/WPS 继续编辑。</li></ol><p>桌面端交付到 DOCX。需要落图时自行使用 CAD 插件 DSS 选择最终文件。</p>
+      {busy && <p role="status">正在处理…</p>}{message && <p className="settings-message" role="status">{message}</p>}
+    </div>
+  </section></div>
 }
 
 function ConfirmDialog({ state, onCancel }: { state: NonNullable<ConfirmState>; onCancel: () => void }) {

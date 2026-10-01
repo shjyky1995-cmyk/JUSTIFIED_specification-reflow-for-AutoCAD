@@ -4,6 +4,7 @@
 .idea/
 artifacts/
 /测试文件/程序/
+/测试文件/设计说明客户端试用/
 /desktop/app/node_modules/
 /desktop/app/dist/
 /desktop/app/dist-electron/

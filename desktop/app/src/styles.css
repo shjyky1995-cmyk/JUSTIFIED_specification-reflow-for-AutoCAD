@@ -1381,3 +1381,14 @@ textarea:focus-visible {
 .corrosion-design .content-confirm { align-items: flex-start; line-height: 1.7; }
 .project-parameter-panel .panel-head p { font-size: 12px; color: #667085; }
 @media (max-height: 760px) { .editor-shell { min-height: 420px; height: calc(100dvh - 170px); } }
+.settings-modal { width: min(650px, 94vw); max-height: 88vh; overflow: auto; }
+.settings-body { padding: 20px 24px; line-height: 1.7; color: #475467; }
+.settings-body h3 { margin: 22px 0 8px; font-size: 15px; color: #182230; }
+.settings-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.settings-body .local-path { display: block; overflow-wrap: anywhere; margin-top: 10px; color: #667085; }
+.settings-message { padding: 12px; background: #f2f4f7; border-radius: 8px; overflow-wrap: anywhere; }
+.app-error { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 90; background: #fff1f0; border: 1px solid #fda29b; padding: 12px 18px; border-radius: 10px; max-width: 90vw; }
+.app-error button { margin-left: 16px; }
+.preview-side .wide + .wide { margin-top: 10px; }
+button:focus-visible, summary:focus-visible { outline: 2px solid #3687ef; outline-offset: 3px; }
+button:disabled { cursor: not-allowed; }

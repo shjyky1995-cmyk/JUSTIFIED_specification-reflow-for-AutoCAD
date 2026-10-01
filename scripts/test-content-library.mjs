@@ -50,7 +50,8 @@ try {
   note.fieldDefinitions = { capacity: { label: '处理规模', unit: 'm³/d' } }
   assert.ok(findIssues(note).some(issue => issue.message.includes('尚未确认')))
   assert.ok(findIssues(note).some(issue => issue.message.includes('处理规模')))
-  assert.throws(() => toExportRequest(note, join(sandbox, 'draft.docx')))
+  assert.ok(toExportRequest(note, join(sandbox, 'draft.docx')).document.reviewNotices.length > 0)
+  assert.throws(() => toExportRequest(note, join(sandbox, 'reviewed.docx'), 'reviewed'))
   note.sections[0].modules[0].confirmedForNote = true
   note.fieldValues.capacity = '80000 m³/d'
   assert.equal(findIssues(note).filter(issue => issue.level === 'error').length, 0)

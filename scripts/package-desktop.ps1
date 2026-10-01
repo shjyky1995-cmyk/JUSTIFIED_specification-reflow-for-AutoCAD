@@ -1,0 +1,75 @@
+[CmdletBinding()]
+param(
+    [string]$OutputDirectory = '',
+    [string]$ContentLibraryDirectory = '',
+    [string]$Dotnet10 = ''
+)
+$ErrorActionPreference = 'Stop'
+$projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$appDirectory = Join-Path $projectRoot 'desktop/app'
+$workerDirectory = Join-Path $projectRoot 'desktop/worker'
+$version = (Get-Content (Join-Path $appDirectory 'package.json') -Raw | ConvertFrom-Json).version
+$revision = (& git -C $projectRoot rev-parse --short HEAD).Trim()
+if ($LASTEXITCODE -ne 0) { throw '无法读取 Git 版本。' }
+if (!$OutputDirectory) { $OutputDirectory = Join-Path $projectRoot "artifacts/desktop-client-$version-$revision-$(Get-Date -Format yyyyMMdd-HHmmss)" }
+$outputRoot = [IO.Path]::GetFullPath($OutputDirectory)
+if (Test-Path -LiteralPath $outputRoot) { throw "输出目录已存在，避免覆盖：$outputRoot" }
+if (!$Dotnet10) {
+    $candidates = @((Join-Path $projectRoot 'artifacts/dotnet10/sdk/dotnet.exe'), (Join-Path $projectRoot '../../artifacts/dotnet10/sdk/dotnet.exe'))
+    $Dotnet10 = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if (!$Dotnet10) { throw '请通过 -Dotnet10 指定本机 .NET 10 SDK 的 dotnet.exe。' }
+}
+function Invoke-Build([string]$Directory, [string]$Command, [string[]]$Arguments) {
+    Push-Location -LiteralPath $Directory
+    try {
+        & $Command @Arguments
+        if ($LASTEXITCODE -ne 0) { throw "构建失败：$Command $Arguments" }
+    } finally { Pop-Location }
+}
+Invoke-Build $appDirectory 'npm.cmd' @('run', 'build')
+$workerOutput = Join-Path $projectRoot 'artifacts/desktop-worker-release'
+Invoke-Build $workerDirectory $Dotnet10 @('publish', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=false', '-o', $workerOutput)
+Invoke-Build $projectRoot 'dotnet' @('build', 'desktop/setup/DesktopSetup.csproj', '-c', 'Release')
+$electronDirectory = Join-Path $appDirectory 'node_modules/electron/dist'
+if (!(Test-Path -LiteralPath (Join-Path $electronDirectory 'electron.exe'))) { throw '缺少 Electron 运行时，请先 npm ci。' }
+New-Item -ItemType Directory -Path $outputRoot | Out-Null
+$clientRoot = Join-Path $outputRoot 'client'
+Copy-Item -LiteralPath $electronDirectory -Destination $clientRoot -Recurse
+Rename-Item -LiteralPath (Join-Path $clientRoot 'electron.exe') -NewName 'EngiSpace.exe'
+$runtimeApp = Join-Path $clientRoot 'resources/app'
+New-Item -ItemType Directory -Path $runtimeApp | Out-Null
+foreach ($folder in @('dist', 'dist-electron')) { Copy-Item -LiteralPath (Join-Path $appDirectory $folder) -Destination (Join-Path $runtimeApp $folder) -Recurse }
+New-Item -ItemType Directory -Path (Join-Path $runtimeApp 'electron') | Out-Null
+Copy-Item -LiteralPath (Join-Path $appDirectory 'electron/preload.cjs') -Destination (Join-Path $runtimeApp 'electron')
+Copy-Item -LiteralPath (Join-Path $appDirectory 'package.json') -Destination $runtimeApp
+Copy-Item -LiteralPath $workerOutput -Destination (Join-Path $clientRoot 'resources/worker') -Recurse
+$privateContent = [bool]$ContentLibraryDirectory
+if ($privateContent) {
+    $libraryRoot = [IO.Path]::GetFullPath($ContentLibraryDirectory)
+    foreach ($required in @('catalog.json', 'source-layouts.json')) {
+        if (!(Test-Path -LiteralPath (Join-Path $libraryRoot $required))) { throw "资料库缺少 $required" }
+    }
+    $libraryTarget = Join-Path $clientRoot 'resources/content-library'
+    New-Item -ItemType Directory -Path $libraryTarget | Out-Null
+    foreach ($file in @('catalog.json', 'source-layouts.json')) { Copy-Item -LiteralPath (Join-Path $libraryRoot $file) -Destination $libraryTarget }
+    '本包含本机旧工程候选资料，仅供本机试用，不上传公开仓库或公开发行。' | Set-Content -LiteralPath (Join-Path $outputRoot '本机资料版-请勿公开.txt') -Encoding utf8
+}
+'engispace-design-note-client-v1' | Set-Content -LiteralPath (Join-Path $clientRoot '.engispace-client') -Encoding ascii
+$version | Set-Content -LiteralPath (Join-Path $clientRoot 'VERSION.txt') -Encoding ascii
+Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/DESKTOP_CLIENT_GUIDE.md') -Destination (Join-Path $outputRoot '使用说明.md')
+Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop/setup/bin/Release/net48/DesktopSetup.exe') -Destination $outputRoot
+$manifest = Get-ChildItem -LiteralPath $clientRoot -Recurse -File | Sort-Object FullName | ForEach-Object {
+    $relative = [IO.Path]::GetRelativePath($clientRoot, $_.FullName).Replace('\', '/')
+    "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $relative"
+}
+$manifest | Set-Content -LiteralPath (Join-Path $outputRoot 'manifest.sha256') -Encoding ascii
+$dirty = [bool](& git -C $projectRoot status --porcelain --untracked-files=no)
+@{ version = $version; revision = $revision; candidate = $true; productionReady = $false; builtFromDirtyTree = $dirty; privateContent = $privateContent; builtAt = (Get-Date).ToString('o'); files = $manifest.Count } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outputRoot 'BUILD.json') -Encoding utf8
+$verification = Start-Process -FilePath (Join-Path $outputRoot 'DesktopSetup.exe') -ArgumentList '--verify-payload' -WindowStyle Hidden -Wait -PassThru
+if ($verification.ExitCode -ne 0) { throw '安装包完整性检查失败。' }
+$zipPath = $outputRoot + '.zip'
+Compress-Archive -LiteralPath (Get-ChildItem -LiteralPath $outputRoot | Select-Object -ExpandProperty FullName) -DestinationPath $zipPath -CompressionLevel Optimal
+Write-Output "DESKTOP_PACKAGE_OK files=$($manifest.Count) privateContent=$privateContent"
+Write-Output "安装入口：$(Join-Path $outputRoot 'DesktopSetup.exe')"
+Write-Output "免安装入口：$(Join-Path $clientRoot 'EngiSpace.exe')"
+Write-Output "ZIP：$zipPath"

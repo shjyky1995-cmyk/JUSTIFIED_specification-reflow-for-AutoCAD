@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('workbench', {
-  chooseSave: () => ipcRenderer.invoke('choose-save'),
+  chooseSave: name => ipcRenderer.invoke('choose-save', name),
   work: request => ipcRenderer.invoke('work', request),
   openDocx: path => ipcRenderer.invoke('open-docx'),
   notesList: () => ipcRenderer.invoke('notes-list'),
@@ -11,4 +11,15 @@ contextBridge.exposeInMainWorld('workbench', {
   projectsList: () => ipcRenderer.invoke('projects-list'),
   projectSave: project => ipcRenderer.invoke('project-save', project),
   catalogLoad: () => ipcRenderer.invoke('catalog-load'),
+  catalogChoose: () => ipcRenderer.invoke('catalog-choose'),
+  appInfo: () => ipcRenderer.invoke('app-info'),
+  openDataFolder: () => ipcRenderer.invoke('open-data-folder'),
+  duplicateNote: id => ipcRenderer.invoke('note-duplicate', id),
+  exportBackup: () => ipcRenderer.invoke('backup-export'),
+  importBackup: () => ipcRenderer.invoke('backup-import'),
+  beforeClose: callback => {
+    const listener = () => { Promise.resolve().then(callback).then(ok => ipcRenderer.send('close-ready', ok), () => ipcRenderer.send('close-ready', false)) }
+    ipcRenderer.on('before-close', listener)
+    return () => ipcRenderer.removeListener('before-close', listener)
+  },
 })

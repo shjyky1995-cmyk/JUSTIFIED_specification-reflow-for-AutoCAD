@@ -18,7 +18,8 @@ for (const layout of catalog.layouts) {
   const discipline = layout.templateId.includes('struct') ? 'structural' : layout.templateId.includes('arch') ? 'architecture' : layout.templateId.includes('plumb') ? 'plumbing' : layout.templateId.includes('elec') ? 'electrical' : 'hvac'
   const note = assembleNote(createNote(discipline, layout.templateId, { name: '测试工程', number: '', owner: '', location: '测试地点' }), layout.templateId, catalog).note
   assert.equal(note.title, layout.sourceTitle)
-  assert.throws(() => toExportRequest(note, 'test.docx'))
+  assert.ok(toExportRequest(note, 'draft.docx').document.reviewNotices.length > 0)
+  assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
   const reopened = parseNote(JSON.parse(JSON.stringify(note)))
   assert.deepEqual(reopened.sections, note.sections)
   if (note.structural) Object.assign(note.structural, { siteCategory: 'II', seismicGrade: '乙', safetyLevel: '二级', foundationGrade: '乙级', protectionScheme: '中', seismicIntensity: '7度（0.10g）' })
@@ -38,7 +39,7 @@ for (const layout of catalog.layouts) {
     const id = table.rows.flat().join('').match(/\{([a-z][a-z0-9_]*)\}/)[1]
     const old = note.fieldValues[id]; delete note.fieldValues[id]
     assert.ok(findIssues(note).some(issue => issue.field === id))
-    assert.throws(() => toExportRequest(note, 'test.docx'))
+    assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
     note.fieldValues[id] = old
   }
   const output = join(dir, `${layout.templateId}-${process.pid}.docx`)

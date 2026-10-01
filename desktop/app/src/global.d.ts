@@ -12,7 +12,7 @@ export type SaveResult = { ok: true; savedAt: string } | { ok: false; error: str
 declare global {
   interface Window {
     workbench: {
-      chooseSave(): Promise<string | null>
+      chooseSave(name?: string): Promise<string | null>
       work(request: Record<string, unknown>): Promise<WorkResult>
       openDocx(path: string): Promise<void>
       notesList(): Promise<import('./shared/model').NoteSummary[]>
@@ -22,6 +22,13 @@ declare global {
       projectsList(): Promise<import('./shared/model').StoredProject[]>
       projectSave(project: import('./shared/model').StoredProject): Promise<import('./shared/model').StoredProject[]>
       catalogLoad(): Promise<import('./shared/content').ContentCatalog | null>
+      catalogChoose(): Promise<import('./shared/content').ContentCatalog | null>
+      appInfo(): Promise<{ version: string; dataRoot: string; catalogPath: string; packaged: boolean }>
+      openDataFolder(): Promise<string>
+      duplicateNote(id: string): Promise<import('./shared/model').Note>
+      exportBackup(): Promise<string | null>
+      importBackup(): Promise<number | null>
+      beforeClose(callback: () => Promise<boolean>): () => void
     }
   }
 }

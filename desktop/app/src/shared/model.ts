@@ -2,7 +2,7 @@
 // 约束：仅使用可擦除语法（无枚举/命名空间/参数属性），供 Electron 主进程、渲染进程与 Node 测试共同引用。
 import { renderModule, renderTemplate, parseColumnWidths, type SelectedModule } from './content.ts'
 import { corrosionIssues, corrosionSupplement } from './corrosion.ts'
-import { projectFieldValues } from './project-fields.ts'
+import { projectFieldValues, fieldLabelsFor } from './project-fields.ts'
 
 export const LIBRARY_VERSION = '1.0.1'
 
@@ -182,6 +182,7 @@ export type LayoutBlock = { kind: 'paragraph'; moduleId: string } | { kind: 'tab
 export type NoteSection = { id: string; title: string; body: string; custom: boolean; modules?: SelectedModule[]; layoutBlocks?: LayoutBlock[] }
 
 export type Note = {
+  recoveryMessage?: string
   id: string
   title: string
   discipline: DisciplineCode
@@ -340,6 +341,8 @@ export function summarizeNote(note: Note): NoteSummary {
 }
 
 export function findIssues(note: Note): NoteIssue[] {
+  const values = effectiveFieldValues(note)
+  const labels = fieldLabelsFor(note)
   const issues: NoteIssue[] = corrosionIssues(note).map(issue => ({ level: 'error', ...issue }))
   const assembled = Boolean(note.assemblyPackageId)
   if (assembled && !note.assemblyReviewConfirmed) issues.push({ level: 'error', message: '请核对自动生成的整篇说明及规范引用，再确认适用于本工程。' })
@@ -366,8 +369,8 @@ export function findIssues(note: Note): NoteIssue[] {
     for (const block of section.layoutBlocks ?? []) {
       if (block.kind === 'paragraph' && !section.modules?.some(module => module.id === block.moduleId)) issues.push({ level: 'error', sectionId: section.id, message: '原稿段落缺失，请重新选择模板或恢复草稿。' })
       if (block.kind === 'table') for (const cell of block.rows.flat()) {
-        const rendered = renderTemplate(cell, effectiveFieldValues(note))
-        for (const id of rendered.missing) issues.push({ level: 'error', sectionId: section.id, field: id, message: `表格缺少「${note.fieldDefinitions[id]?.label ?? id}」。` })
+        const rendered = renderTemplate(cell, values)
+        for (const id of rendered.missing) issues.push({ level: 'error', sectionId: section.id, field: id, message: `表格缺少「${labels[id] ?? id}」。` })
         for (const match of cell.matchAll(/\{([a-z][a-z0-9_]*)\}/g)) if (!note.fieldDefinitions[match[1]]) issues.push({ level: 'error', sectionId: section.id, message: '表格使用了未定义的工程取值。' })
       }
 
@@ -385,10 +388,9 @@ export function findIssues(note: Note): NoteIssue[] {
       if (!module.confirmedForNote && !assembled) {
         issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」条款 ${module.clauseId} 尚未确认适用于本工程。` })
       }
-      const labels = Object.fromEntries(Object.entries(note.fieldDefinitions ?? {}).map(([id, definition]) => [id, definition.label]))
-      const rendered = renderModule(module, effectiveFieldValues(note), labels)
+      const rendered = renderModule(module, values, labels)
       for (const fieldId of rendered.missing) {
-        issues.push({ level: 'error', sectionId: section.id, field: fieldId, message: `章节「${section.title}」缺少「${note.fieldDefinitions?.[fieldId]?.label ?? fieldId}」。` })
+        issues.push({ level: 'error', sectionId: section.id, field: fieldId, message: `章节「${section.title}」缺少「${labels[fieldId] ?? fieldId}」。` })
       }
     }
     if (isSectionEmpty(section)) {
@@ -422,13 +424,16 @@ export type DocumentBlock =
 export type BuiltDocument = { blocks: DocumentBlock[]; notices: string[] }
 
 export function buildDocument(note: Note): BuiltDocument {
+  const values = effectiveFieldValues(note)
+  const labels = fieldLabelsFor(note)
+  const needsReview = findIssues(note).some(issue => issue.level === 'error')
   const blocks: DocumentBlock[] = []
   const notices: string[] = []
   const sourceLayout = note.sections.some(section => section.layoutBlocks?.length)
   blocks.push({ kind: 'title', text: note.title.trim() || defaultTitle(note.discipline) })
-  if (findIssues(note).some(issue => issue.level === 'error')) blocks.push({ kind: 'meta', text: '资料状态：待完善草稿，缺项与适用条件待核定；待填写标记已保留。' })
+  if (needsReview) blocks.push({ kind: 'meta', text: '资料状态：待完善草稿，缺项与适用条件待核定；待填写标记已保留。' })
   if (sourceLayout) notices.push('项目取值、规范版本与适用性须由设计人员核定。')
-  if (note.assemblyPackageId && !findIssues(note).some(issue => issue.level === 'error')) blocks.push({ kind: 'meta', text: '资料状态：旧工程候选初稿，规范版本与适用性待核定' })
+  if (note.assemblyPackageId && !needsReview) blocks.push({ kind: 'meta', text: '资料状态：旧工程候选初稿，规范版本与适用性待核定' })
   if (!sourceLayout) blocks.push({ kind: 'meta', text: '专业：' + disciplineLabel(note.discipline) })
   const project = note.project
   if (!sourceLayout) blocks.push({ kind: 'meta', text: '工程名称：' + (project.name.trim() || '【待填写：工程名称】') })
@@ -456,14 +461,13 @@ export function buildDocument(note: Note): BuiltDocument {
       continue
     }
     blocks.push({ kind: 'heading', text: section.title.trim() })
-    const labels = Object.fromEntries(Object.entries(note.fieldDefinitions ?? {}).map(([id, definition]) => [id, definition.label]))
     if (section.layoutBlocks?.length) {
       const byId = new Map((section.modules ?? []).map(module => [module.id, module]))
       for (const block of section.layoutBlocks) {
-        if (block.kind === 'table') blocks.push({ kind: 'table', rows: block.rows.map(row => row.map(cell => renderTemplate(cell, effectiveFieldValues(note), labels).text)), columnWidths: block.columnWidths, reviewNote: block.reviewNote })
+        if (block.kind === 'table') blocks.push({ kind: 'table', rows: block.rows.map(row => row.map(cell => renderTemplate(cell, values, labels).text)), columnWidths: block.columnWidths, reviewNote: block.reviewNote })
         else {
           const module = byId.get(block.moduleId)
-          if (module) blocks.push({ kind: 'paragraph', text: renderModule(module, effectiveFieldValues(note), labels).text })
+          if (module) blocks.push({ kind: 'paragraph', text: renderModule(module, values, labels).text })
           if (!supplementWritten && module?.fieldIds.includes('concrete_grade_main')) {
             const supplement = corrosionSupplement(note)
             if (supplement) blocks.push({ kind: 'paragraph', text: supplement })
@@ -472,7 +476,7 @@ export function buildDocument(note: Note): BuiltDocument {
         }
       }
     } else for (const module of section.modules ?? []) {
-      const rendered = renderModule(module, effectiveFieldValues(note), labels)
+      const rendered = renderModule(module, values, labels)
       blocks.push({ kind: 'paragraph', text: rendered.text })
     }
     const lines = section.body.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim().length > 0)
