@@ -7,7 +7,7 @@
 - CAD 窗口采用系统 Microsoft YaHei UI / GDI 点数字体；卡片图形按控件尺寸缩放，统一背景、移除标签重叠与输入框白块。后台实际控件四档模拟缩放预览通过；CAD 内真实 DPI/多屏未验。
 - 完整构建 0 警告/0 错误，net8.0/net48 各 190/190。复杂脱敏表：6 不等宽列、两层表头、组合合并、120 条唯一条目、长文字/多段/上标。AutoCAD 2021 后台 TEXTBOX 捕获 328 条真实 SHX 边界，禁止模拟补值后双框架三图幅各通过；A1/A2/A3 为 2/3/7 页。12 张排版检查图和三图幅首张真实 CAD 核心 PDF 转图已查看。
 - 本机证据 `artifacts/t28-preview2-build-final.log`、`artifacts/t28-host-final.log`、`artifacts/t28-visual`、`artifacts/t28-host-font-plots`；方法见 `docs/CAD_TABLES_AUTOMATED_CHECKS.md`。测试结果/测量缓存/DOCX 不入库。Core Console NETLOAD 失败，后台 DXF 出图不等于 DSS 导入、事务或一次撤销通过。
-- 新包版本 `0.2.0-table-preview.2`，交付目录 `测试文件/CAD表格试用`；安装后以 DSS 导入 `复杂工程表格试用.docx`。未安装到用户 CAD、未改当前业务图、未合 main/打标签；本轮本地提交，不推送正式发布。
+- 实现提交 c23e1f0，打包基准 77d9645；包 `CAD-tables-0.2.0-table-preview.2-77d9645.zip`，PACKAGE_VERIFY_OK files=30，独立 ZIP 核对通过。新包版本 `0.2.0-table-preview.2`，交付目录 `测试文件/CAD表格试用`；安装后以 DSS 导入 `复杂工程表格试用.docx`。未安装到用户 CAD、未改当前业务图、未合 main/打标签；本轮本地提交，不推送正式发布。
 - 唯一下一动作：用户方便时集中验证新版窗口、实际工程图框下部留白、复杂表格和一次 U；出现反馈先修，明确通过后按 WORKFLOW 集成/标签/远端备份。无需再让用户重复 Agent 已完成的自动测试。
 - 桌面 T29 仍在独立 `artifacts/t26-auto-content-worktree` 接续，下方记录保留；不把它带入 CAD 分支，不重复关机任务。
 
