@@ -1394,3 +1394,15 @@ button:focus-visible, summary:focus-visible { outline: 2px solid #3687ef; outlin
 button:disabled { cursor: not-allowed; }
 .chapter-title-input { width: 100%; min-width: 260px; max-width: 640px; padding: 4px 0; border: 0; border-bottom: 1px solid transparent; background: transparent; color: #182230; font: inherit; font-size: 19px; font-weight: 600; }
 .chapter-title-input:focus { border-bottom-color: #3687ef; outline: none; }
+.review-highlight { outline: 3px solid #3687ef !important; outline-offset: 3px; }
+.review-queue-row { padding-bottom: 10px; border-bottom: 1px solid #e4e7ec; }
+.review-queue-row p { margin: 4px 0; }
+.review-queue-row details { margin-top: 4px; font-size: 12px; }
+.review-queue-row ul { padding-left: 15px; }
+.issue-list { max-height: 42vh; overflow-y: auto; padding-right: 8px; }
+.source-review-modal { width: min(820px, 94vw); max-height: 88vh; overflow: auto; }
+.source-entry { margin: 10px 0; border: 1px solid #e4e7ec; border-radius: 8px; padding: 12px; overflow-wrap: anywhere; }
+.source-entry summary { cursor: pointer; font-weight: 600; color: #344054; }
+.reference-occurrence { padding: 10px 0; border-bottom: 1px solid #edf0f4; }
+.reference-occurrence:last-child { border-bottom: 0; }
+.reference-occurrence small { display: block; margin-top: 4px; color: #667085; }

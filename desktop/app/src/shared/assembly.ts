@@ -44,6 +44,21 @@ function eligible(clause: ContentClause, profile: Profile): boolean {
 
 export type AssemblyResult = { note: Note; selectedClauses: number; excludedClauses: number; sourceFile: string | null }
 
+export function templateReadiness(templateId: string, catalog: ContentCatalog | null) {
+  const profile = PROFILES[templateId]
+  const source = catalog?.sourceDigest.find(item => item.file === profile?.sourceFile)
+  const layout = catalog?.layouts?.find(item => item.templateId === templateId && item.sourceId === source?.id)
+  const clauses = source && catalog && profile ? catalog.clauses.filter(clause => clause.sources.some(ref => ref.sourceId === source.id) && eligible(clause, profile)) : []
+  return {
+    sourceFile: source?.file ?? null,
+    version: source?.versionRelation ?? '',
+    chapters: layout?.sections.length ?? new Set(clauses.map(clause => clause.chapterId)).size,
+    paragraphs: layout?.sections.reduce((count, section) => count + section.blocks.filter(block => block.kind === 'paragraph').length, 0) ?? clauses.length,
+    tables: layout?.sections.reduce((count, section) => count + section.blocks.filter(block => block.kind === 'table').length, 0) ?? 0,
+    available: Boolean(layout || clauses.length),
+  }
+}
+
 export function assembleNote(note: Note, templateId: string, catalog: ContentCatalog | null): AssemblyResult {
   const profile = PROFILES[templateId]
   const empty = { ...note, templateId, sections: rebuildSections(note, templateId), fieldDefinitions: {}, fieldValues: Object.fromEntries(Object.entries(note.fieldValues).filter(([id]) => isProjectField(id, note.fieldDefinitions[id]?.label) || isCorrosionField(id) || id === 'external_anticorrosion_coating')), corrosionDesign: note.corrosionDesign, sourceReferenceValues: {}, assemblyReviewConfirmed: false, assemblyPackageId: '' }
@@ -53,6 +68,7 @@ export function assembleNote(note: Note, templateId: string, catalog: ContentCat
   const related = catalog.clauses.filter(clause => clause.sources.some(ref => ref.sourceId === source.id))
   const layout = catalog.layouts?.find(item => item.templateId === templateId && item.sourceId === source.id)
   if (layout) {
+    const clausesById = new Map(catalog.clauses.map(clause => [clause.id, clause]))
     const sections: NoteSection[] = layout.sections.map(section => {
       const modules: NonNullable<NoteSection['modules']> = []
       const layoutBlocks: NonNullable<NoteSection['layoutBlocks']> = []
@@ -62,7 +78,7 @@ export function assembleNote(note: Note, templateId: string, catalog: ContentCat
           continue
         }
         const id = `${layout.sourceId}-p${block.sourcePara}`
-        modules.push({ id, clauseId: block.clauseIds.join('+') || `原稿段落${block.sourcePara}`, packageId: catalog.packageId, template: block.template, baseTemplate: block.template, edited: false, fieldIds: block.fieldIds, sourceRefs: [{ sourceId: source.id, para: block.sourcePara, file: source.file }], refs: [], flags: block.reviewNote.startsWith('阻断') ? ['requires_rewrite'] : block.reviewNote.startsWith('条件') ? ['requires_applicability_review'] : [], reviewStatus: 'pending', confirmedForNote: false })
+        modules.push({ id, clauseId: block.clauseIds.join('+') || `原稿段落${block.sourcePara}`, packageId: catalog.packageId, template: block.template, baseTemplate: block.template, edited: false, fieldIds: block.fieldIds, sourceRefs: [{ sourceId: source.id, para: block.sourcePara, file: source.file }], refs: [...new Set(block.clauseIds.flatMap(clauseId => clausesById.get(clauseId)?.refs ?? []))], flags: block.reviewNote.startsWith('阻断') ? ['requires_rewrite'] : block.reviewNote.startsWith('条件') ? ['requires_applicability_review'] : [], reviewStatus: 'pending', confirmedForNote: false })
         layoutBlocks.push({ kind: 'paragraph', moduleId: id })
       }
       return { id: `lib-${section.id}`, title: section.title, body: '', custom: false, modules, layoutBlocks }

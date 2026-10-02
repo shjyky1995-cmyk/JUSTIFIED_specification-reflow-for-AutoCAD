@@ -212,7 +212,8 @@ export type NoteSummary = {
   updatedAt: string
 }
 
-export type NoteIssue = { level: 'error' | 'warning'; field?: string; sectionId?: string; message: string }
+// 核对定位信息仅在桌面内计算，不改变存储格式或 DOCX/CAD 协议。
+export type NoteIssue = { level: 'error' | 'warning'; field?: string; sectionId?: string; moduleId?: string; tablePara?: number; message: string }
 
 export function newId(): string {
   const cryptoRef = globalThis.crypto
@@ -371,27 +372,27 @@ export function findIssues(note: Note): NoteIssue[] {
       if (block.kind === 'paragraph' && !section.modules?.some(module => module.id === block.moduleId)) issues.push({ level: 'error', sectionId: section.id, message: '原稿段落缺失，请重新选择模板或恢复草稿。' })
       if (block.kind === 'table') for (const cell of block.rows.flat()) {
         const rendered = renderTemplate(cell, values)
-        for (const id of rendered.missing) issues.push({ level: 'error', sectionId: section.id, field: id, message: `表格缺少「${labels[id] ?? id}」。` })
-        for (const match of cell.matchAll(/\{([a-z][a-z0-9_]*)\}/g)) if (!note.fieldDefinitions[match[1]]) issues.push({ level: 'error', sectionId: section.id, message: '表格使用了未定义的工程取值。' })
+        for (const id of rendered.missing) issues.push({ level: 'error', sectionId: section.id, tablePara: block.sourcePara, field: id, message: `表格缺少「${labels[id] ?? id}」。` })
+        for (const match of cell.matchAll(/\{([a-z][a-z0-9_]*)\}/g)) if (!note.fieldDefinitions[match[1]]) issues.push({ level: 'error', sectionId: section.id, tablePara: block.sourcePara, message: '表格使用了未定义的工程取值。' })
       }
 
-      if (block.kind === 'table' && block.rows.some(row => row.some(cell => cell.includes('【待核定：本工程取值】')))) issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」表格仍有本工程取值待填写。` })
-      if (block.kind === 'table' && block.reviewNote.startsWith('条件') && !block.confirmedForNote) issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」第 ${block.sourcePara} 处表格的适用条件尚未确认。` })
+      if (block.kind === 'table' && block.rows.some(row => row.some(cell => cell.includes('【待核定：本工程取值】')))) issues.push({ level: 'error', sectionId: section.id, tablePara: block.sourcePara, message: `章节「${section.title}」表格仍有本工程取值待填写。` })
+      if (block.kind === 'table' && block.reviewNote.startsWith('条件') && !block.confirmedForNote) issues.push({ level: 'error', sectionId: section.id, tablePara: block.sourcePara, message: `章节「${section.title}」第 ${block.sourcePara} 处表格的适用条件尚未确认。` })
     }
     for (const module of section.modules ?? []) {
-      if (module.flags.includes('requires_rewrite') && !module.edited) issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」第 ${module.sourceRefs[0]?.para ?? '?'} 段含旧工程事实，请改写。` })
-      if (module.flags.includes('requires_applicability_review') && !module.confirmedForNote) issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」第 ${module.sourceRefs[0]?.para ?? '?'} 段的适用条件尚未确认。` })
-      if (module.reviewStatus !== 'approved' && !assembled) issues.push({ level: 'warning', sectionId: section.id, message: `条款 ${module.clauseId} 来自旧资料候选，尚未批准为全局标准。` })
-      if (module.template.trim().length === 0) issues.push({ level: 'error', sectionId: section.id, message: `条款 ${module.clauseId} 的文字为空。` })
+      if (module.flags.includes('requires_rewrite') && !module.edited) issues.push({ level: 'error', sectionId: section.id, moduleId: module.id, message: `章节「${section.title}」第 ${module.sourceRefs[0]?.para ?? '?'} 段含旧工程事实，请改写。` })
+      if (module.flags.includes('requires_applicability_review') && !module.confirmedForNote) issues.push({ level: 'error', sectionId: section.id, moduleId: module.id, message: `章节「${section.title}」第 ${module.sourceRefs[0]?.para ?? '?'} 段的适用条件尚未确认。` })
+      if (module.reviewStatus !== 'approved' && !assembled) issues.push({ level: 'warning', sectionId: section.id, moduleId: module.id, message: `条款 ${module.clauseId} 来自旧资料候选，尚未批准为全局标准。` })
+      if (module.template.trim().length === 0) issues.push({ level: 'error', sectionId: section.id, moduleId: module.id, message: `条款 ${module.clauseId} 的文字为空。` })
       for (const fieldId of module.fieldIds) {
-        if (!note.fieldDefinitions?.[fieldId]) issues.push({ level: 'error', sectionId: section.id, message: `条款 ${module.clauseId} 使用了未定义的占位符「${fieldId}」。` })
+        if (!note.fieldDefinitions?.[fieldId]) issues.push({ level: 'error', sectionId: section.id, moduleId: module.id, message: `条款 ${module.clauseId} 使用了未定义的占位符「${fieldId}」。` })
       }
       if (!module.confirmedForNote && !assembled) {
-        issues.push({ level: 'error', sectionId: section.id, message: `章节「${section.title}」条款 ${module.clauseId} 尚未确认适用于本工程。` })
+        issues.push({ level: 'error', sectionId: section.id, moduleId: module.id, message: `章节「${section.title}」条款 ${module.clauseId} 尚未确认适用于本工程。` })
       }
       const rendered = renderModule(module, values, labels)
       for (const fieldId of rendered.missing) {
-        issues.push({ level: 'error', sectionId: section.id, field: fieldId, message: `章节「${section.title}」缺少「${labels[fieldId] ?? fieldId}」。` })
+        issues.push({ level: 'error', sectionId: section.id, moduleId: module.id, field: fieldId, message: `章节「${section.title}」缺少「${labels[fieldId] ?? fieldId}」。` })
       }
     }
     if (isSectionEmpty(section)) {
