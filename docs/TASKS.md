@@ -2,6 +2,8 @@
 
 # 任务清单
 
+2026-10-02 T32/B：桌面worktree task/T32-content-review 新增缺项合并定位、当前正文来源/引用核对、模板覆盖显示。7faac31实现、859ca6a交付，preview.2候选包302文件/309项ZIP检查通过，状态待验收；开发位置及剩余项见DEVELOPMENT_STATUS，CAD T28独立保留。
+
 2026-10-02 T31/C：桌面worktree task/T31-desktop-client 完成缺项草稿导出、重复参数整理、保存备份恢复、安装升级回退和离线客户端候选，状态待验收；代码e0a1cfc，交接9e22a83。301文件包校验通过；GUI/Word/安装和专业核定未验，用户次日集中测试。唯一入口与下一动作见NEXT_AGENT；CAD T28独立保留。
 
 
