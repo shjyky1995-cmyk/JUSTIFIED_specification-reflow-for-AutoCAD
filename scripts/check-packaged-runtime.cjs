@@ -11,6 +11,7 @@ async function check() {
   const output = resolve(process.argv[3])
   fs.mkdirSync(output, { recursive: true })
   const model = await import(pathToFileURL(join(app, 'dist-electron/src/shared/model.js')))
+  const review = await import(pathToFileURL(join(app, 'dist-electron/src/shared/review.js')))
   const { createStore } = await import(pathToFileURL(join(app, 'dist-electron/src/shared/store.js')))
   const packageInfo = JSON.parse(fs.readFileSync(join(app, 'package.json'), 'utf8'))
   assert.ok(fs.existsSync(join(app, packageInfo.main)))
@@ -20,7 +21,9 @@ async function check() {
   const catalog = store.loadCatalog()
   assert.equal(catalog.layouts.length, 7)
   const note = model.createNote('electrical', 'tpl-elec-custom', { name: '', number: '', owner: '', location: '' })
-  note.sections = [{ id: 'custom-1', title: '说明', body: '客户端编译代码验证。', custom: true }]
+  note.sections = [{ id: 'custom-1', title: '说明', body: '客户端编译代码验证。引用 GB/T 50046-2018 待核定。', custom: true }]
+  assert.equal(review.referenceIndex(note)[0].code, 'GB/T50046-2018')
+  assert.equal(review.reviewQueue(note, model.findIssues(note)).find(item => item.issue.field === 'project.name').target.page, 'parameters')
   assert.equal(store.saveNote(note).ok, true)
   const copy = store.duplicateNote(note.id)
   assert.notEqual(copy.id, note.id)
