@@ -1,6 +1,6 @@
 {
   "name": "dss-desktop-workbench",
-  "version": "0.2.0-preview.2",
+  "version": "0.3.0-bid-preview.1",
   "private": true,
   "type": "module",
   "main": "dist-electron/electron/main.js",
@@ -17,7 +17,8 @@
     "test:parameters": "node ../../scripts/test-desktop-parameters.mjs",
     "test:scroll": "node ../../scripts/run-desktop-scroll.mjs",
     "test:corrosion": "node ../../scripts/test-corrosion-source.mjs",
-    "check:candidate": "node ../../scripts/check-desktop-candidate.mjs"
+    "check:candidate": "node ../../scripts/check-desktop-candidate.mjs",
+    "test:bidding": "node ../../scripts/test-bidding.mjs"
   },
   "dependencies": {
     "lucide-react": "1.48.0",

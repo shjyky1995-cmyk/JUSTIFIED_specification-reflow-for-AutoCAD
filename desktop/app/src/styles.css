@@ -6,9 +6,21 @@
   font-display: swap;
 }
 :root {
+  /* 设计说明与投标模块共用的视觉基础。 */
+  --ui-canvas: #f9f9fb;
+  --ui-surface: #fff;
+  --ui-ink: #1a1a1a;
+  --ui-muted: #71717a;
+  --ui-subtle: #a1a1aa;
+  --ui-line: #ececef;
+  --ui-control-line: #e5e5e9;
+  --ui-accent: #3b82f6;
+  --ui-accent-soft: #eff6ff;
+  --ui-control-radius: 9px;
+  --ui-card-radius: 16px;
   font-family: Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif;
-  color: #1a1a1a;
-  background: #f9f9fb;
+  color: var(--ui-ink);
+  background: var(--ui-canvas);
   font-synthesis: none;
 }
 * {
@@ -66,7 +78,7 @@ textarea:focus-visible {
   gap: 12px;
   border: 0;
   background: none;
-  color: #1a1a1a;
+  color: var(--ui-ink);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -81,7 +93,7 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 20px;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 .global-avatar {
@@ -119,10 +131,10 @@ textarea:focus-visible {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #71717a;
+  color: var(--ui-muted);
 }
 .home-link:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .workflow-title {
   font-size: 16px;
@@ -148,7 +160,7 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 .step-nav button.active {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .step-number {
   font-size: 11px;
@@ -159,7 +171,7 @@ textarea:focus-visible {
   font-family: monospace;
 }
 .active .step-number {
-  background: #1a1a1a;
+  background: var(--ui-ink);
   color: #fff;
 }
 .step-divider {
@@ -195,7 +207,7 @@ textarea:focus-visible {
   background: #fff;
   box-shadow: 0 1px 3px #00000005;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .home-search::placeholder {
   color: #aaaab0;
@@ -246,8 +258,8 @@ textarea:focus-visible {
   border-color: #e9edf6;
 }
 .entry-card.active .entry-icon {
-  color: #3b82f6;
-  background: #eff6ff;
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
 }
 .entry-card:hover {
   border-color: #dedee3;
@@ -277,7 +289,7 @@ textarea:focus-visible {
 }
 .entry-card small {
   font-size: 13px;
-  color: #71717a;
+  color: var(--ui-muted);
   line-height: 1.5;
   margin-top: 6px;
 }
@@ -297,7 +309,7 @@ textarea:focus-visible {
   padding: 0 4px;
 }
 .home-panel h2 {
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -381,7 +393,7 @@ textarea:focus-visible {
   color: #8c8c94;
 }
 .icon-button:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .empty-hint {
   font-size: 13px;
@@ -412,7 +424,7 @@ textarea:focus-visible {
 .page-heading p {
   font-size: 13px;
   line-height: 1.6;
-  color: #71717a;
+  color: var(--ui-muted);
   margin: 0;
 }
 .eyebrow,
@@ -477,7 +489,7 @@ textarea:focus-visible {
   background: #fff;
   border: 1px solid #e5e5e9;
   border-radius: 9px;
-  color: #1a1a1a;
+  color: var(--ui-ink);
   font-size: 13px;
   outline: 0;
   box-shadow: 0 1px 2px #00000004;
@@ -508,7 +520,7 @@ textarea:focus-visible {
 }
 .field input[readonly] {
   background: #f7f7f8;
-  color: #71717a;
+  color: var(--ui-muted);
 }
 .discipline-grid {
   display: flex;
@@ -526,7 +538,7 @@ textarea:focus-visible {
   background: transparent;
   padding: 7px 15px;
   border-radius: 7px;
-  color: #71717a;
+  color: var(--ui-muted);
 }
 .discipline-card strong {
   font-size: 13px;
@@ -534,12 +546,12 @@ textarea:focus-visible {
 }
 .discipline-card.active {
   background: #fff;
-  border-color: #ececef;
+  border-color: var(--ui-line);
   box-shadow: 0 1px 3px #0000000a;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .discipline-card:hover:not(.active) {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .structural-panel .panel-head {
   border-bottom: 1px solid #ececef;
@@ -548,7 +560,7 @@ textarea:focus-visible {
 }
 .group-label {
   font-size: 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   letter-spacing: 0.02em;
   margin: 0 0 16px;
 }
@@ -578,7 +590,7 @@ textarea:focus-visible {
 .corrosion-option.active {
   border-color: #9dc2fa;
   background: #f8fbff;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .radio-dot {
   width: 14px;
@@ -621,7 +633,7 @@ textarea:focus-visible {
 }
 .primary-button {
   border: 1px solid #1a1a1a;
-  background: #1a1a1a;
+  background: var(--ui-ink);
   color: #fff;
   box-shadow: 0 2px 8px #00000014;
 }
@@ -649,7 +661,7 @@ textarea:focus-visible {
   border: 0;
   background: none;
   padding: 3px 0;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 .back-link {
@@ -658,7 +670,7 @@ textarea:focus-visible {
 }
 .text-link:hover,
 .back-link:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .status,
 .form-hint {
@@ -712,7 +724,7 @@ textarea:focus-visible {
 .template-card small {
   font-size: 13px;
   line-height: 1.5;
-  color: #71717a;
+  color: var(--ui-muted);
   margin-top: 7px;
 }
 .editor-workspace {
@@ -838,7 +850,7 @@ textarea:focus-visible {
   color: #8c8c94;
 }
 .section-tools button:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .section-tools button:disabled {
   opacity: 0.3;
@@ -969,7 +981,7 @@ textarea:focus-visible {
 }
 .paper-meta {
   font-size: 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   margin: 4px 0;
 }
 .paper-heading {
@@ -1111,17 +1123,17 @@ textarea:focus-visible {
   background: none;
   border-radius: 7px;
   padding: 7px 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 .modal-tabs button.active {
   background: #f0f0f2;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .modal-close {
   border: 0;
   background: none;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 20px;
 }
 .library-list {
@@ -1297,7 +1309,7 @@ textarea:focus-visible {
 }
 .issue-disclosure summary {
   font-size: 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   cursor: pointer;
   list-style: none;
 }

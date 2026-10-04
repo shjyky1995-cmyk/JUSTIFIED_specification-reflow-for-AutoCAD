@@ -18,7 +18,7 @@ namespace DocxWorkbench.Worker;
 
 internal static class Program
 {
-    private const int MaxRequestCharacters = 400_000;
+    private const int MaxRequestCharacters = 2_000_000;
     private const int MaxSectionCharacters = 100_000;
     private const int MaxCorrosionCharacters = 20_000;
     private const int MaxLines = 5_000;
@@ -39,12 +39,14 @@ internal static class Program
             {
                 "generate" => Generate(request),
                 "inspect" => Inspect(request.Path),
+                "bid-extract" => BidDocx.Extract(request.Path),
+                "bid-export" => BidDocx.Export(request),
                 _ => throw new ArgumentException("不支持的桌面操作。")
             };
             Console.Out.Write(JsonSerializer.Serialize(result, JsonOptions));
             return result.Success ? 0 : 1;
         }
-        catch (Exception error) when (error is ArgumentException or IOException or UnauthorizedAccessException or JsonException or InvalidDataException or OpenXmlPackageException)
+        catch (Exception error) when (error is ArgumentException or IOException or UnauthorizedAccessException or JsonException or InvalidDataException or OpenXmlPackageException or System.Xml.XmlException)
         {
             Console.Out.Write(JsonSerializer.Serialize(new WorkerResult(false, error.Message, null, 0, Array.Empty<string>(), Array.Empty<WorkerDiagnostic>()), JsonOptions));
             return 1;
@@ -344,6 +346,7 @@ internal sealed class WorkerRequest
     public string Operation { get; set; } = string.Empty;
     public string? Path { get; set; }
     public WorkerDocument? Document { get; set; }
+    public BidExportDocument? BidDocument { get; set; }
 }
 
 internal sealed class WorkerDocument
@@ -394,5 +397,8 @@ internal sealed class WorkerBlock
     public List<double>? ColumnWidths { get; set; }
 }
 
-internal sealed record WorkerResult(bool Success, string Message, string? Path, int Blocks, IReadOnlyList<string> Headings, IReadOnlyList<WorkerDiagnostic> Diagnostics);
+internal sealed record WorkerResult(bool Success, string Message, string? Path, int Blocks, IReadOnlyList<string> Headings, IReadOnlyList<WorkerDiagnostic> Diagnostics)
+{
+    public IReadOnlyList<BidSourceBlock>? SourceBlocks { get; init; }
+}
 internal sealed record WorkerDiagnostic(string Code, string Severity, string Message);

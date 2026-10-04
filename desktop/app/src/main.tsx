@@ -46,8 +46,9 @@ import {
 import type { NoteSummary, StoredProject } from './shared/model'
 import type { WorkResult } from './global'
 import './styles.css'
+import { BidWorkbench } from './features/bidding/BidWorkbench'
 
-type Route = 'home' | 'step01' | 'step02a' | 'step02b' | 'step03'
+type Route = 'home' | 'step01' | 'step02a' | 'step02b' | 'step03' | 'bidding'
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
 type NoteMutation = (note: Note | null) => Note | null
 
@@ -82,6 +83,7 @@ function App() {
   const [route, setRoute] = useState<Route>('home')
   const [note, setNote] = useState<Note | null>(null)
   const noteRef = useRef<Note | null>(null)
+  const bidFlushRef = useRef<null | (() => Promise<boolean>)>(null)
   const [notes, setNotes] = useState<NoteSummary[]>([])
   const [projects, setProjects] = useState<StoredProject[]>([])
   const [search, setSearch] = useState('')
@@ -131,12 +133,12 @@ function App() {
 
   useEffect(() => {
     if (!window.workbench?.beforeClose) return
-    return window.workbench.beforeClose(flushSave)
+    return window.workbench.beforeClose(async () => (await flushSave()) && (bidFlushRef.current ? await bidFlushRef.current() : true))
   }, [])
 
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void commitSave(); return }
+      if (route !== 'bidding' && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void commitSave(); return }
       if (route === 'home' && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         document.querySelector<HTMLInputElement>('.home-search')?.focus()
@@ -277,6 +279,7 @@ function App() {
     } catch (error) { setSave({ status: 'error', message: error instanceof Error ? error.message : '复制草稿失败。' }) }
   }
 
+  if (route === 'bidding') return <BidWorkbench onExit={() => { setRoute('home'); refreshHome() }} registerFlush={fn => { bidFlushRef.current = fn }} />
   return <div className="app-shell">
     <header className="global-header">
       <button className="global-brand" onClick={() => void goHome()} aria-label="返回首页"><img src={productIcon} alt="产品图标" /><span>EngiSpace</span></button>
@@ -288,7 +291,7 @@ function App() {
       setRoute(target)
     }} />}
     <main className={'main-area route-' + route}>
-      {route === 'home' && <HomePage notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={() => void startNew()} onContinue={id => void openNote(id)} onCopy={id => void duplicate(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
+      {route === 'home' && <HomePage onBid={() => { void flushSave().then(ok => { if (ok) setRoute('bidding') }) }} notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={() => void startNew()} onContinue={id => void openNote(id)} onCopy={id => void duplicate(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
       {route === 'step01' && <Step01 focus={reviewFocus} note={note} catalog={catalog} projects={projects} linkedProjectId={linkedProjectId} setLinkedProjectId={setLinkedProjectId} onUpdate={updateNote} onConfirm={askConfirm} onDone={async () => {
         if (!noteRef.current) setWorkingNote(createNote('structural', customTemplateId('structural'), { name: '', number: '', owner: '', location: '' }, defaultTitle('structural')))
         if (!(await commitSave())) return
@@ -366,7 +369,8 @@ function StepNav({ route, note, onNavigate }: { route: Route; note: Note | null;
   </header>
 }
 
-function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onCopy, onDelete }: {
+function HomePage({ onBid, notes, projects, search, onSearch, onNew, onContinue, onCopy, onDelete }: {
+  onBid: () => void
   notes: NoteSummary[]
   projects: StoredProject[]
   search: string
@@ -388,7 +392,9 @@ function HomePage({ notes, projects, search, onSearch, onNew, onContinue, onCopy
         <strong>设计说明</strong>
         <small>起草并管理技术设计说明</small>
       </button>
-      {['可研报告', '投标文件', '项目管理', 'AI 工程助手'].map(name => <div className="entry-card" key={name}>
+<div className="entry-card"><span className="entry-icon"><PieChart size={18}/></span><strong>可研报告</strong><small>暂未开放</small></div>
+      <button className="entry-card active" onClick={onBid}><span className="entry-icon"><BriefcaseBusiness size={18} /></span><strong>勘察设计投标</strong><small>资料、条款响应与投标文件编制</small></button>
+      {['项目管理', 'AI 工程助手'].map(name => <div className="entry-card" key={name}>
         <span className="entry-icon">{name === 'AI 工程助手' ? <Sparkles size={18} /> : name === '项目管理' ? <FolderOpen size={18} /> : name === '可研报告' ? <PieChart size={18} /> : <BriefcaseBusiness size={18} />}</span>
         <strong>{name}</strong>
         <small>暂未开放</small>

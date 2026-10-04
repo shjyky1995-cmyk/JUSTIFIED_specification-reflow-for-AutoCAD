@@ -12,6 +12,17 @@ export type SaveResult = { ok: true; savedAt: string } | { ok: false; error: str
 declare global {
   interface Window {
     workbench: {
+      bids: {
+        list(): Promise<import('./features/bidding/model').BidSummary[]>
+        load(id: string): Promise<{ bid: import('./features/bidding/model').BidProject; recovered: boolean }>
+        save(bid: import('./features/bidding/model').BidProject): Promise<import('./features/bidding/model').BidSave>
+        duplicate(id: string): Promise<import('./features/bidding/model').BidProject>
+        importSource(): Promise<import('./features/bidding/model').BidSource | null>
+        openSource(id: string, sourceId: string): Promise<void>
+        exportDocx(id: string, mode: 'draft' | 'reviewed'): Promise<{ success: boolean; message: string; path: string } | null>
+        backup(id: string): Promise<string | null>
+        restore(): Promise<import('./features/bidding/model').BidProject | null>
+      }
       chooseSave(name?: string): Promise<string | null>
       work(request: Record<string, unknown>): Promise<WorkResult>
       openDocx(path: string): Promise<void>

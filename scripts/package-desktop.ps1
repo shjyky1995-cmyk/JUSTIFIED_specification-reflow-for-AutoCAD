@@ -2,7 +2,8 @@
 param(
     [string]$OutputDirectory = '',
     [string]$ContentLibraryDirectory = '',
-    [string]$Dotnet10 = ''
+    [string]$Dotnet10 = '',
+    [switch]$Portable
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -29,7 +30,7 @@ function Invoke-Build([string]$Directory, [string]$Command, [string[]]$Arguments
 Invoke-Build $appDirectory 'npm.cmd' @('run', 'build')
 $workerOutput = Join-Path $projectRoot 'artifacts/desktop-worker-release'
 Invoke-Build $workerDirectory $Dotnet10 @('publish', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=false', '-o', $workerOutput)
-Invoke-Build $projectRoot 'dotnet' @('build', 'desktop/setup/DesktopSetup.csproj', '-c', 'Release')
+if (!$Portable) { Invoke-Build $projectRoot 'dotnet' @('build', 'desktop/setup/DesktopSetup.csproj', '-c', 'Release') }
 $electronDirectory = Join-Path $appDirectory 'node_modules/electron/dist'
 if (!(Test-Path -LiteralPath (Join-Path $electronDirectory 'electron.exe'))) { throw '缺少 Electron 运行时，请先 npm ci。' }
 New-Item -ItemType Directory -Path $outputRoot | Out-Null
@@ -66,20 +67,27 @@ if ($privateContent) {
 }
 'engispace-design-note-client-v1' | Set-Content -LiteralPath (Join-Path $clientRoot '.engispace-client') -Encoding ascii
 $version | Set-Content -LiteralPath (Join-Path $clientRoot 'VERSION.txt') -Encoding ascii
-Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/DESKTOP_CLIENT_GUIDE.md') -Destination (Join-Path $outputRoot '使用说明.md')
-Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop/setup/bin/Release/net48/DesktopSetup.exe') -Destination $outputRoot
+if ($Portable) {
+    'portable-v1' | Set-Content -LiteralPath (Join-Path $clientRoot 'resources/.engispace-portable') -Encoding ascii
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/BIDDING_CLIENT_GUIDE.md') -Destination (Join-Path $outputRoot '使用说明.md')
+} else {
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/DESKTOP_CLIENT_GUIDE.md') -Destination (Join-Path $outputRoot '使用说明.md')
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop/setup/bin/Release/net48/DesktopSetup.exe') -Destination $outputRoot
+}
 $manifest = Get-ChildItem -LiteralPath $clientRoot -Recurse -File | Sort-Object FullName | ForEach-Object {
     $relative = [IO.Path]::GetRelativePath($clientRoot, $_.FullName).Replace('\', '/')
     "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $relative"
 }
 $manifest | Set-Content -LiteralPath (Join-Path $outputRoot 'manifest.sha256') -Encoding ascii
 $dirty = [bool](& git -C $projectRoot status --porcelain --untracked-files=no)
-@{ version = $version; revision = $revision; candidate = $true; productionReady = $false; builtFromDirtyTree = $dirty; privateContent = $privateContent; builtAt = (Get-Date).ToString('o'); files = $manifest.Count } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outputRoot 'BUILD.json') -Encoding utf8
-$verification = Start-Process -FilePath (Join-Path $outputRoot 'DesktopSetup.exe') -ArgumentList '--verify-payload' -WindowStyle Hidden -Wait -PassThru
-if ($verification.ExitCode -ne 0) { throw '安装包完整性检查失败。' }
+@{ version = $version; revision = $revision; candidate = $true; productionReady = $false; builtFromDirtyTree = $dirty; portable = [bool]$Portable; privateContent = $privateContent; builtAt = (Get-Date).ToString('o'); files = $manifest.Count } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outputRoot 'BUILD.json') -Encoding utf8
+if (!$Portable) {
+    $verification = Start-Process -FilePath (Join-Path $outputRoot 'DesktopSetup.exe') -ArgumentList '--verify-payload' -WindowStyle Hidden -Wait -PassThru
+    if ($verification.ExitCode -ne 0) { throw '安装包完整性检查失败。' }
+}
 $zipPath = $outputRoot + '.zip'
 Compress-Archive -LiteralPath (Get-ChildItem -LiteralPath $outputRoot | Select-Object -ExpandProperty FullName) -DestinationPath $zipPath -CompressionLevel Optimal
 Write-Output "DESKTOP_PACKAGE_OK files=$($manifest.Count) privateContent=$privateContent"
-Write-Output "安装入口：$(Join-Path $outputRoot 'DesktopSetup.exe')"
+if (!$Portable) { Write-Output "安装入口：$(Join-Path $outputRoot 'DesktopSetup.exe')" }
 Write-Output "免安装入口：$(Join-Path $clientRoot 'EngiSpace.exe')"
 Write-Output "ZIP：$zipPath"

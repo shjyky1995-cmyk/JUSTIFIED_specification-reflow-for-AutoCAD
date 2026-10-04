@@ -7,6 +7,7 @@ import { createStore, type DesktopStore, type SaveResult } from '../src/shared/s
 import { parseNote, serializeNote, type Note, type NoteSummary, type StoredProject } from '../src/shared/model.ts'
 import { workerDotnetCommand } from '../src/shared/dotnet.ts'
 import { findProjectCatalogPath } from '../src/shared/catalog-path.ts'
+import { registerBidIpc } from './bid-ipc.ts'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = resolve(here, '../..')
@@ -14,6 +15,15 @@ const maxPayload = 450_000
 const selectedPaths = new Set<string>()
 const closeAllowed = new Set<number>()
 const closePending = new Set<number>()
+// 便携候选的数据、Chromium缓存和临时文件与程序同盘，避免写入 C 盘。
+const portable = app.isPackaged && existsSync(join(process.resourcesPath, '.engispace-portable'))
+const configuredData = process.env.DSS_USER_DATA_ROOT || (portable ? resolve(process.resourcesPath, '../../portable-data') : '')
+if (configuredData) {
+  const userData = resolve(configuredData), temporary = join(userData, 'temp')
+  mkdirSync(temporary, { recursive: true })
+  app.setPath('userData', userData); app.setPath('sessionData', userData); app.setPath('temp', temporary)
+  process.env.TEMP = temporary; process.env.TMP = temporary
+}
 const hasLock = app.requestSingleInstanceLock()
 if (!hasLock) app.quit()
 app.on('second-instance', () => {
@@ -21,7 +31,7 @@ app.on('second-instance', () => {
   if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus() }
 })
 
-type WorkRequest = { operation: 'generate' | 'inspect'; path?: string; document?: unknown; [key: string]: unknown }
+type WorkRequest = { operation: string; path?: string; document?: unknown; [key: string]: unknown }
 
 function workerCommand(): { command: string; args: string[] } {
   const explicit = process.env.DSS_WORKER_EXE
@@ -37,9 +47,9 @@ function workerCommand(): { command: string; args: string[] } {
 }
 
 function runWorker(request: WorkRequest): Promise<unknown> {
-  if (!['generate', 'inspect'].includes(request.operation)) throw new Error('不支持的操作。')
+  if (!['generate', 'inspect', 'bid-extract', 'bid-export'].includes(request.operation)) throw new Error('不支持的操作。')
   const payload = JSON.stringify(request)
-  if (payload.length > maxPayload) throw new Error('填写内容过长。')
+  if (payload.length > (request.operation.startsWith('bid-') ? 2_000_000 : maxPayload)) throw new Error('填写内容过长。')
   const { command, args } = workerCommand()
   return new Promise((resolveResult, reject) => {
     const child = spawn(command, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
@@ -79,7 +89,7 @@ function makeWindow(): void {
     minWidth: 900,
     minHeight: 680,
     backgroundColor: '#f9f9fb',
-    title: 'EngiSpace · 设计说明',
+    title: 'EngiSpace · 工程编制工作台',
     ...(iconFile ? { icon: join(assetDirectory, iconFile) } : {}),
     show: false,
     webPreferences: {
@@ -122,6 +132,7 @@ app.whenReady().then(() => {
   const bundledLibrary = join(process.resourcesPath, 'content-library', 'catalog.json')
   let catalogPath = process.env.DSS_CONTENT_LIBRARY_PATH || configuredLibrary || (existsSync(bundledLibrary) ? bundledLibrary : findProjectCatalogPath(appRoot))
   let store: DesktopStore = createStore(dataRoot, catalogPath)
+  registerBidIpc(dataRoot, runWorker, path => selectedPaths.add(path))
 
   ipcMain.on('close-ready', async (event, saved: boolean) => {
     const window = BrowserWindow.fromWebContents(event.sender)
@@ -198,6 +209,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('work', async (_event, request: WorkRequest) => {
     if (!request || typeof request !== 'object') throw new Error('请求无效。')
+    if (!['generate', 'inspect'].includes(request.operation)) throw new Error('请使用对应的模块操作。')
     request.path = docxPath(request.path)
     if (!selectedPaths.has(request.path)) throw new Error('请先从桌面窗口选择文件。')
     if (request.operation === 'generate' && request.document !== undefined) {
