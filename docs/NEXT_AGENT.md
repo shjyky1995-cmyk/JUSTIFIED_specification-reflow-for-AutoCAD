@@ -1,5 +1,8 @@
 # 当前接续状态（所有 Agent 共用）
 
+2026-10-04：用户已批准T33计划，当前T34在本工作树执行P1整理后继续P2标书开发。开发工作树为G盘 artifacts/worktrees/t34-bid-workbench，基于T32 859ca6a；独立分支 task/T34-bid-workbench。保留旧线未验收状态，不直接合main。具体执行和证据见 devlog/T34.md。
+
+
 ## 2026-10-02 当前桌面：T32 内容核对与来源定位待验收
 
 - 用户询问开发位置并要求继续；A通用框架已实现，B七模板候选装配部分实现，C安装交付代码已有候选，专业核定与真实安装/Word验收未完成。准确状态见 [DEVELOPMENT_STATUS](DEVELOPMENT_STATUS.md)。
