@@ -9,6 +9,8 @@
 | 投标活动开发 | artifacts/worktrees/t34-bid-workbench | T34，独立数据/检查/导出 |
 | 投标批准计划 | artifacts/t33-bid-plan-worktree | 只保留规划历史，不作为新开发基线 |
 | 当前设计说明试用 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.2-内容核对版/client/EngiSpace.exe | 当前入口保留 |
+| 投标便携试用 | 测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.1/client/EngiSpace.exe | T34/P2候选；数据在同包portable-data；基准6db0808 |
+| 投标检查证据 | artifacts/runs/t34 | 模型/UI/关窗/包完整性报告；不入公开库 |
 | 设计说明回退 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.1-最终试用 | 保留可运行副本 |
 | CAD表格候选/样本 | 测试文件/CAD表格试用 | 保留原入口和验收证据 |
 | 早期桌面解压副本 | local/archive/desktop-extracted-T34 | 已校验归档，不是当前试用入口；ZIP在原试用目录 |

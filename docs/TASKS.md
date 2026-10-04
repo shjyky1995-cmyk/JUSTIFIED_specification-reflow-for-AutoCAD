@@ -1,6 +1,6 @@
 # 任务清单
 
-2026-10-04：T33计划已获用户批准；T34/P1目录整理与P2勘察设计投标本地编制进行中。计划见[SURVEY_DESIGN_BID_PLAN](SURVEY_DESIGN_BID_PLAN.md)，整理见[PROJECT_ORGANIZATION_PLAN](PROJECT_ORGANIZATION_PLAN.md)。保留下面的既有开发进度。
+2026-10-04：T33计划已获用户批准；T34/P1目录分类已完成（删除改归档）；P2勘察设计投标本地编制候选已实现，状态待验收。计划见[SURVEY_DESIGN_BID_PLAN](SURVEY_DESIGN_BID_PLAN.md)，整理见[PROJECT_ORGANIZATION_PLAN](PROJECT_ORGANIZATION_PLAN.md)。保留下面的既有开发进度。
 
 
 2026-10-02 T32/B：缺项合并定位、正文来源/引用核对、模板覆盖显示已实现，状态待验收；前端与七模板检查、8份缺项DOCX生成通过。开发位置和未开发项见DEVELOPMENT_STATUS；人工集中试用、专业核定和正式发行仍待完成。
