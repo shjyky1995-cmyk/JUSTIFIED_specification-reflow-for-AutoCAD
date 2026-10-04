@@ -1,11 +1,21 @@
-import { dialog, ipcMain, shell } from 'electron'
+import { dialog, ipcMain, shell, safeStorage } from 'electron'
+import { createBidAiService } from './bid-ai.ts'
 import { basename, extname, resolve } from 'node:path'
 import { readFileSync, statSync, writeFileSync } from 'node:fs'
 import { createBidStore } from '../src/features/bidding/store.ts'
 import { bidDocument, isoNow, type BidSource } from '../src/features/bidding/model.ts'
 
-export function registerBidIpc(root: string, runWorker: (request: { operation: string; path?: string; [key: string]: unknown }) => Promise<unknown>, allowPath: (path: string) => void) {
+export function registerBidIpc(root: string, runWorker: (request: { operation: string; path?: string; [key: string]: unknown }) => Promise<unknown>, allowPath: (path: string) => void, aiService?: ReturnType<typeof createBidAiService>) {
   const store = createBidStore(root)
+  const ai = aiService ?? createBidAiService(root, { available: () => safeStorage.isEncryptionAvailable(), encrypt: text => safeStorage.encryptString(text), decrypt: bytes => safeStorage.decryptString(bytes) })
+  ipcMain.handle('bid-ai-settings', () => ai.settings())
+  ipcMain.handle('bid-ai-configure', (_event, model: string, key: string, remove: boolean) => ai.configure(model,key,remove))
+  ipcMain.handle('bid-ai-prepare', (_event, selection) => ai.prepare(selection))
+  ipcMain.handle('bid-ai-start', (_event, token: string, consent: boolean) => ai.start(token,consent))
+  ipcMain.handle('bid-ai-list', (_event, bidId: string) => ai.list(bidId))
+  ipcMain.handle('bid-ai-cancel', (_event, bidId: string, id: string) => ai.cancel(bidId,id))
+  ipcMain.handle('bid-ai-apply', (_event, bidId: string, id: string, indices: number[]) => ai.apply(bidId,id,indices))
+  ipcMain.handle('bid-ai-remove', (_event, bidId: string, id: string) => ai.remove(bidId,id))
   ipcMain.handle('bid-list', () => store.list())
   ipcMain.handle('bid-load', (_event, id: string) => store.load(id))
   ipcMain.handle('bid-save', (_event, value: unknown) => store.save(value))

@@ -10,6 +10,10 @@
 
 状态：用户已确认架构；M0 加载与工具验证结果见 T02 日志。产品语义以 PRD 为准。
 
+## T35 已选定 DeepSeek 的增量
+
+用户2026-10-04/05确认服务为DeepSeek。Electron主进程通过官方HTTPS接口请求，不引入SDK；bid-ai独立本地任务和Windows加密配置，投标schema1及原备份兼容。新增bid-ai-*受限IPC；准备/确认/执行/候选校验/人工采纳分开，发送前绑定保存版本、模型及输入哈希，失效需重新确认。网络请求不锁正文编辑，采纳时统一保存锁；结果只增加待核对候选。每次调用记录token用量，不伪造费用。PDF/OCR依赖未选定，尚未实现。
+
 ## 技术栈
 - 固定项目名：JUSTIFIED_specification-reflow-for-AutoCAD；解决方案与 .bundle 使用此名。
 - C# 命名空间/程序集前缀：Justified.SpecificationReflow.AutoCAD（连字符不能用于 C# 命名空间）。

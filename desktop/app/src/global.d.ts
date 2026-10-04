@@ -13,6 +13,16 @@ declare global {
   interface Window {
     workbench: {
       bids: {
+        ai: {
+          settings(): Promise<import('./features/bidding/ai-model').AiSettings>
+          configure(model: string, key: string, remove?: boolean): Promise<import('./features/bidding/ai-model').AiSettings>
+          prepare(selection: import('./features/bidding/ai-model').AiSelection): Promise<import('./features/bidding/ai-model').AiPrepared>
+          start(token: string, consent: boolean): Promise<import('./features/bidding/ai-model').AiJob>
+          list(id: string): Promise<import('./features/bidding/ai-model').AiJob[]>
+          cancel(id: string, jobId: string): Promise<void>
+          apply(id: string, jobId: string, indices: number[]): Promise<import('./features/bidding/model').BidProject>
+          remove(id: string, jobId: string): Promise<void>
+        }
         list(): Promise<import('./features/bidding/model').BidSummary[]>
         load(id: string): Promise<{ bid: import('./features/bidding/model').BidProject; recovered: boolean }>
         save(bid: import('./features/bidding/model').BidProject): Promise<import('./features/bidding/model').BidSave>

@@ -5,6 +5,16 @@ contextBridge.exposeInMainWorld('workbench', {
   work: request => ipcRenderer.invoke('work', request),
   openDocx: path => ipcRenderer.invoke('open-docx', path),
   bids: {
+    ai: {
+      settings: () => ipcRenderer.invoke('bid-ai-settings'),
+      configure: (model, key, remove) => ipcRenderer.invoke('bid-ai-configure', model, key, remove),
+      prepare: selection => ipcRenderer.invoke('bid-ai-prepare', selection),
+      start: (token, consent) => ipcRenderer.invoke('bid-ai-start', token, consent),
+      list: id => ipcRenderer.invoke('bid-ai-list', id),
+      cancel: (id, jobId) => ipcRenderer.invoke('bid-ai-cancel', id, jobId),
+      apply: (id, jobId, indices) => ipcRenderer.invoke('bid-ai-apply', id, jobId, indices),
+      remove: (id, jobId) => ipcRenderer.invoke('bid-ai-remove', id, jobId),
+    },
     list: () => ipcRenderer.invoke('bid-list'),
     load: id => ipcRenderer.invoke('bid-load', id),
     save: bid => ipcRenderer.invoke('bid-save', bid),
