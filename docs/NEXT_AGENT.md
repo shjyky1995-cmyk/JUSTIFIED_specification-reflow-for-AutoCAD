@@ -1,5 +1,7 @@
 # 当前接续状态（所有 Agent 共用）
 
+2026-10-04新增工作线：T34勘察设计投标P2候选待验收；独立worktree、程序入口、检查结果和下一步见 [BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。本根目录CAD及既有桌面进度保持下方记录，不在根分支继续投标源码开发。
+
 ## 2026-10-02 当前桌面：T32 内容核对与来源定位待验收
 
 - 用户询问开发位置并要求继续；A通用框架已实现，B七模板候选装配部分实现，C安装交付代码已有候选，专业核定与真实安装/Word验收未完成。准确状态见 [DEVELOPMENT_STATUS](DEVELOPMENT_STATUS.md)。
