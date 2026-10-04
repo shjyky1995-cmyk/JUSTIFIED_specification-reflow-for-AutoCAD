@@ -1,5 +1,16 @@
 # 当前接续状态（所有 Agent 共用）
 
+## 2026-10-05 T35 DeepSeek辅助候选：待验收
+
+- 用户提供1004导出样本并要求继续，选定DeepSeek。新增本地关键词候选、响应章节建议、AI要求/目录/单章候选、逐次发送预览、安全密钥保存、原文引用核验、人工采纳与任务恢复。AI候选不自动确认，不覆盖人工正文。
+- 工作树仍为 artifacts/worktrees/t34-bid-workbench，当前分支 task/T35-bid-assistance，基线a4e3205；实现/打包基准90a535d。不合main、不推公开远程，祖先验收与工程核定仍独立。
+- 当前入口：测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.2/client/EngiSpace.exe；同包portable-data保存数据。旧版6个数据文件已复制并逐一哈希核对，旧版保留。ZIP不含业务数据/密钥，旧版仍可回退。
+- 自动检查：AI17组（11次模拟请求、0真实请求）；真实Windows safeStorage和隐藏UI，预览取消0请求、确认1次模拟请求；三类型原流程、六专业回归；ZIP在G盘全新解压，306文件逐项哈希通过，包内真实关窗保存及DOCX再次通过。证据根artifacts/runs/t35。
+- 用户待办：按BIDDING_CLIENT_GUIDE在程序中填写自己的DeepSeek官方API密钥，用脱敏短资料完成预览→确认→查看候选→人工采纳。不得把密钥发到聊天；没有真实密钥，本轮未实际调用DeepSeek，也未上传测试结果或业务原件。
+- 未完成：真实API权限/计费/效果、Word/WPS分页和工程专业核定；PDF/OCR/复杂排版及P3剩余深化尚未完成。任务tokens可追溯，账单金额不作推定。
+- 唯一下一步：接收DeepSeek真实脱敏试用反馈并修复；随后按真实资料确定PDF/OCR解析方案。用户要求本轮完成后10分钟关机，执行结果登记本机artifacts/runs/t35/shutdown.json；后续接续不重复安排关机。
+
+
 ## 2026-10-04 T34/P2 勘察设计投标候选：待验收
 
 - 用户已批准T33计划，P1已完成分类归档，P2本地编制候选已实现；P3/P4未实施。分支 task/T34-bid-workbench，工作树 artifacts/worktrees/t34-bid-workbench，基于T32 859ca6a；不合main、不推公开远程，避免带入未验收祖先。
