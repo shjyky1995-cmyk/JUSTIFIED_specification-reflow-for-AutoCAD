@@ -1,5 +1,18 @@
 # 勘察设计投标工作线入口
 
+## 2026-10-05 当前为T35 DeepSeek辅助候选
+
+当前分支task/T35-bid-assistance，工作树仍为artifacts/worktrees/t34-bid-workbench。实现90a535d、接续0823891，未合main/推远程。
+
+新版入口：`测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.2/client/EngiSpace.exe`。本地候选及DeepSeek要求/目录/章节建议已实现；逐次预览确认、安全加密密钥、原文核对、任务恢复和人工采纳，不覆盖原正文。统一既有UI风格。旧版6个数据文件已复制校验，旧原件保留；ZIP不含业务数据。
+
+AI模拟17组、实际Windows密钥加密及隐藏UI、原三类型与六专业回归、新ZIP全新解压306文件、包内真实关窗保存和DOCX检查通过。真实DeepSeek权限/计费/工程效果、Word视觉仍待验收；PDF/OCR及其他P3深化未完成。
+
+下一步用户按[BIDDING_CLIENT_GUIDE](BIDDING_CLIENT_GUIDE.md)在程序内填写密钥并用脱敏短资料集中试用，Agent接收反馈修复。1004文件仅登记用户导出样本，不推定完整验收。用户要求本轮完成后10分钟关机，执行证据在artifacts/runs/t35/shutdown.json；以后不重复安排。
+
+以下保留T34历史交付记录；当前入口以上方preview.2为准。
+
+
 2026-10-04，T34/P2候选已实现，待人工验收。用户批准T33计划；开发在独立分支 task/T34-bid-workbench / artifacts/worktrees/t34-bid-workbench 完成。基于T32 859ca6a，代码bb87696、包基准6db0808、检查接续a4e3205；尚未合main/推远程。本根目录T28保持原开发边界，本文件只同步工作线位置，不表示投标源码已集成根分支。
 
 - 试用：`测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.1/client/EngiSpace.exe`；数据/原件/缓存位于同包 `portable-data`，全在G盘。
