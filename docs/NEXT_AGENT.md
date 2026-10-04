@@ -1,5 +1,20 @@
 # 当前接续状态（所有 Agent 共用）
 
+## 2026-10-04 本工作树：T33 计划待用户批准
+
+- 用户已确定勘察设计标，允许与原开发独立并行；随后要求全部项目工作放 G 盘，计划先批准，正式开发之前先整理目录。
+- 当前工作树 `G:\JUSTIFIED_specification reflow for AutoCAD\artifacts\t33-bid-plan-worktree`，分支 `task/T33-survey-design-bid-plan`。实际基线 058ab3e 在 origin/main；本地 main=8f2563e，两者不同。只提交本任务文档；未来集成先核对目标并拣选 T33 提交，不擅自改变旧主线。
+- 产出：[开发计划](SURVEY_DESIGN_BID_PLAN.md)、[目录整理方案](PROJECT_ORGANIZATION_PLAN.md)、[源码参考](OPENBIDKIT_REFERENCE.md)、[T33 日志](devlog/T33.md)。AGENTS 新增目录规范；目前在规划分支，P1 向活动分支按增量串行同步，不能整文件覆盖。
+- 易标源码位于项目根 `local/references/OpenBidKit_Yibiao`，SHA f185a25bec6709c9132c4f874d5d824e93acac84，浅克隆干净、Git 连接校验通过，未安装运行或移植代码。C 盘托管工作树已归档回收；源码迁移完成，原位置残留两个无文件空目录，删除被自动审批拒绝，停止重复尝试。
+- 盘点本机 34,483 文件/约 9.04 GiB，读取错误 0。明细在项目根 local/organization；旧客户端有五套解压副本及 ZIP，删除范围和保护条件写入目录方案，尚未执行历史清理。
+- 既有测试 JSON 末尾换行差异未暂存；根目录 T28 和 T32 工作树的修改均未触碰。未合 main、未推远程、未打标签，不启动其他聊天或后台开发。
+- 用户待办：批准开发和目录整理两个方案，或提出调整。此刻无需安装、运行、整理文件或测试 CAD。
+- **唯一下一步：等用户批准；批准后先执行 P1 目录整理和结果报告，通过后才进入 P2 标书本地编制开发。** 不能把本轮的「制定计划」理解为已批准新增内部协议/依赖实现。
+- 其他工作线保持独立：设计说明在 G 盘 artifacts/t26-auto-content-worktree、task/T32-content-review、859ca6a，待用户试用与专业核定；CAD 在 G 盘项目根 task/T28-cad-tables、b3be51b，待独立验收。它们的下一步以各自最新接续为准，下方 2026-09-27 历史不能覆盖 2026-10-02 的进度。
+
+以下为基线历史，保留追溯；在本工作树不直接按其旧「下一步」执行。
+
+
 更新：2026-09-27。CAD v0.1.0 已由用户签收、合入 `main`、推送 GitHub **公开**仓库并上传 ZIP。发布页：[CAD v0.1.0](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/v0.1.0)。T12/T13 被用户免除的补充验收数据仍不得写成实测；详见任务日志与 BUILD.json。
 
 ## 2026-09-27 桌面 A 已合并，B1 清点完成

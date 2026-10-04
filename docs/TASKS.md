@@ -1,4 +1,15 @@
 # 任务清单
+
+## 2026-10-04 独立工作线：T33 勘察设计投标规划
+
+状态：**待验收（计划待用户批准）**。用户已确认勘察设计方向、参考易标、允许与既有工作独立并行，并要求先整理项目目录再开发；批准方案前不编码或执行历史批量清理。
+
+产出：[开发计划](SURVEY_DESIGN_BID_PLAN.md)、[目录整理方案](PROJECT_ORGANIZATION_PLAN.md)、[参考记录](OPENBIDKIT_REFERENCE.md)、[日志](devlog/T33.md)。工作树在 G 盘 `artifacts/t33-bid-plan-worktree`，分支 `task/T33-survey-design-bid-plan`。本轮源码已迁到 G 盘 local/references，目录只读盘点完成。
+
+T32 设计说明在其独立工作树继续待验收，T28 CAD 表格在根目录继续待验收；下方较早任务记录不覆盖其最新进度。此分支只提交 T33 文档，不携带未验收的 T32 代码。唯一下一动作见 NEXT_AGENT。
+
+以下保留既有任务历史与设计说明路线。
+
 CAD 阶段已发布；桌面端按 [实施计划](IMPLEMENTATION_PLAN.md) 的 A 通用编制框架→B 标准内容与专业深化→C 成品交付连续推进。T 编号用于追踪，不要求用户逐个小步确认。固定交付/验收按 [WORKFLOW](WORKFLOW.md)，唯一下一步读 [NEXT_AGENT](NEXT_AGENT.md)。任务范围不授权扩大 PRD。
 领取时记录负责人、输入/输出与细分步骤到 docs/devlog/<编号>.md。
 状态：待开始、进行中、阻塞、待验收、完成。无真实证据不得完成。
