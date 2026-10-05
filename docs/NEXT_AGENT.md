@@ -1,6 +1,6 @@
 # 当前接续状态（所有 Agent 共用）
 
-2026-10-05：投标T35已交付DeepSeek辅助候选preview.2，待真实联网/脱敏样本验收；分支、检查及下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。旧线状态不变。
+2026-10-05：投标T36本地文字型PDF＋AI选页候选preview.3已交付，待真实PDF/Word/DeepSeek验收；实现dfda806、检查接续954f739，分支及入口见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。旧线状态不变。
 
 2026-10-04新增工作线：T34勘察设计投标P2候选待验收；独立worktree、程序入口、检查结果和下一步见 [BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。本根目录CAD及既有桌面进度保持下方记录，不在根分支继续投标源码开发。
 

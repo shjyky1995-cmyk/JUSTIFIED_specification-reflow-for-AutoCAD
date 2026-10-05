@@ -1,5 +1,17 @@
 # 勘察设计投标工作线入口
 
+## 2026-10-05 当前为T36本地文字型PDF候选
+
+当前分支`task/T36-bid-pdf`，工作树仍为`artifacts/worktrees/t34-bid-workbench`。实现及包基准dfda806，检查接续954f739；未合main/推远端，独立候选待验收。
+
+当前入口：`测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.3/client/EngiSpace.exe`。本地PDF逐物理页提取，AI可只选指定页；扫描/加密/超限资料明确提示，TXT完整提取，资料版本变动使关联核对失效。原正文及原件保留。旧版6个数据文件已复制校验，两份投标及附件可加载；旧版继续保留，ZIP不含业务数据和密钥。
+
+PDF/TXT11组、原投标10组、AI17组、六专业worker/flow及隐藏UI通过；新ZIP316文件/322项CRC与SHA256通过。包内worker实际PDF/DOCX及隔离入口加载包内main/preload/界面的关窗保存/PDF检查通过；直接成品exe传测试脚本未执行，不记为检查通过。证据在`artifacts/runs/t36`。
+
+用户方便时按[BIDDING_CLIENT_GUIDE](BIDDING_CLIENT_GUIDE.md)或根试用目录`PDF试用步骤.md`集中核对首末页、物理页序、否定条件、表格文字与选页AI预览。真实工程PDF/Word/DeepSeek及专业核定仍待验收，OCR与P3/P4其余深化未完成。唯一下一动作是接收本轮脱敏试用反馈并先修复，再按真实扫描样本讨论OCR方案；不重复关机。
+
+以下为T35与T34历史，当前入口以上述preview.3为准。
+
 ## 2026-10-05 当前为T35 DeepSeek辅助候选
 
 当前分支task/T35-bid-assistance，工作树仍为artifacts/worktrees/t34-bid-workbench。实现90a535d、接续0823891，未合main/推远程。
