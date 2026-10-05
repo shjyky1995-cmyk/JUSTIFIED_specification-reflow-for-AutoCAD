@@ -37,7 +37,7 @@ await check('中文文字型PDF逐物理页提取、表格文字与否定完整'
 })
 await check('纯扫描/混合/空白页明确报告，页序不压缩',async()=>{
   const scan=await importPdf('scan.pdf');assert.equal(scan.blocks.length,0);assert.ok(scan.warnings.some(w=>w.includes('未执行OCR')))
-  const mixed=await importPdf('mixed.pdf');assert.ok(mixed.blocks.every(b=>b.location.startsWith('PDF物理页 1 /')));assert.ok(mixed.warnings.some(w=>w.includes('2、3')))
+  const mixed=await importPdf('mixed.pdf');assert.ok(mixed.blocks.every(b=>b.location.startsWith('PDF物理页 1 /')));assert.ok(mixed.warnings.some(w=>w.includes('2、3')));assert.ok(mixed.warnings.some(w=>w.includes('图片内文字未识别')&&w.includes('1')))
 })
 await check('密码/损坏/超页数失败不保留部分摘录，原件可恢复',async()=>{
   for(const name of ['encrypted.pdf','damaged.pdf','overpages.pdf']){const s=await importPdf(name);assert.equal(s.blocks.length,0);assert.ok(s.warnings.some(w=>w.includes('失败')));assert.deepEqual(store.assetBytes(s),readFileSync(join(fixtures,name)))}

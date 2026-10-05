@@ -1,6 +1,6 @@
 # 任务清单
 
-2026-10-05：T36本地文字型PDF（用户已确认方案）进行中；逐页提取、AI页范围、TXT完整摘录和资料核对失效已实现并通过开发检查，正在打包。真实资料/Word/DeepSeek验收未完成，见devlog/T36和NEXT_AGENT。
+2026-10-05：T36本地文字型PDF（用户已确认方案）候选已交付，状态待验收；逐页提取、AI页范围、TXT完整摘录和资料核对失效已实现，preview.3的316文件/322项ZIP及包内PDF、DOCX、关窗检查通过。真实资料/Word/DeepSeek验收未完成，见devlog/T36和NEXT_AGENT。
 
 2026-10-05：T35 DeepSeek辅助候选已实现，待真实联网与脱敏样本验收；未完成P3全部深化。状态、检查与入口见NEXT_AGENT和devlog/T35。
 
