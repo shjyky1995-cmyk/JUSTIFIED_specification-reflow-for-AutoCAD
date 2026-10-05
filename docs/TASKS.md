@@ -1,5 +1,7 @@
 # 任务清单
 
+2026-10-05：T36本地文字型PDF（用户已确认方案）进行中；逐页提取、AI页范围、TXT完整摘录和资料核对失效已实现并通过开发检查，正在打包。真实资料/Word/DeepSeek验收未完成，见devlog/T36和NEXT_AGENT。
+
 2026-10-05：T35 DeepSeek辅助候选已实现，待真实联网与脱敏样本验收；未完成P3全部深化。状态、检查与入口见NEXT_AGENT和devlog/T35。
 
 2026-10-04：T33计划已获用户批准；T34/P1目录分类已完成（删除改归档）；P2勘察设计投标本地编制候选已实现，状态待验收。计划见[SURVEY_DESIGN_BID_PLAN](SURVEY_DESIGN_BID_PLAN.md)，整理见[PROJECT_ORGANIZATION_PLAN](PROJECT_ORGANIZATION_PLAN.md)。保留下面的既有开发进度。

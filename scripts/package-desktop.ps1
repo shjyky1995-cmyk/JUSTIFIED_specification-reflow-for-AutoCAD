@@ -47,7 +47,7 @@ Copy-Item -LiteralPath (Join-Path $appDirectory 'package.json') -Destination $ru
 Copy-Item -LiteralPath $workerOutput -Destination (Join-Path $clientRoot 'resources/worker') -Recurse
 $noticeDirectory = Join-Path $clientRoot 'third-party'
 New-Item -ItemType Directory -Path $noticeDirectory | Out-Null
-foreach ($file in @('NotoSansSC-OFL.txt', 'Open-XML-SDK-LICENSE.txt', 'Newtonsoft.Json-LICENSE.md')) { Copy-Item -LiteralPath (Join-Path $projectRoot "third-party/$file") -Destination $noticeDirectory }
+foreach ($file in @('NotoSansSC-OFL.txt', 'Open-XML-SDK-LICENSE.txt', 'Newtonsoft.Json-LICENSE.md', 'PdfPig-LICENSE.txt', 'PdfPig-ATTRIBUTION.md')) { Copy-Item -LiteralPath (Join-Path $projectRoot "third-party/$file") -Destination $noticeDirectory }
 foreach ($dependency in @('react', 'react-dom', 'lucide-react')) { Copy-Item -LiteralPath (Join-Path $appDirectory "node_modules/$dependency/LICENSE") -Destination (Join-Path $noticeDirectory "$dependency-LICENSE.txt") }
 $assets = Get-Content (Join-Path $workerDirectory 'obj/project.assets.json') -Raw | ConvertFrom-Json
 $runtimeDependency = $assets.project.frameworks.'net10.0'.downloadDependencies | Where-Object { $_.name -eq 'Microsoft.NETCore.App.Runtime.win-x64' } | Select-Object -First 1

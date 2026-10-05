@@ -3,7 +3,8 @@ import { createBidAiService } from './bid-ai.ts'
 import { basename, extname, resolve } from 'node:path'
 import { readFileSync, statSync, writeFileSync } from 'node:fs'
 import { createBidStore } from '../src/features/bidding/store.ts'
-import { bidDocument, isoNow, type BidSource } from '../src/features/bidding/model.ts'
+import { bidDocument, isoNow } from '../src/features/bidding/model.ts'
+import { extractBidSource } from './bid-source.ts'
 
 export function registerBidIpc(root: string, runWorker: (request: { operation: string; path?: string; [key: string]: unknown }) => Promise<unknown>, allowPath: (path: string) => void, aiService?: ReturnType<typeof createBidAiService>) {
   const store = createBidStore(root)
@@ -25,17 +26,7 @@ export function registerBidIpc(root: string, runWorker: (request: { operation: s
     if (result.canceled || !result.filePaths[0]) return null
     const source = store.importAsset(result.filePaths[0])
     const path = store.assetPath(source.asset)
-    if (extname(path) === '.docx') {
-      try {
-        const extracted = await runWorker({ operation: 'bid-extract', path }) as { success: boolean; message: string; sourceBlocks?: BidSource['blocks']; diagnostics?: { message: string }[] }
-        source.blocks = extracted.sourceBlocks ?? []
-        source.warnings = extracted.success ? (extracted.diagnostics ?? []).map(d => d.message) : ['自动摘录失败：' + extracted.message + '；原文件已保存，请人工核对。']
-      } catch (error) { source.warnings = ['自动摘录失败，原文件已保存：' + (error instanceof Error ? error.message : '')] }
-    } else if (extname(path) === '.txt') {
-      if (source.bytes > 500_000) source.warnings = ['文本超过预览限额，请打开原文人工摘录。']
-      else { source.blocks = [{ location: '文本全文', text: readFileSync(path, 'utf8').slice(0, 50_000) }]; source.warnings = ['按UTF-8读取；若乱码请转换编码后重新导入。', ...(source.bytes > 50_000 ? ['仅预览前5万字符，请核对原文件。'] : [])] }
-    } else source.warnings = ['本阶段未自动解析PDF/图片，请打开原文件人工摘录要求；未执行OCR。']
-    return source
+    return extractBidSource(source, path, runWorker)
   })
   ipcMain.handle('bid-open-source', async (_event, id: string, sourceId: string) => {
     const source = store.load(id).bid.sources.find(s => s.id === sourceId)

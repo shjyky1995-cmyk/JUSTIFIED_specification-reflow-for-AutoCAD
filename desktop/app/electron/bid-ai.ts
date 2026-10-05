@@ -66,6 +66,7 @@ export function createBidAiService(dataRoot:string,vault:Vault,fetcher:typeof fe
     let key:string
     try{key=vault.decrypt(Buffer.from(c.key,'base64'))}catch{throw new Error('此密钥无法在当前Windows账户解密，请重新填写。')}
     const job:AiJob={id:randomUUID(),bidId:bid.id,kind:p.selection.kind,model:p.model,state:'running',createdAt:new Date().toISOString(),finishedAt:'',error:'',sourceIds:p.selection.sourceIds,sectionId:p.selection.sectionId,inputHash:digest(p.input),sourceHashes:Object.fromEntries(p.input.sources.map(s=>[s.id,s.hash])),contextHash:digest({type:p.input.type,project:p.input.project,section:p.input.section}),result:null,usage:null,applied:[]}
+    if (p.selection.pageRanges) job.pageRanges=structuredClone(p.selection.pageRanges)
     atomic(pathFor(job.id),job);prepared.delete(token)
     const controller=new AbortController();controllers.set(job.id,controller)
     void execute(job,p.input,key,controller)
@@ -104,7 +105,7 @@ export function createBidAiService(dataRoot:string,vault:Vault,fetcher:typeof fe
   function apply(bidId:string,id:string,indices:number[]){
     const job=load(id),bid=store.load(bidId).bid
     if(job.bidId!==bidId)throw new Error('标段不一致。')
-    const input=buildAiInput(bid,{bidId,kind:job.kind,sourceIds:job.sourceIds,sectionId:job.sectionId})
+    const input=buildAiInput(bid,{bidId,kind:job.kind,sourceIds:job.sourceIds,sectionId:job.sectionId,pageRanges:job.pageRanges})
     if(digest(input)!==job.inputHash)throw new Error('资料或本次发送的项目信息已变化，请重新生成候选。')
     for(const sid of job.sourceIds)store.assetBytes(bid.sources.find(s=>s.id===sid)!)
     const next=applyAiResult(bid,job,indices),saved=store.save(next)

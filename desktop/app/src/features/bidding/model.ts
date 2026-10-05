@@ -62,6 +62,27 @@ export function addSource(bid: BidProject, source: BidSource): BidProject {
   }
   return next
 }
+// 改变资料的身份/版本时，清除受影响的人工核对状态；保留原文与关联。
+export function updateBidSource(bid: BidProject, id: string, patch: Partial<Pick<BidSource, 'kind' | 'version' | 'supersedes' | 'confirmed'>>): BidProject {
+  const previous = bid.sources.find(s => s.id === id)
+  if (!previous) throw new Error('资料不存在。')
+  const source = { ...previous, ...patch }
+  const changed = source.kind !== previous.kind || source.version !== previous.version || source.supersedes !== previous.supersedes
+  if (!changed) return { ...bid, requirementsReviewed: false, sources: bid.sources.map(s => s.id === id ? source : s) }
+  source.confirmed = false
+  const broad = [previous, source].some(s => s.kind === '补遗答疑' && !s.supersedes)
+  const affected = new Set([id, previous.supersedes, source.supersedes].filter(Boolean))
+  let count: number
+  do {
+    count = affected.size
+    for (const s of bid.sources) if (affected.has(s.supersedes)) affected.add(s.id)
+  } while (count !== affected.size)
+  const evidenceIds = new Set(bid.evidence.filter(e => broad || affected.has(e.sourceId)).map(e => e.id))
+  const requirements = bid.requirements.map(r => broad || affected.has(r.sourceId) || r.evidenceIds.some(e => evidenceIds.has(e)) ? { ...r, confirmed: false, responseReviewed: false } : r)
+  const sections = new Set(requirements.filter((r,i) => r !== bid.requirements[i]).flatMap(r => r.sectionIds))
+  return { ...bid, requirementsReviewed: false, sources: bid.sources.map(s => s.id === id ? source : s), requirements,
+    evidence: bid.evidence.map(e => evidenceIds.has(e.id) ? { ...e, verified: false } : e), sections: bid.sections.map(s => broad || sections.has(s.id) ? { ...s, reviewed: false } : s) }
+}
 export function reviewBid(bid: BidProject, today = new Date().toLocaleDateString('en-CA')): BidIssue[] {
   const issues: BidIssue[] = []
   const add = (page: BidIssue['page'], message: string, id?: string) => issues.push({ page, message, id })

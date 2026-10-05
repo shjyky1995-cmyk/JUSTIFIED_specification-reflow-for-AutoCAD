@@ -39,7 +39,7 @@ internal static class Program
             {
                 "generate" => Generate(request),
                 "inspect" => Inspect(request.Path),
-                "bid-extract" => BidDocx.Extract(request.Path),
+                "bid-extract" => string.Equals(Path.GetExtension(request.Path), ".pdf", StringComparison.OrdinalIgnoreCase) ? BidPdf.Extract(request.Path) : BidDocx.Extract(request.Path),
                 "bid-export" => BidDocx.Export(request),
                 _ => throw new ArgumentException("不支持的桌面操作。")
             };

@@ -61,13 +61,13 @@ function runWorker(request: WorkRequest): Promise<unknown> {
     child.stderr.setEncoding('utf8')
     child.stdout.on('data', (chunk: string) => {
       output += chunk
-      if (output.length > 2_000_000) child.kill()
+      if (output.length > 4_000_000) child.kill()
     })
     child.stderr.on('data', (chunk: string) => { errorOutput += chunk.slice(0, 2000) })
     child.on('error', error => { clearTimeout(timer); reject(error) })
     child.on('close', () => {
       clearTimeout(timer)
-      if (timedOut) { reject(new Error('导出用时过长，请重试或减少单份说明内容。')); return }
+      if (timedOut) { reject(new Error(request.operation === 'bid-extract' ? '资料提取超过30秒，原件已保留，请拆分后导入或人工摘录。' : '导出用时过长，请重试或减少单份说明内容。')); return }
       try { resolveResult(JSON.parse(output)) }
       catch { reject(new Error(errorOutput || 'DOCX 工作进程没有返回结果。')) }
     })

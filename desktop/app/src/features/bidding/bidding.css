@@ -82,6 +82,8 @@
 .bid-source-blocks>div{border-top:1px solid #edf0f5;padding:15px 0}
 .bid-source-blocks small{color:#8c9db4}
 .bid-source-blocks p{white-space:pre-wrap;font-size:13px;line-height:1.8;margin:8px 0;overflow-wrap:anywhere}
+.bid-source-blocks .bid-toolbar{position:sticky;top:0;background:white;z-index:1;padding:10px 0}
+.bid-source-blocks .bid-source-focused{background:var(--ui-accent-soft);border-left:3px solid var(--ui-accent);padding-left:12px}
 .bid-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
 .bid-choice-grid .bid-check{margin:5px 0}
 .bid-muted{color:var(--ui-muted);font-size:12px}
