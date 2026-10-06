@@ -2,6 +2,11 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('workbench', {
   openBidFramework: () => ipcRenderer.invoke('bid-framework-open'),
+  onBidFrameworkState: callback => {
+    const closed = () => callback({closed:true}); const failed = (_event,message) => callback({closed:true,error:message});
+    ipcRenderer.on('bid-framework-closed',closed);ipcRenderer.on('bid-framework-failed',failed);
+    return ()=>{ipcRenderer.removeListener('bid-framework-closed',closed);ipcRenderer.removeListener('bid-framework-failed',failed)};
+  },
   chooseSave: name => ipcRenderer.invoke('choose-save', name),
   work: request => ipcRenderer.invoke('work', request),
   openDocx: path => ipcRenderer.invoke('open-docx', path),

@@ -88,6 +88,7 @@ function App() {
   const [projects, setProjects] = useState<StoredProject[]>([])
   const [search, setSearch] = useState('')
   const [bidLaunching,setBidLaunching]=useState(false),[bidLaunchError,setBidLaunchError]=useState('')
+  useEffect(()=>window.workbench?.onBidFrameworkState?.(state=>{if(state.closed){setRoute('home');setBidLaunching(false);if(state.error)setBidLaunchError(state.error)}}),[])
   const [save, setSave] = useState<{ status: SaveStatus; message: string }>({ status: 'idle', message: '' })
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null)

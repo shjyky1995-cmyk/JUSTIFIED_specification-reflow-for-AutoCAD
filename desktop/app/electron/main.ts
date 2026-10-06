@@ -8,7 +8,7 @@ import { parseNote, serializeNote, type Note, type NoteSummary, type StoredProje
 import { workerDotnetCommand } from '../src/shared/dotnet.ts'
 import { findProjectCatalogPath } from '../src/shared/catalog-path.ts'
 import { registerBidIpc } from './bid-ipc.ts'
-import { registerBidFramework } from './bid-framework.ts'
+import { registerEmbeddedBidding } from './bid-embedded.ts'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = resolve(here, '../..')
@@ -16,6 +16,7 @@ const maxPayload = 450_000
 const selectedPaths = new Set<string>()
 const closeAllowed = new Set<number>()
 const closePending = new Set<number>()
+let biddingModule: ReturnType<typeof registerEmbeddedBidding> | undefined
 // 便携候选的数据、Chromium缓存和临时文件与程序同盘，避免写入 C 盘。
 const portable = app.isPackaged && existsSync(join(process.resourcesPath, '.engispace-portable'))
 const configuredData = process.env.DSS_USER_DATA_ROOT || (portable ? resolve(process.resourcesPath, '../../portable-data') : '')
@@ -134,7 +135,7 @@ app.whenReady().then(() => {
   let catalogPath = process.env.DSS_CONTENT_LIBRARY_PATH || configuredLibrary || (existsSync(bundledLibrary) ? bundledLibrary : findProjectCatalogPath(appRoot))
   let store: DesktopStore = createStore(dataRoot, catalogPath)
   registerBidIpc(dataRoot, runWorker, path => selectedPaths.add(path))
-  registerBidFramework(appRoot,dataRoot)
+  biddingModule = registerEmbeddedBidding(appRoot, dataRoot)
 
   ipcMain.on('close-ready', async (event, saved: boolean) => {
     const window = BrowserWindow.fromWebContents(event.sender)
@@ -142,6 +143,11 @@ app.whenReady().then(() => {
     if (saved !== true) {
       const answer = await dialog.showMessageBox(window, { type: 'warning', title: '草稿尚未保存', message: '本次修改保存失败。继续编辑可以重试保存，或先导出备份。', buttons: ['继续编辑', '放弃未保存更改并关闭'], defaultId: 0, cancelId: 0 })
       if (answer.response === 0) { closePending.delete(event.sender.id); return }
+    }
+    if (biddingModule?.isActive()) {
+      const allowed = await biddingModule.prepareClose()
+      if (!allowed) { closePending.delete(event.sender.id); return }
+      await biddingModule.dispose()
     }
     closeAllowed.add(event.sender.id)
     closePending.delete(event.sender.id)

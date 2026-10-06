@@ -11,6 +11,15 @@ async function invokeOfficialAccount(action, ...args) {
 
 const bridge = {
   appName: '易标投标工具箱',
+  embeddedInWorkbench: process.argv.includes('--engispace-embedded'),
+  engispace: {
+    returnHome: () => ipcRenderer.invoke('engispace:return-home'),
+    onBeforeClose: (callback) => {
+      const listener = async (_event, id) => { let allowed = false; try { allowed = await callback(); } catch {} ipcRenderer.send('engispace:close-response', id, allowed === true); };
+      ipcRenderer.on('engispace:close-request', listener);
+      return () => ipcRenderer.removeListener('engispace:close-request', listener);
+    },
+  },
   platform: process.platform,
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   getGpuHardwareAccelerationStatus: () => ipcRenderer.invoke('app:get-gpu-hardware-acceleration-status'),

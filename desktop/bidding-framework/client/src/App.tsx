@@ -58,8 +58,12 @@ function App() {
   const { settingsRequest, clearSettingsRequest } = useTextModelSetupRedirect(requestSectionChange);
   const returnHome = async () => {
     const allowed = await (leaveGuardRef.current?.('engispace-home') ?? Promise.resolve(true));
-    if (allowed) window.close();
+    if (allowed) { if(window.yibiao.embeddedInWorkbench)await window.yibiao.engispace.returnHome();else window.close(); }
   };
+  useEffect(()=>{
+    if(!window.yibiao?.embeddedInWorkbench)return;
+    return window.yibiao.engispace.onBeforeClose(()=>leaveGuardRef.current?.('engispace-home')??Promise.resolve(true));
+  },[]);
 
   return (
     <>

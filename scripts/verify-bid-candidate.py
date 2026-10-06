@@ -45,7 +45,7 @@ if actual != set(files):
 build = json.loads((fresh / 'BUILD.json').read_text(encoding='utf-8-sig'))
 if build['files'] != len(files) or build['privateContent'] or not build['candidate'] or build['productionReady']:
     raise ValueError('候选元数据不正确')
-for path in ['resources/worker/UglyToad.PdfPig.dll', 'resources/app/dist-electron/electron/bid-source.js', 'third-party/PdfPig-LICENSE.txt', 'third-party/PdfPig-ATTRIBUTION.md', 'EngiSpace.exe']:
+for path in ['resources/worker/UglyToad.PdfPig.dll', 'resources/app/dist-electron/electron/bid-source.js', 'resources/app/dist-electron/electron/bid-embedded.js', 'third-party/PdfPig-LICENSE.txt', 'third-party/PdfPig-ATTRIBUTION.md', 'EngiSpace.exe']:
     if not (fresh / 'client' / path).is_file():
         raise ValueError('缺少成品依赖: ' + path)
 if build.get('biddingFramework'):
@@ -57,7 +57,8 @@ if build.get('biddingFramework'):
         raise ValueError('缺少对应源码')
     with zipfile.ZipFile(source) as z:
         required = 'desktop/bidding-framework/client/electron/engispace-entry.cjs'
-        if required not in z.namelist() or z.testzip():
+        embedded = ['desktop/app/electron/bid-embedded.ts', 'desktop/bidding-framework/client/electron/engispace-backend.cjs', 'desktop/bidding-framework/client/electron/services/engispaceWire.cjs']
+        if required not in z.namelist() or not all(p in z.namelist() for p in embedded) or z.testzip():
             raise ValueError('对应源码入口/CRC错误')
 result = {'status': 'BID_PACKAGE_OK', 'files': len(files), 'zipEntries': entries, 'zipSha256': sha(archive), 'zipBytes': archive.stat().st_size, 'revision': build['revision'], 'fresh': str(fresh), 'privateContent': False}
 report.parent.mkdir(parents=True, exist_ok=True)

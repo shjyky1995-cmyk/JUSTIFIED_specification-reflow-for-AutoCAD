@@ -1,5 +1,7 @@
 # 架构与决策
 
+2026-10-06 T40：投标原框架已接入平台同主窗口，前端Electron44＋后台原Electron41/SQLite/Word，通过本机IPC版本1转发现有白名单。用户继续指令与边界见[ADR-019](adr/ADR-019-bidding-embedded-engine.md)；ADR-018独立运行环境保留，T33无数据库/单运行时限制被用户原框架移植要求替代。
+
 ## 2026-10-04 T33/T34 标书增量方案（已批准，P2候选已实现）
 
 原因：用户新增勘察设计投标业务，要求参考易标并独立并行开发。推荐保留 Electron/React/TypeScript＋.NET/Open XML，新增独立标书领域与本地 JSON 存储，项目资料快照复用；主进程/preload/worker 仅新增受限标书操作，既有说明操作与 CAD Contracts 保持兼容。第一阶段不引入数据库、第二套导出运行时或云服务。

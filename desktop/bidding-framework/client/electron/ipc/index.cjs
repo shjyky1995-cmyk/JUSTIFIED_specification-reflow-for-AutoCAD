@@ -371,11 +371,16 @@ function registerIpcHandlers({ app, mainWindow, checkAndDownloadUpdate, triggerU
   let gpuTrialRelaunchStarted = false;
 
   const closeServices = async () => {
+    const trace = step => { if(process.argv.includes('--engispace-backend')) console.log('ENGINE_CLOSE_'+step); };
+    trace('OFFICIAL');
     await officialAccountService.close();
     donationService.close?.();
+    trace('AGENT');
     await agentService.close?.();
     autoConfirmationService.close?.();
+    trace('OPENXML');
     await openXmlHelperService.close?.();
+    trace('DONE');
   };
 
   const closeServicesBeforeExit = async () => {

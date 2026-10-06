@@ -578,6 +578,8 @@ export interface DeveloperLayoutFigureResult {
 
 export interface YibiaoBridge {
   appName: string;
+  embeddedInWorkbench: boolean;
+  engispace: { returnHome: () => Promise<{success:boolean}>; onBeforeClose: (callback:()=>Promise<boolean>)=>()=>void };
   platform: string;
   getVersion: () => Promise<string>;
   getGpuHardwareAccelerationStatus: () => Promise<GpuHardwareAccelerationStatus>;

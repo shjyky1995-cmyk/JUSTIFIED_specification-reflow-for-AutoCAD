@@ -13,6 +13,7 @@ declare global {
   interface Window {
     workbench: {
       openBidFramework(): Promise<{success:boolean;message:string}>
+      onBidFrameworkState(callback:(state:{closed:boolean;error?:string})=>void):()=>void
       bids: {
         ai: {
           settings(): Promise<import('./features/bidding/ai-model').AiSettings>

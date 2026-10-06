@@ -104,7 +104,7 @@ function createHelperRunner({ app, writeLog, ensureExecutable, name }) {
     const workspace = getWorkspaceDir(app);
     fs.mkdirSync(getOpenXmlJobsDir(app), { recursive: true });
 
-    const command = app.isPackaged
+      const command = app.isPackaged || process.env.YIBIAO_OPENXML_HELPER_DIR
       ? getBundledOpenXmlHelperPath(app)
       : getOpenXmlHelperDebugExecutablePath();
     const args = ['--workspace', workspace];
@@ -392,7 +392,7 @@ function createOpenXmlHelperService({ app, configStore } = {}) {
   }
 
   async function ensureExecutable() {
-    if (!app.isPackaged) await buildDebugHelper();
+    if (!app.isPackaged && !process.env.YIBIAO_OPENXML_HELPER_DIR) await buildDebugHelper();
   }
 
   const runner = createHelperRunner({ app, writeLog, ensureExecutable, name: 'main' });
@@ -621,7 +621,7 @@ function createOpenXmlHelperService({ app, configStore } = {}) {
     await Promise.all([runner.close(), previewRunner.close()]);
   }
 
-  if (!app.isPackaged) {
+  if (!app.isPackaged && !process.env.YIBIAO_OPENXML_HELPER_DIR) {
     void buildDebugHelper().catch((error) => {
       writeLog('openxml.helper.build_error', { error: compactLogError(error) });
     });

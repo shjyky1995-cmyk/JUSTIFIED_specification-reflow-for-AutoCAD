@@ -28,9 +28,9 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
       callback({cancel:true});
     }else callback({});
   }));
-  app.on('second-instance',()=>{const {BrowserWindow}=require('electron');const window=BrowserWindow.getAllWindows()[0];if(window){if(window.isMinimized())window.restore();window.show();window.focus();}});
+  app.on('second-instance',()=>{if(process.argv.includes('--engispace-backend'))return;const {BrowserWindow}=require('electron');const window=BrowserWindow.getAllWindows()[0];if(window){if(window.isMinimized())window.restore();window.show();window.focus();}});
   app.on('browser-window-created',(_event,window)=>{
     if(process.env.DSS_FRAMEWORK_HIDE==='1')window.show=()=>{};
   });
-  require('./main.cjs');
+  require(process.argv.includes('--engispace-backend')?'./engispace-backend.cjs':'./main.cjs');
 }
