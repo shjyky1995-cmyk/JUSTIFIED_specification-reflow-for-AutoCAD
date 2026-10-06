@@ -5,6 +5,7 @@ const root=path.resolve(process.env.DSS_FRAMEWORK_ROOT||path.join(__dirname,'..'
 app.setAppPath(root);
 // 使用已发布的自包含助手，测试不依赖系统SDK。
 Object.defineProperty(app,'isPackaged',{value:true});
+if(process.env.DSS_RUNTIME_RESOURCES)Object.defineProperty(process,'resourcesPath',{value:process.env.DSS_RUNTIME_RESOURCES});
 const output=fs.mkdtempSync(path.join(process.env.DSS_TEST_ROOT,'runtime-check-'));
 process.env.ENGISPACE_BIDDING_DATA_ROOT=path.join(output,'user');
 process.env.DSS_FRAMEWORK_HIDE='1';
@@ -18,6 +19,8 @@ dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});
 dialog.showSaveDialog=async()=>({canceled:false,filePath:path.join(output,'框架导出.docx')});
 app.on('browser-window-created',(_event,win)=>{
   win.show=()=>{};
+  const rendererErrors=[];
+  win.webContents.on('console-message',event=>{if(event.level==='error')rendererErrors.push(event.message)});
   win.webContents.once('did-finish-load',async()=>{
     const js=s=>win.webContents.executeJavaScript(s);
     try{
@@ -66,9 +69,10 @@ app.on('browser-window-created',(_event,win)=>{
       assert.equal(technical.success,true);
       assert.ok(new AdmZip(path.join(output,'框架导出.docx')).readAsText('word/document.xml').includes('阶段安排'));
       console.log('RUNTIME_TECHNICAL_EXPORT_OK');
+      assert.deepEqual(rendererErrors,[],'渲染层不应有错误');
       win.webContents.invalidate();await pause(350);
       fs.writeFileSync(path.join(output,'framework.png'),(await win.webContents.capturePage()).toPNG());
-      const report={status:'FRAMEWORK_RUNTIME_OK',output,electron:process.versions.electron,checks:['主入口加载','统计留本机/凭据不落统计','自配API允许到传输层(模拟)','无作者许可时本地失败诊断/密钥脱敏','原Word导出/正文读回','自带OpenXmlHelper HTML含表格导出/读回','SQLite目录保存回读'],realHttp:0};
+      const report={status:'FRAMEWORK_RUNTIME_OK',output,electron:process.versions.electron,checks:['主入口加载','统计留本机/凭据不落统计','自配API允许到传输层(模拟)','无作者许可时本地失败诊断/密钥脱敏','原Word导出/正文读回','自带OpenXmlHelper HTML含表格导出/读回','SQLite目录保存回读','实际技术方案导出','渲染层无错误'],realHttp:0};
       fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(report,null,2));
       console.log(JSON.stringify(report));finished=true;win.close();console.log('RUNTIME_CLOSE_REQUESTED');
     }catch(error){console.error(error);app.exit(1);}

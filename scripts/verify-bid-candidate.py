@@ -48,6 +48,17 @@ if build['files'] != len(files) or build['privateContent'] or not build['candida
 for path in ['resources/worker/UglyToad.PdfPig.dll', 'resources/app/dist-electron/electron/bid-source.js', 'third-party/PdfPig-LICENSE.txt', 'third-party/PdfPig-ATTRIBUTION.md', 'EngiSpace.exe']:
     if not (fresh / 'client' / path).is_file():
         raise ValueError('缺少成品依赖: ' + path)
+if build.get('biddingFramework'):
+    for path in ['EngiSpace-Bidding.exe', 'resources/app.asar', 'resources/app.asar.unpacked/node_modules/better-sqlite3/build/Release/better_sqlite3.node', 'resources/openxml-tools/win32-x64/openxmlhelper.exe', 'resources/agent-tools/win32-x64/bin/rg.exe', 'resources/agent-tools/win32-x64/bin/fd.exe', 'resources/agent-tools/win32-x64/bin/jq.exe', 'third-party/LICENSE', 'third-party/NOTICE', 'third-party/UPSTREAM.json', 'third-party/HtmlToOpenXml-LICENSE.txt']:
+        if not (fresh / 'client/resources/bidding-framework' / path).is_file():
+            raise ValueError('缺少独立框架依赖/许可: ' + path)
+    source = fresh / '对应源码.zip'
+    if not source.is_file():
+        raise ValueError('缺少对应源码')
+    with zipfile.ZipFile(source) as z:
+        required = 'desktop/bidding-framework/client/electron/engispace-entry.cjs'
+        if required not in z.namelist() or z.testzip():
+            raise ValueError('对应源码入口/CRC错误')
 result = {'status': 'BID_PACKAGE_OK', 'files': len(files), 'zipEntries': entries, 'zipSha256': sha(archive), 'zipBytes': archive.stat().st_size, 'revision': build['revision'], 'fresh': str(fresh), 'privateContent': False}
 report.parent.mkdir(parents=True, exist_ok=True)
 report.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')

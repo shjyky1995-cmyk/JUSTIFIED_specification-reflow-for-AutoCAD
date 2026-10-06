@@ -104,3 +104,7 @@ T06 已交付（2026-09-22 范围调整后）：Contracts 增加 `ScriptCalibrat
 ## 2026-10-05 T36 本地文字型PDF（用户已确认）
 
 用户在方案选择中明确同意先本地文字型PDF、新增解析依赖，扫描件暂不OCR。仅desktop/worker引用PdfPig 0.1.16（Apache-2.0、锁定内容哈希），复用现有bid-extract白名单操作，按扩展名分派到独立BidPdf。Electron主进程读取已导入哈希原件并保存逐页摘录，AI内部选择支持可选页范围，旧任务未带页范围仍按原语义读取。不改CAD Contracts或依赖方向，不新增运行时/数据库/云解析。限额和失败行为见[BID_PDF_PARSING](BID_PDF_PARSING.md)。
+
+## 2026-10-06 T38 易标原框架直接移植
+
+用户明确改变T33的只参考/自行实现路线，并确认独立Electron41和自动上传本地化；详见[ADR-018](adr/ADR-018-bidding-framework-import.md)。现有桌面入口保留Electron44/.NET10，投标源码子树desktop/bidding-framework使用原React/SQLite/Pi Agent/OpenXML架构和运行时，通过独立进程打开及返回，数据隔离；CAD依赖方向与设计说明流程不改变。上游许可/出处和对应源码随候选提供；正式发行、安全和专业验收未完成。

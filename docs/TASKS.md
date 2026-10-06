@@ -1,5 +1,7 @@
 # 任务清单
 
+2026-10-06 T38：易标原框架移植、独立Electron41入口、本地统计/诊断和Word助手候选0.4.0-bid-preview.1待验收。生产源码299128c；已获用户确认，证据/入口见BIDDING_WORKSPACE和T38日志。设计说明/CAD各自保留原状态。
+
 2026-10-06：T37投标AI候选来源核对与取消恢复已实现并交付preview.4，待验收；基准bc6228a，316文件/322项ZIP及包内界面/worker/关窗检查通过。与另一Agent的设计说明工作独立。详见devlog/T37和NEXT_AGENT。
 
 2026-10-05：T36本地文字型PDF（用户已确认方案）候选已交付，状态待验收；逐页提取、AI页范围、TXT完整摘录和资料核对失效已实现，preview.3的316文件/322项ZIP及包内PDF、DOCX、关窗检查通过。真实资料/Word/DeepSeek验收未完成，见devlog/T36和NEXT_AGENT。

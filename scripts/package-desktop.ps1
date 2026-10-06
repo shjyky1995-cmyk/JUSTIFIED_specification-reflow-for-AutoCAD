@@ -49,11 +49,13 @@ Copy-Item -LiteralPath (Join-Path $appDirectory 'package.json') -Destination $ru
 Copy-Item -LiteralPath $workerOutput -Destination (Join-Path $clientRoot 'resources/worker') -Recurse
 if ($BiddingFrameworkDirectory) {
     $frameworkRoot = [IO.Path]::GetFullPath($BiddingFrameworkDirectory)
-    foreach ($required in @('EngiSpace-Bidding.exe', 'resources/app/electron/engispace-entry.cjs', 'resources/openxml-tools/win32-x64/openxmlhelper.exe', 'resources/agent-tools/win32-x64/bin/rg.exe')) {
+    foreach ($required in @('EngiSpace-Bidding.exe', 'resources/app.asar', 'resources/openxml-tools/win32-x64/openxmlhelper.exe', 'resources/agent-tools/win32-x64/bin/rg.exe')) {
         if (!(Test-Path -LiteralPath (Join-Path $frameworkRoot $required))) { throw "投标模块缺少 $required" }
     }
     if (!$BiddingSourceArchive -or !(Test-Path -LiteralPath $BiddingSourceArchive)) { throw '投标移植候选需要同时提供对应源码ZIP。' }
-    Copy-Item -LiteralPath $frameworkRoot -Destination (Join-Path $clientRoot 'resources/bidding-framework') -Recurse
+    # 原框架有大量小文件；多线程复制减少便携包组装时间，不使用删除/镜像选项。
+    & robocopy.exe $frameworkRoot (Join-Path $clientRoot 'resources/bidding-framework') /E /MT:16 /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+    if ($LASTEXITCODE -ge 8) { throw "投标模块复制失败，robocopy退出码$LASTEXITCODE" }
     $frameworkNotice = Join-Path $clientRoot 'resources/bidding-framework/third-party'
     New-Item -ItemType Directory -Path $frameworkNotice -Force | Out-Null
     foreach ($file in @('LICENSE', 'NOTICE', 'UPSTREAM.json')) { Copy-Item -LiteralPath (Join-Path $projectRoot "desktop/bidding-framework/$file") -Destination $frameworkNotice }

@@ -9,7 +9,7 @@ export function registerBidFramework(appRoot:string,dataRoot:string){
     if(child&&!child.killed)return {success:true,message:'投标模块已经打开，请切换到投标窗口。'}
     const bundled=join(process.resourcesPath,'bidding-framework'),local=resolve(appRoot,'../bidding-framework/client')
     const root=app.isPackaged&&existsSync(bundled)?bundled:local
-    const command=join(root,'EngiSpace-Bidding.exe'),entry=existsSync(command)?join(root,'resources/app/electron/engispace-entry.cjs'):join(root,'electron/engispace-entry.cjs')
+    const command=join(root,'EngiSpace-Bidding.exe'),entry=existsSync(command)?(existsSync(join(root,'resources/app.asar'))?join(root,'resources/app.asar'):join(root,'resources/app/electron/engispace-entry.cjs')):join(root,'electron/engispace-entry.cjs')
     const dev=join(root,'node_modules/electron/dist/electron.exe')
     if(!existsSync(entry)||(!existsSync(command)&&!existsSync(dev)))throw new Error('未找到投标框架程序，请使用完整的框架试用包。')
     const parent=BrowserWindow.fromWebContents(event.sender),directory=join(dataRoot,'bidding-framework')

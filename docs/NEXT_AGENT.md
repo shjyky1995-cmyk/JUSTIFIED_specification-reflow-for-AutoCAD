@@ -1,5 +1,17 @@
 # 当前接续状态（所有 Agent 共用）
 
+## 2026-10-06 T38 原框架移植版：待验收
+
+- 用户要求直接移植易标框架，已确认独立Electron41运行及统计/诊断留本机、关闭自动上传，替代T33只参考自行实现的限制；见[ADR-018](adr/ADR-018-bidding-framework-import.md)。
+- 工作树artifacts/worktrees/t34-bid-workbench，分支task/T38-bid-framework-import；选文件修复942029a、源码导入f9448c5、组合实现/源码基准299128c。固定上游f185a25，mark / yibiaoai署名及AGPL-3.0-only保留。
+- 入口：测试文件/勘察设计投标试用/EngiSpace-0.4.0-bid-preview.1/client/EngiSpace.exe → 勘察设计投标 → 选择招标文件。新模块数据portable-data/data/bidding-framework，旧JSON草稿保留独立入口，preview.4程序与数据原位保留，不自动转换SQLite。
+- artifacts/runs/t38证据：选择文件/取消/TXT导入/SQLite回读；成品资源主入口渲染无错误/关闭0；本地统计/凭据不落统计、utilityProcess诊断/密钥脱敏；原导出器与自带OpenXML助手正文/表格/实际技术方案DOCX读回；成品子EXE首页打开/退出返回5项；旧关窗保存。旧投标10项、AI17项、来源16项、包内PDF11项和六专业回归通过，未用真实AI密钥。
+- 新包采用原版ASAR包装，最终文件数与实现基准见T38日志/BUILD.json，含许可/对应源码，不含业务资料/密钥/私有说明库；ZIP全新解压与CRC/SHA256最终证据见T38日志。builtFromDirtyTree=true如实包括当时测试脚本和既有夹具差异，最终生产源码基准见BUILD.json，未提交旧夹具。
+- 用户按[BIDDING_CLIENT_GUIDE](BIDDING_CLIENT_GUIDE.md)集中核验文件选择、退出重开、脱敏AI和Word可编辑/版式。原框架内容先保留；真实API/费用/Word视觉、专业规则及锁定依赖52项风险（3严重）仍pending。仅本机候选，未合main、未推送、未正式发布。
+- 唯一下一步：先修移植版试用反馈，再用脱敏勘察设计标书完善目录、材料组织和要求响应。另一Agent负责设计说明，CAD与设计说明原待验收状态不改。
+
+下方T37及更早记录为历史；当前投标入口以上方T38为准。
+
 ## 2026-10-06 T37 AI候选来源核对与取消恢复：待验收
 
 - 用户安排本聊天负责投标、另一个Agent独立推进设计说明；投标分支task/T37-bid-candidate-review，工作树artifacts/worktrees/t34-bid-workbench，基线edaea06；实现及包基准bc6228a。只在各自worktree开发，公共根目录仅同步投标接续，不整合另一Agent源码。
