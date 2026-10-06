@@ -178,8 +178,9 @@ export function customTemplateId(discipline: DisciplineCode): string {
   return `tpl-${discipline}-custom`
 }
 
-export type LayoutBlock = { kind: 'paragraph'; moduleId: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[]; sourcePara: number; reviewNote: string; confirmedForNote?: boolean }
+export type LayoutBlock = { kind: 'paragraph'; moduleId: string } | { kind: 'table'; rows: string[][]; columnWidths?: number[]; sourcePara: number; reviewNote: string; confirmedForNote?: boolean; liveLoad?: boolean }
 export type NoteSection = { id: string; title: string; body: string; custom: boolean; modules?: SelectedModule[]; layoutBlocks?: LayoutBlock[] }
+export type LiveLoadRow = { item: string; value: string; fieldId?: string }
 
 export type Note = {
   recoveryMessage?: string
@@ -192,8 +193,9 @@ export type Note = {
   templateVersion: string
   sections: NoteSection[]
   fieldValues: Record<string, string>
-  fieldDefinitions: Record<string, { label: string; unit: string }>
+  fieldDefinitions: Record<string, { label: string; unit: string; defaultValue?: string }>
   sourceReferenceValues?: Record<string, string>
+  liveLoads?: LiveLoadRow[]
   corrosionDesign?: { ruleVersion: string; level: string; scopeConfirmed: boolean; autoValues: Record<string, string> }
   assemblyPackageId?: string
   assemblyReviewConfirmed?: boolean
@@ -281,7 +283,7 @@ export function setFieldValue(note: Note, fieldId: string, value: string): Note 
 }
 
 export function effectiveFieldValues(note: Note): Record<string, string> {
-  return {
+  const values: Record<string, string> = {
     ...projectFieldValues(note),
     project_name: note.project.name,
     project_location: note.project.location,
@@ -297,6 +299,9 @@ export function effectiveFieldValues(note: Note): Record<string, string> {
       seismic_acceleration: note.structural.seismicIntensity.match(/([0-9.]+)g/)?.[1] ? note.structural.seismicIntensity.match(/([0-9.]+)g/)![1] + 'g' : '',
     } : {}),
   }
+  // 活荷载参数表（01）是这些表格取值的唯一来源；默认值来自原稿登记值。
+  for (const row of note.liveLoads ?? []) if (row.fieldId) values[row.fieldId] = row.value
+  return values
 }
 
 export function setModuleTemplate(note: Note, sectionId: string, moduleId: string, template: string): Note {
@@ -466,8 +471,11 @@ export function buildDocument(note: Note): BuiltDocument {
     if (section.layoutBlocks?.length) {
       const byId = new Map((section.modules ?? []).map(module => [module.id, module]))
       for (const block of section.layoutBlocks) {
-        if (block.kind === 'table') blocks.push({ kind: 'table', rows: block.rows.map(row => row.map(cell => renderTemplate(cell, values, labels).text)), columnWidths: block.columnWidths, reviewNote: block.reviewNote })
-        else {
+        if (block.kind === 'table') {
+          const rows = block.rows.map(row => row.map(cell => renderTemplate(cell, values, labels).text))
+          if (block.liveLoad) for (const row of note.liveLoads ?? []) if (!row.fieldId) rows.push([row.item, String(rows.length), '', row.value, ''])
+          blocks.push({ kind: 'table', rows, columnWidths: block.columnWidths, reviewNote: block.reviewNote })
+        } else {
           const module = byId.get(block.moduleId)
           if (module) blocks.push({ kind: 'paragraph', text: renderModule(module, values, labels).text })
           if (!supplementWritten && module?.fieldIds.includes('concrete_grade_main')) {
@@ -606,7 +614,7 @@ export function parseNote(value: unknown): Note {
       ...(Array.isArray(section.layoutBlocks) ? { layoutBlocks: section.layoutBlocks.flatMap<LayoutBlock>(value => {
         const block = (value ?? {}) as Record<string, unknown>
         if (block.kind === 'paragraph' && typeof block.moduleId === 'string') return [{ kind: 'paragraph' as const, moduleId: block.moduleId }]
-        if (block.kind === 'table' && Array.isArray(block.rows) && block.rows.every(row => Array.isArray(row) && row.every(cell => typeof cell === 'string'))) return [{ kind: 'table' as const, rows: block.rows as string[][], columnWidths: parseColumnWidths(block.columnWidths, (block.rows[0] as string[] | undefined)?.length ?? 0), sourcePara: asNumber(block.sourcePara, 0), reviewNote: asString(block.reviewNote, '待核定'), confirmedForNote: block.confirmedForNote === true }]
+        if (block.kind === 'table' && Array.isArray(block.rows) && block.rows.every(row => Array.isArray(row) && row.every(cell => typeof cell === 'string'))) return [{ kind: 'table' as const, rows: block.rows as string[][], columnWidths: parseColumnWidths(block.columnWidths, (block.rows[0] as string[] | undefined)?.length ?? 0), sourcePara: asNumber(block.sourcePara, 0), reviewNote: asString(block.reviewNote, '待核定'), confirmedForNote: block.confirmedForNote === true, ...(block.liveLoad === true ? { liveLoad: true } : {}) }]
         return []
       }) } : {}),
     }
@@ -646,6 +654,11 @@ export function parseNote(value: unknown): Note {
     fieldValues: stringRecord(raw.fieldValues),
     fieldDefinitions: definitionRecord(raw.fieldDefinitions),
     sourceReferenceValues: stringRecord(raw.sourceReferenceValues),
+    ...(Array.isArray(raw.liveLoads) ? { liveLoads: raw.liveLoads.flatMap<LiveLoadRow>(value => {
+      const row = (value ?? {}) as Record<string, unknown>
+      if (typeof row.item !== 'string' && typeof row.value !== 'string') return []
+      return [{ item: asString(row.item, ''), value: asString(row.value, ''), ...(typeof row.fieldId === 'string' ? { fieldId: row.fieldId } : {}) }]
+    }) } : {}),
     ...(raw.corrosionDesign && typeof raw.corrosionDesign === 'object' ? { corrosionDesign: {
       ruleVersion: asString((raw.corrosionDesign as Record<string, unknown>).ruleVersion, ''),
       level: asString((raw.corrosionDesign as Record<string, unknown>).level, ''),
@@ -664,13 +677,13 @@ function stringRecord(value: unknown): Record<string, string> {
   return Object.fromEntries(Object.entries(value).filter(([key, item]) => /^[a-z][a-z0-9_]*$/.test(key) && typeof item === 'string')) as Record<string, string>
 }
 
-function definitionRecord(value: unknown): Record<string, { label: string; unit: string }> {
+function definitionRecord(value: unknown): Record<string, { label: string; unit: string; defaultValue?: string }> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-  const result: Record<string, { label: string; unit: string }> = {}
+  const result: Record<string, { label: string; unit: string; defaultValue?: string }> = {}
   for (const [key, item] of Object.entries(value)) {
     if (!/^[a-z][a-z0-9_]*$/.test(key) || !item || typeof item !== 'object') continue
     const definition = item as Record<string, unknown>
-    result[key] = { label: asString(definition.label, key), unit: asString(definition.unit, '') }
+    result[key] = { label: asString(definition.label, key), unit: asString(definition.unit, ''), ...(typeof definition.defaultValue === 'string' ? { defaultValue: definition.defaultValue } : {}) }
   }
   return result
 }

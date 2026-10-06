@@ -37,10 +37,21 @@ for (const layout of catalog.layouts) {
   const table = note.sections.flatMap(s => s.layoutBlocks ?? []).find(b => b.kind === 'table' && /\{/.test(b.rows.flat().join('')))
   if (table) {
     const id = table.rows.flat().join('').match(/\{([a-z][a-z0-9_]*)\}/)[1]
-    const old = note.fieldValues[id]; delete note.fieldValues[id]
-    assert.ok(findIssues(note).some(issue => issue.field === id))
-    assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
-    note.fieldValues[id] = old
+    if (table.liveLoad) {
+      const row = (note.liveLoads ?? []).find(item => item.fieldId === id)
+      if (row) {
+        const old = row.value
+        row.value = ''
+        assert.ok(findIssues(note).some(issue => issue.field === id))
+        assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
+        row.value = old
+      }
+    } else {
+      const old = note.fieldValues[id]; delete note.fieldValues[id]
+      assert.ok(findIssues(note).some(issue => issue.field === id))
+      assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
+      note.fieldValues[id] = old
+    }
   }
   const output = join(dir, `${layout.templateId}-${process.pid}.docx`)
   const request = toExportRequest(note, output)
