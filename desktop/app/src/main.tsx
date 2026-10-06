@@ -641,7 +641,7 @@ function Step02A({ note, catalog, catalogError, onBack, onSelect }: { note: Note
         <strong>{template.name}</strong>
         <small>{template.custom ? '从空白开始，自由组合标准章节。' : readiness.available ? `${readiness.chapters} 章 · ${readiness.paragraphs} 段 · ${readiness.tables} 表；候选正文待核定。` : '暂无可靠正文来源，先建立章节框架。'}</small>
         {readiness.sourceFile && <small className="template-source">来源：{readiness.sourceFile}{readiness.version ? ` · ${readiness.version}` : ''}</small>}
-        {template.id === 'tpl-plumb-standard' && readiness.available && <small>现有来源为工艺总图，需核对是否覆盖本工程给排水范围。</small>}
+        {template.id === 'tpl-plumb-standard' && readiness.available && <small>现有来源为污水处理厂工艺总图：覆盖处理工艺、运行与施工说明；未覆盖给水系统与用水定额、排水体制与管网、消防给水、管材与防腐保温等通用给排水主题，需按本工程范围在 02B 补充。</small>}
       </button>})}
     </div>
   </div>
