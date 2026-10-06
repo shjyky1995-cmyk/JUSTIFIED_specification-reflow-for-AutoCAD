@@ -31,8 +31,8 @@ for (const layout of catalog.layouts) {
   note.assemblyReviewConfirmed = true
   assert.deepEqual(findIssues(note).filter(issue => issue.level === 'error'), [])
   const blocks = buildDocument(note).blocks
-  assert.ok(!blocks.some(block => block.kind === 'meta'))
-  assert.deepEqual(blocks.filter(b => b.kind !== 'title').map(b => b.kind), layout.sections.flatMap(section => ['heading', ...section.blocks.map(b => b.kind)]))
+  assert.deepEqual(blocks.filter(block => block.kind === 'meta').map(block => block.text), ['资料状态：旧工程候选初稿，规范版本与适用性待核定'])
+  assert.deepEqual(blocks.filter(b => b.kind !== 'title' && b.kind !== 'meta').map(b => b.kind), layout.sections.flatMap(section => ['heading', ...section.blocks.map(b => b.kind)]))
   assert.ok(!JSON.stringify(blocks).includes('待填写'))
   const table = note.sections.flatMap(s => s.layoutBlocks ?? []).find(b => b.kind === 'table' && /\{/.test(b.rows.flat().join('')))
   if (table) {

@@ -66,7 +66,7 @@ for (const [templateId, discipline, sourceFile] of cases) {
   assert.ok(modules.every(module => !module.flags.some(flag => ['condition', 'table', 'possible_project_literal', 'source_note', 'suspect_reference'].includes(flag))))
   assert.ok(modules.every(module => !/山东省|新疆|乌苏|济南|腊山河|尉犁/.test(module.template)))
   assert.ok(findIssues(note).some(issue => issue.message.includes('整篇说明')))
-  assert.ok(buildDocument(note).blocks.some(block => block.text.includes('旧工程候选初稿')))
+  assert.ok(buildDocument(note).blocks.some(block => block.text.includes('待完善草稿')))
   const reopened = parseNote(JSON.parse(JSON.stringify(note)))
   assert.equal(reopened.sections.flatMap(section => section.modules ?? []).length, modules.length)
   console.log(`${templateId}: ${modules.length} 条，${note.sections.length} 章，排除 ${result.excludedClauses} 条`)
@@ -81,6 +81,7 @@ for (const fieldId of Object.keys(pool.fieldDefinitions)) {
   if (!['project_name', 'project_location', 'structural_safety_level', 'foundation_design_grade', 'seismic_intensity', 'site_class', 'design_life', 'seismic_fortification_category'].includes(fieldId)) pool.fieldValues[fieldId] = '测试值'
 }
 pool.assemblyReviewConfirmed = true
+assert.ok(buildDocument(pool).blocks.some(block => block.text.includes('旧工程候选初稿')))
 assert.equal(findIssues(pool).filter(issue => issue.level === 'error').length, 0)
 assert.ok(toExportRequest(pool, testDocx).document.sections.length > 0)
 if (process.env.DSS_DOTNET_EXE && existsSync(process.env.DSS_DOTNET_EXE)) {
