@@ -1,3 +1,5 @@
+2026-10-06：投标T37候选来源核对版preview.4已交付，待验收；实现/包bc6228a，分支task/T37-bid-candidate-review。用户安排本聊天负责投标，另一个Agent独立推进设计说明；投标入口/证据/下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)，设计说明和CAD历史状态不由本轮改写。
+
 2026-10-02 T28 反馈修复：候选 preview.2 / 模板 1.2.1 修正正文与表格下边距，CAD 窗口统一字体与缩放、去除遮挡；双框架各 190/190、四档 UI 后台预览、328 条真实 SHX 测量及三图幅核心出图完成。完整 DSS/工程图框/撤销仍待验收，见 T28 日志。
 
 2026-10-05：投标T36本地文字型PDF＋AI选页候选preview.3已交付，待真实PDF/Word/DeepSeek验收；实现dfda806、检查接续954f739，分支及入口见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。旧线状态不变。

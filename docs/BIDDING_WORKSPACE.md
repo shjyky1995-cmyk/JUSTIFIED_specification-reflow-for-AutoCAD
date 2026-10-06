@@ -1,5 +1,17 @@
 # 勘察设计投标工作线入口
 
+## 2026-10-06 当前为T37候选来源核对版
+
+投标当前分支`task/T37-bid-candidate-review`，工作树仍为`artifacts/worktrees/t34-bid-workbench`；实现/包基准bc6228a，preview.4待验收，未合main或推远端。用户安排本聊天负责投标，另一Agent在独立worktree负责设计说明。
+
+当前入口：`测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.4/client/EngiSpace.exe`。新增AI候选来源文件、生成时版本、引用原文定位；资料及关联补遗变化后旧候选禁止加入；旧版任务缺版本快照保留查看，重新生成后采纳。取消发送预览释放记录，回复读取阶段取消/超时可恢复。PDF及原流程保留，OCR未实施。
+
+新核对16组、原AI17组、PDF11组、投标10组与六专业回归通过；316文件/322项ZIP CRC和SHA256通过；包内worker、候选界面4项及真实main关窗保存通过。旧版6个数据文件复制校验、两份投标及附件加载通过，旧原件保留，业务数据及密钥不进ZIP。证据`artifacts/runs/t37`。
+
+方便时按[BIDDING_CLIENT_GUIDE](BIDDING_CLIENT_GUIDE.md)核对引用定位、版本变化和重新生成采纳。真实工程PDF、Word/WPS、DeepSeek权限/计费/效果与专业核定仍待验收。唯一下一动作：先修试用反馈；无反馈继续已批准的P4补遗/资信细化，OCR方案另行讨论。设计说明/CAD各自待验收状态由对应工作线维护，不重复关机。
+
+以下为T36及更早历史，当前入口以上方preview.4为准。
+
 ## 2026-10-05 当前为T36本地文字型PDF候选
 
 当前分支`task/T36-bid-pdf`，工作树仍为`artifacts/worktrees/t34-bid-workbench`。实现及包基准dfda806，检查接续954f739；未合main/推远端，独立候选待验收。

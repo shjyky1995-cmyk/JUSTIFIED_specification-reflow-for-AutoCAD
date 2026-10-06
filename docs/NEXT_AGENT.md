@@ -1,3 +1,5 @@
+2026-10-06：投标T37候选来源核对版preview.4已交付，待验收；实现/包bc6228a，分支task/T37-bid-candidate-review。用户安排本聊天负责投标，另一个Agent独立推进设计说明；投标入口/证据/下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)，设计说明和CAD历史状态不由本轮改写。
+
 # 当前接续状态（所有 Agent 共用）
 
 2026-10-05：投标T36本地文字型PDF＋AI选页候选preview.3已交付，待真实PDF/Word/DeepSeek验收；实现dfda806、检查接续954f739，分支及入口见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。旧线状态不变。
