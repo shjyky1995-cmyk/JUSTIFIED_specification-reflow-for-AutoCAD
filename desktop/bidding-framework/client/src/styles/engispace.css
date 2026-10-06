@@ -1,0 +1,17 @@
+@font-face{font-family:"Noto Sans SC";src:url("../../../../../src/Justified.SpecificationReflow.AutoCAD.PluginHost/Assets/fonts/NotoSansSC-VF.ttf") format("truetype");font-weight:100 900;font-display:swap}
+:root{--yb-primary:#3b82f6;--yb-primary-hover:#2563eb;--yb-primary-deep:#1d4ed8;--yb-bg:#f9f9fb;--yb-surface:#fff;--yb-border:#ececef;--yb-border-soft:#f4f4f6;--yb-text:#1a1a1a;--yb-text-soft:#71717a;--yb-text-muted:#a1a1aa;--yb-radius-sm:9px;--yb-radius-md:12px;--yb-radius-lg:16px;--yb-radius-xl:16px;--yb-shadow-xs:0 1px 3px #00000004;--yb-shadow-sm:0 2px 12px #00000005;--yb-shadow:0 4px 16px #0000000a;--yb-shadow-lg:0 10px 26px #0000000d;--yb-shadow-hover:0 4px 16px #0000000a;font-family:Inter,"Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--yb-bg)}
+.app-shell{background:var(--yb-bg);padding:20px 32px;gap:0}
+.sidebar{width:220px;min-width:220px;height:calc(100vh - 40px);padding:24px 12px;background:#fff;box-shadow:none;border:1px solid var(--yb-border);border-radius:20px 0 0 20px}
+.sidebar-surface{background:none}.brand-block{padding:0 8px 22px}.brand-mark{width:25px;height:25px;flex-basis:25px}.brand-copy span{font-size:13px;color:var(--yb-text);letter-spacing:0}.brand-copy strong{font-size:13px;font-weight:500;color:var(--yb-text-soft)}
+.main-area{min-width:0;background:#fff;border:1px solid var(--yb-border);border-left:0;border-radius:0 20px 20px 0;overflow:hidden}
+.content-shell{background:#fff}.nav-item.is-active,.settings-trigger.is-active{background:#f4f4f6;box-shadow:none;color:var(--yb-text)}
+.nav-item{border-radius:9px}.primary-action{background:#1a1a1a;color:#fff;border:1px solid #1a1a1a;border-radius:9px;box-shadow:none}.primary-action:hover{background:#333}.secondary-action{background:#fff;border:1px solid #e5e5e9;border-radius:9px;box-shadow:none}.engispace-attribution{display:block;padding:10px 8px;font-size:10px;line-height:1.6;color:var(--yb-text-soft)}
+@media(max-width:1050px){.app-shell{padding:16px 24px}.sidebar{width:200px;min-width:200px;height:calc(100vh - 32px)}}
+
+.nav-item.is-active .nav-copy small,.settings-trigger.is-active .settings-copy small{color:var(--yb-text-soft)}
+.nav-item.is-active .nav-icon{color:var(--yb-text);background:#f4f4f6;border-color:var(--yb-border)}
+.sidebar-footer-shortcuts{grid-template-columns:1fr}.sidebar-footer-shortcut .settings-copy strong{white-space:nowrap}
+.upload-row{background:#fafafb}.upload-empty{background:#fafafb;border-color:var(--yb-border)}
+@media(max-width:1050px){.upload-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:16px}.upload-label{display:flex;align-items:center;gap:10px}.upload-file-list{width:100%}.upload-file-pill{min-width:0}.upload-actions{justify-self:end}}
+
+.engispace-home-link{border:0;background:none;color:var(--yb-text-soft);font-size:12px;text-align:left;padding:0 8px 16px;cursor:pointer}
