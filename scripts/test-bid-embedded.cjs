@@ -62,6 +62,7 @@ app.on('browser-window-created',(_event,win)=>{
       const image=await js(`(async()=>{const value=await fetch('yibiao-asset://imported-images/check.png');return [...new Uint8Array(await value.arrayBuffer()).slice(0,4)]})()`);assert.deepEqual(image,[137,80,78,71]);
       assert.equal(await js(`fetch('yibiao-asset://imported-images/..%5c..%5coutside.txt').then(value=>value.status)`),403);
       const AdmZip=require(path.join(framework,'node_modules/adm-zip'));assert.ok(new AdmZip(savePath).readAsText('word/document.xml').includes('勘察工作安排'));
+      await js(`document.querySelectorAll('.app-toast-close').forEach(button=>button.click());true`);
       nativeShow();panel.webContents.invalidate();await pause(350);
       fs.writeFileSync(path.join(output,'platform-bidding.png'),(await panel.webContents.capturePage()).toPNG());win.hide();
       await js(`document.querySelector('.engispace-module-header button').click();true`);

@@ -1,5 +1,20 @@
 # 当前接续状态（所有 Agent 共用）
 
+## 2026-10-06 T40 平台同主窗口投标：待验收
+
+- 用户要求平台内点进即用，在同窗口前端＋原引擎后台说明后回复“继续工作”，T40已按此实施。前台Electron44原框架页面，后台Electron41/ABI145原SQLite/解析/Agent/Word；同一原生主窗口，不再以隐藏主平台切换双窗口作为新入口。见[ADR-019](adr/ADR-019-bidding-embedded-engine.md)。
+- 工作树artifacts/worktrees/t34-bid-workbench，分支task/T40-bid-in-platform，基线547bc62，实现/包源码5da55ab。旧T39可见窗口修复7f5f1a1/preview.2保留。没有集成另一Agent设计说明或CAD源码。
+- 新入口：测试文件/勘察设计投标试用/EngiSpace-0.4.0-bid-preview.3/client/EngiSpace.exe → 勘察设计投标 → 选择招标文件 → 返回平台首页。同包portable-data/data/bidding-framework保存原模块数据；新版独立空数据，旧程序/资料原位保留，没有复制运行中的SQLite。迁移整目录的退出/备份步骤见BIDDING_CLIENT_GUIDE。
+- 源码、成品资源和ZIP全新解压后的13项实际检查均通过：同窗口/后台无可见窗口、44/41边界、缩放、文件选择/取消/TXT、SQLite、实际Word读回与DOCX二进制预览、资源越界拒绝、统计阻断/凭据不落统计、返回/重入/故障/关窗后台退出0。直接成品EXE另5项通过，进入/返回句柄2690198不变，退出0。六专业worker/flow回归及旧投标关窗最后输入保存通过。
+- artifacts/runs/t40：embedded-rd5dFO（源码）、embedded-AggU35（成品）、embedded-GT7o0W（全新解压）、platform-exe-umqQr0（直接EXE）、bid-close-uyZGa1、package-verification.json。632文件/659ZIP项，CRC/双副本SHA256/源码/许可/原生SQLite/自包含Word工具均通过；ZIP SHA256 17472d383d220f08538b7cd62bb526d03a20a137a22228f96c293292c0085f19。前端测试运行时与成品EXE哈希一致，包源码5da55ab。
+- 平台内部桥接版本1采用稳定JSON＋类型/二进制编解码；advanced跨版本原型挂起已修。原离开保护/原生对话框归平台，退出清理原服务。前后台自动上传关闭；内嵌不单独重启GPU或升级。模块存储未与设计说明项目同步。
+- 用户待办：关闭正在使用的旧版后打开preview.3，脱敏文件选择/取消→导入→保存目录→导出Word→返回首页→重入；应同窗口、资料保留、DOCX可编辑。异常反馈步骤、完整提示、格式及脱敏截图。真实AI/费用、Word视觉、专业规则及原52项依赖风险（含3严重）仍pending。
+- 当前仅本机候选，未合main/推远端/正式发布；业务资料/密钥/截图不入库。builtFromDirtyTree=true如实保留既有夹具及测试脚本截图改动，生产代码与5da55ab对应，不暂存旧夹具。
+- 唯一下一步：优先修此版试用反馈；无新故障则按已批准路线逐步完善原框架的勘察设计目录、材料组织与要求响应。另一Agent设计说明/CAD待验收状态独立保留。
+
+以下T38/T37及更早为历史，当前投标以T40/preview.3为准。
+
+
 ## 2026-10-06 T38 原框架移植版：待验收
 
 - 用户要求直接移植易标框架，已确认独立Electron41运行及统计/诊断留本机、关闭自动上传，替代T33只参考自行实现的限制；见[ADR-018](adr/ADR-018-bidding-framework-import.md)。
