@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$OutputDirectory = '',
     [string]$ContentLibraryDirectory = '',
@@ -69,7 +69,7 @@ $version | Set-Content -LiteralPath (Join-Path $clientRoot 'VERSION.txt') -Encod
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/DESKTOP_CLIENT_GUIDE.md') -Destination (Join-Path $outputRoot '使用说明.md')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop/setup/bin/Release/net48/DesktopSetup.exe') -Destination $outputRoot
 $manifest = Get-ChildItem -LiteralPath $clientRoot -Recurse -File | Sort-Object FullName | ForEach-Object {
-    $relative = [IO.Path]::GetRelativePath($clientRoot, $_.FullName).Replace('\', '/')
+    $relative = $_.FullName.Substring($clientRoot.TrimEnd('\').Length).TrimStart('\').Replace('\', '/')
     "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $relative"
 }
 $manifest | Set-Content -LiteralPath (Join-Path $outputRoot 'manifest.sha256') -Encoding ascii
