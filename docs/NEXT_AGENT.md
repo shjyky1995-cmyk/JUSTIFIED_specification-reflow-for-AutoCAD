@@ -1,3 +1,5 @@
+2026-10-06 T38：易标原框架直接移植与EngiSpace UI适配、独立Electron41入口和自动上传本地化已按用户确认完成。最终候选0.4.0-bid-preview.1，源码d458cfa、检查接续29702e6，631文件/658项ZIP及全新解压后运行检查通过，状态待验收；入口/未验项/唯一下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。设计说明由另一Agent独立维护，CAD/设计说明原待验收状态不改。
+
 2026-10-06：投标T37候选来源核对版preview.4已交付，待验收；实现/包bc6228a，分支task/T37-bid-candidate-review。用户安排本聊天负责投标，另一个Agent独立推进设计说明；投标入口/证据/下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)，设计说明和CAD历史状态不由本轮改写。
 
 # 当前接续状态（所有 Agent 共用）
