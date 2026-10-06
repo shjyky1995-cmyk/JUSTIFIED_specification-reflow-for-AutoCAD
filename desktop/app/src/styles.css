@@ -1335,7 +1335,7 @@ textarea:focus-visible {
 .content-import .error-text { color: #b42318; margin-top: 8px; }
 .content-modules { padding: 0 2px 16px; }
 .content-guidance { color: #6b7280; font-size: 12px; line-height: 1.6; margin: 8px 0 14px; }
-.content-module { border: 1px solid #d9e2f1; background: #f8fbff; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+.content-module { padding: 2px 0; margin-bottom: 2px; }
 .content-module-head { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #667085; }
 .content-module-head strong { color: #1d4ed8; }
 .content-module-head button { margin-left: auto; }
