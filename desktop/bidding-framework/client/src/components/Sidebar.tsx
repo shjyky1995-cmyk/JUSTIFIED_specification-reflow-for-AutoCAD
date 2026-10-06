@@ -86,14 +86,13 @@ function Sidebar({ activeSection, developerMode, onSectionChange }: SidebarProps
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="sidebar-surface" />
 
-      <button type="button" className="engispace-home-link" onClick={()=>window.close()}>← 返回工作台</button>
       <div className="brand-block">
         <div className="brand-mark" aria-hidden="true">
           <img src={logoUrl} alt="" />
         </div>
         <div className="brand-copy">
           <span>EngiSpace</span>
-          <strong>投标工作台</strong>
+          <strong>勘察设计投标</strong>
         </div>
       </div>
 

@@ -19,3 +19,5 @@
 .floating-toolbar{border-radius:12px;background:#fff;box-shadow:var(--yb-shadow);border-color:var(--yb-border)}
 .floating-toolbar-button.is-primary,.floating-toolbar-button.is-ai{background:#1a1a1a;color:#fff;border-radius:9px;box-shadow:none}
 .floating-toolbar-button.is-primary:hover:not(:disabled),.floating-toolbar-button.is-ai:hover:not(:disabled){background:#333;box-shadow:none}
+.engispace-module-header{display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;gap:16px;padding:16px 24px;border-bottom:1px solid var(--yb-border);color:var(--yb-text-soft);font-size:13px;background:#fff}
+.engispace-module-header strong{color:var(--yb-text);font-weight:500}.engispace-module-header button{padding:7px 12px;font-size:12px}

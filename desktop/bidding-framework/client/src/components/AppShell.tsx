@@ -9,9 +9,10 @@ interface AppShellProps {
   children: ReactNode;
   developerMode: boolean;
   onSectionChange: (section: SectionId) => void;
+  onReturnHome: () => void;
 }
 
-function AppShell({ activeSection, children, developerMode, onSectionChange }: AppShellProps) {
+function AppShell({ activeSection, children, developerMode, onSectionChange, onReturnHome }: AppShellProps) {
   const isMac = navigator.platform.toLowerCase().includes('mac');
 
   return (
@@ -20,6 +21,10 @@ function AppShell({ activeSection, children, developerMode, onSectionChange }: A
         <Sidebar activeSection={activeSection} developerMode={developerMode} onSectionChange={onSectionChange} />
 
         <main className="main-area">
+          <header className="engispace-module-header">
+            <span>工作台 <span aria-hidden="true">/</span> <strong>勘察设计投标</strong></span>
+            <button type="button" className="secondary-action" onClick={onReturnHome}>返回平台首页</button>
+          </header>
           <AgentRuntimeStatusBar />
           <section className="content-shell" aria-label="主内容">
             {children}

@@ -56,6 +56,10 @@ function App() {
     return allowed;
   };
   const { settingsRequest, clearSettingsRequest } = useTextModelSetupRedirect(requestSectionChange);
+  const returnHome = async () => {
+    const allowed = await (leaveGuardRef.current?.('engispace-home') ?? Promise.resolve(true));
+    if (allowed) window.close();
+  };
 
   return (
     <>
@@ -67,6 +71,7 @@ function App() {
         activeSection={activeSection}
         developerMode={developerMode}
         onSectionChange={(section) => { void requestSectionChange(section); }}
+        onReturnHome={() => { void returnHome(); }}
       >
         <AppRouter
           activeSection={activeSection}

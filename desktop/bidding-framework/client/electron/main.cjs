@@ -331,11 +331,17 @@ async function openExternalUrl(value) {
 }
 
 function createMainWindow() {
+  let host = {};
+  try { host = JSON.parse(process.env.ENGISPACE_BIDDING_HOST_STATE || '{}'); } catch {}
+  const supplied = host.bounds;
+  const validBounds = supplied && ['x', 'y', 'width', 'height'].every(key => Number.isFinite(supplied[key])) && supplied.width >= 900 && supplied.height >= 680;
   const mainWindow = new BrowserWindow({
     width: 1440,
     height: 920,
     minWidth: 900,
-    minHeight: 720,
+    minHeight: 680,
+    ...(validBounds ? supplied : {}),
+    show: false,
     backgroundColor: '#f8fafd',
     title: 'EngiSpace · 投标工作台',
     icon: fs.existsSync(iconPath) ? iconPath : undefined,
@@ -349,6 +355,18 @@ function createMainWindow() {
   });
 
   mainWindow.setMenuBarVisibility(false);
+  let announced = false;
+  const announceReady = () => {
+    if (announced || !mainWindow.isVisible() || mainWindow.webContents.isLoadingMainFrame()) return;
+    announced = true;
+    if (process.env.ENGISPACE_BIDDING_INTEGRATED === '1') console.log('ENGISPACE_BIDDING_READY ' + JSON.stringify({ visible: mainWindow.isVisible(), bounds: mainWindow.getBounds() }));
+  };
+  mainWindow.once('ready-to-show', () => {
+    if (host.fullscreen) mainWindow.setFullScreen(true);
+    else if (host.maximized) mainWindow.maximize();
+    mainWindow.show(); mainWindow.focus(); announceReady();
+  });
+  mainWindow.webContents.once('did-finish-load', announceReady);
 
   if (rendererUrl) {
     mainWindow.loadURL(rendererUrl);
