@@ -87,6 +87,7 @@ function App() {
   const [notes, setNotes] = useState<NoteSummary[]>([])
   const [projects, setProjects] = useState<StoredProject[]>([])
   const [search, setSearch] = useState('')
+  const [bidLaunching,setBidLaunching]=useState(false),[bidLaunchError,setBidLaunchError]=useState('')
   const [save, setSave] = useState<{ status: SaveStatus; message: string }>({ status: 'idle', message: '' })
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null)
@@ -291,7 +292,8 @@ function App() {
       setRoute(target)
     }} />}
     <main className={'main-area route-' + route}>
-      {route === 'home' && <HomePage onBid={() => { void flushSave().then(ok => { if (ok) setRoute('bidding') }) }} notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={() => void startNew()} onContinue={id => void openNote(id)} onCopy={id => void duplicate(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
+      {route==='home'&&bidLaunchError&&<p className="app-error" role="alert">{bidLaunchError}<button className="text-link" onClick={()=>setBidLaunchError('')}>关闭</button></p>}
+      {route === 'home' && <HomePage onLegacyBid={() => { void flushSave().then(ok => { if (ok) setRoute('bidding') }) }} bidBusy={bidLaunching} onBid={() => { if(bidLaunching)return;setBidLaunching(true);setBidLaunchError('');void flushSave().then(async ok => { if (!ok) return; try { const result=await window.workbench.openBidFramework(); if(!result.success)setBidLaunchError(result.message) } catch(e) { if(String(e).includes('No handler registered'))setRoute('bidding');else setBidLaunchError(e instanceof Error?e.message:String(e)) } }).finally(()=>setBidLaunching(false)) }} notes={notes} projects={projects} search={search} onSearch={setSearch} onNew={() => void startNew()} onContinue={id => void openNote(id)} onCopy={id => void duplicate(id)} onDelete={id => askConfirm({ title: '删除说明', message: '确定删除这份本机说明草稿？导出的 DOCX 文件不会被删除。', confirmLabel: '删除草稿', danger: true, onConfirm: () => { void deleteNote(id) } })} />}
       {route === 'step01' && <Step01 focus={reviewFocus} note={note} catalog={catalog} projects={projects} linkedProjectId={linkedProjectId} setLinkedProjectId={setLinkedProjectId} onUpdate={updateNote} onConfirm={askConfirm} onDone={async () => {
         if (!noteRef.current) setWorkingNote(createNote('structural', customTemplateId('structural'), { name: '', number: '', owner: '', location: '' }, defaultTitle('structural')))
         if (!(await commitSave())) return
@@ -369,8 +371,10 @@ function StepNav({ route, note, onNavigate }: { route: Route; note: Note | null;
   </header>
 }
 
-function HomePage({ onBid, notes, projects, search, onSearch, onNew, onContinue, onCopy, onDelete }: {
+function HomePage({ onBid, onLegacyBid, bidBusy, notes, projects, search, onSearch, onNew, onContinue, onCopy, onDelete }: {
   onBid: () => void
+  onLegacyBid: () => void
+  bidBusy: boolean
   notes: NoteSummary[]
   projects: StoredProject[]
   search: string
@@ -393,7 +397,7 @@ function HomePage({ onBid, notes, projects, search, onSearch, onNew, onContinue,
         <small>起草并管理技术设计说明</small>
       </button>
 <div className="entry-card"><span className="entry-icon"><PieChart size={18}/></span><strong>可研报告</strong><small>暂未开放</small></div>
-      <button className="entry-card active" onClick={onBid}><span className="entry-icon"><BriefcaseBusiness size={18} /></span><strong>勘察设计投标</strong><small>资料、条款响应与投标文件编制</small></button>
+      <button className="entry-card active" disabled={bidBusy} onClick={onBid}><span className="entry-icon"><BriefcaseBusiness size={18} /></span><strong>勘察设计投标</strong><small>{bidBusy?'正在打开投标工作台…':'选择标书、目录与正文生成'}</small></button>
       {['项目管理', 'AI 工程助手'].map(name => <div className="entry-card" key={name}>
         <span className="entry-icon">{name === 'AI 工程助手' ? <Sparkles size={18} /> : name === '项目管理' ? <FolderOpen size={18} /> : name === '可研报告' ? <PieChart size={18} /> : <BriefcaseBusiness size={18} />}</span>
         <strong>{name}</strong>
@@ -401,6 +405,7 @@ function HomePage({ onBid, notes, projects, search, onSearch, onNew, onContinue,
       </div>)}
     </section>
 
+    <button className="text-link" data-open-legacy-bid onClick={onLegacyBid}>继续旧版投标草稿</button>
     <section className="home-columns">
       <div className="home-panel">
         <div className="panel-head"><div><h2>当前项目</h2></div></div>

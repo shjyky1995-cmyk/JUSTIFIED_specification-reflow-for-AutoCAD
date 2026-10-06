@@ -12,6 +12,7 @@ export type SaveResult = { ok: true; savedAt: string } | { ok: false; error: str
 declare global {
   interface Window {
     workbench: {
+      openBidFramework(): Promise<{success:boolean;message:string}>
       bids: {
         ai: {
           settings(): Promise<import('./features/bidding/ai-model').AiSettings>

@@ -8,6 +8,7 @@ import { parseNote, serializeNote, type Note, type NoteSummary, type StoredProje
 import { workerDotnetCommand } from '../src/shared/dotnet.ts'
 import { findProjectCatalogPath } from '../src/shared/catalog-path.ts'
 import { registerBidIpc } from './bid-ipc.ts'
+import { registerBidFramework } from './bid-framework.ts'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = resolve(here, '../..')
@@ -133,6 +134,7 @@ app.whenReady().then(() => {
   let catalogPath = process.env.DSS_CONTENT_LIBRARY_PATH || configuredLibrary || (existsSync(bundledLibrary) ? bundledLibrary : findProjectCatalogPath(appRoot))
   let store: DesktopStore = createStore(dataRoot, catalogPath)
   registerBidIpc(dataRoot, runWorker, path => selectedPaths.add(path))
+  registerBidFramework(appRoot,dataRoot)
 
   ipcMain.on('close-ready', async (event, saved: boolean) => {
     const window = BrowserWindow.fromWebContents(event.sender)

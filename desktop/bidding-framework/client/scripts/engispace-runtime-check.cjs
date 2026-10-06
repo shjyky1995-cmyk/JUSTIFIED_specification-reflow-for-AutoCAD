@@ -1,0 +1,78 @@
+// 真实上游主入口/IPC/Word/本地诊断测试；网络传输用拒绝器，窗口隐藏。
+const {app,BrowserWindow,dialog,session}=require('electron');
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),zlib=require('node:zlib');
+const root=path.resolve(process.env.DSS_FRAMEWORK_ROOT||path.join(__dirname,'..'));
+app.setAppPath(root);
+// 使用已发布的自包含助手，测试不依赖系统SDK。
+Object.defineProperty(app,'isPackaged',{value:true});
+const output=fs.mkdtempSync(path.join(process.env.DSS_TEST_ROOT,'runtime-check-'));
+process.env.ENGISPACE_BIDDING_DATA_ROOT=path.join(output,'user');
+process.env.DSS_FRAMEWORK_HIDE='1';
+process.env.YIBIAO_OPENXML_HELPER_DIR=process.env.DSS_HELPER_ROOT||path.join(root,'vendor/openxml-tools/win32-x64');
+process.env.YIBIAO_AGENT_TOOLS_BIN_DIR=process.env.DSS_AGENT_TOOLS_ROOT||path.join(root,'vendor/agent-tools/win32-x64/bin');
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+let ownApiAttempts=0,finished=false;
+global.fetch=async()=>{ownApiAttempts++;throw Error('TEST_NO_NETWORK');};
+require(path.join(root,'node_modules/undici')).fetch=global.fetch;
+dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});
+dialog.showSaveDialog=async()=>({canceled:false,filePath:path.join(output,'框架导出.docx')});
+app.on('browser-window-created',(_event,win)=>{
+  win.show=()=>{};
+  win.webContents.once('did-finish-load',async()=>{
+    const js=s=>win.webContents.executeJavaScript(s);
+    try{
+      await pause(500);
+      assert.ok(await js(`document.body.textContent.includes('EngiSpace')`));
+      assert.equal(process.versions.modules,'145');
+      console.log('RUNTIME_UI_READY');
+      const metrics={event:'test-local-statistics',properties:{count:2}};
+      await assert.rejects(global.fetch('https://analytics.agnet.top/track',{method:'POST',body:JSON.stringify(metrics)}),/自动联网已关闭/);
+      await assert.rejects(global.fetch('https://yibiao.pro/device-license',{body:'private-credential-for-test'}),/自动联网已关闭/);
+      const local=path.join(output,'user/local-statistics');
+      assert.ok(fs.readFileSync(path.join(local,'events.ndjson'),'utf8').includes('test-local-statistics'));
+      assert.ok(!fs.readFileSync(path.join(local,'blocked-services.ndjson'),'utf8').includes('private-credential'));
+      ownApiAttempts=0;
+      await assert.rejects(global.fetch('https://api.deepseek.com/test'),/TEST_NO_NETWORK/);
+      assert.equal(ownApiAttempts,1);
+      console.log('RUNTIME_LOCAL_POLICY_OK');
+      const {createAgentErrorReporter}=require(path.join(root,'electron/services/agent/agentErrorReporter.cjs'));
+      const reporter=createAgentErrorReporter({app,configStore:{load:()=>({deepseek_api_key:'test-secret-do-not-store'})},licenseService:{}});
+      console.log('RUNTIME_DIAGNOSTIC_START');
+      await reporter.reportFailure({payload:{task_id:'local-check'},error:new Error('test-secret-do-not-store local failure'),userTaskContext:{}});
+      const diag=path.join(local,'agent-errors');
+      const gz=fs.readdirSync(diag).find(n=>n.endsWith('.json.gz'));
+      const diagnostic=zlib.gunzipSync(fs.readFileSync(path.join(diag,gz))).toString('utf8');
+      assert.ok(!diagnostic.includes('test-secret-do-not-store'));
+      assert.ok(diagnostic.includes('local failure'));
+      assert.equal(JSON.parse(fs.readFileSync(path.join(diag,gz.replace('.json.gz','.meta.json')))).uploaded,false);
+      await reporter.close();
+      console.log('RUNTIME_DIAGNOSTIC_OK');
+      const exported=await js(`window.yibiao.export.exportWord({project_name:'脱敏框架核验',outline:[{id:'one',level:1,title:'工作安排',content:'负责人须提供有效注册证书。\\n不接受过期证明。',children:[]}]})`);
+      assert.equal(exported.success,true);
+      const AdmZip=require(path.join(root,'node_modules/adm-zip'));
+      const xml=new AdmZip(path.join(output,'框架导出.docx')).readAsText('word/document.xml');
+      assert.ok(xml.includes('不接受过期证明'));
+      assert.ok(xml.includes('工作安排'));
+      const helperResult=await js(`window.yibiao.export.exportWord({project_name:'HTML核验',export_format:{},template_html:'<html><body><h1>可编辑章节</h1><p>校核条件不得省略。</p><table><tr><td>成果名称</td><td>勘察报告</td></tr></table></body></html>'})`);
+      assert.equal(helperResult.success,true);
+      const helperXml=new AdmZip(path.join(output,'框架导出.docx')).readAsText('word/document.xml');
+      assert.ok(helperXml.includes('校核条件不得省略'));
+      assert.ok(helperXml.includes('勘察报告'));
+      console.log('RUNTIME_WORD_OK');
+      await js(`window.yibiao.technicalPlan.saveOutline({project_name:'保存回读核验',outline:[{id:'persist-one',level:1,title:'阶段安排',children:[]}]})`);
+      assert.equal((await js(`window.yibiao.technicalPlan.loadState()`)).outlineData.outline[0].title,'阶段安排');
+      const format=require(path.join(root,'electron/services/exportFormatDefaults.cjs')).cloneDefaultExportFormat();
+      const technical=await js(`window.yibiao.export.exportWord({source:'technical-plan',export_format:${JSON.stringify(format)}})`);
+      assert.equal(technical.success,true);
+      assert.ok(new AdmZip(path.join(output,'框架导出.docx')).readAsText('word/document.xml').includes('阶段安排'));
+      console.log('RUNTIME_TECHNICAL_EXPORT_OK');
+      win.webContents.invalidate();await pause(350);
+      fs.writeFileSync(path.join(output,'framework.png'),(await win.webContents.capturePage()).toPNG());
+      const report={status:'FRAMEWORK_RUNTIME_OK',output,electron:process.versions.electron,checks:['主入口加载','统计留本机/凭据不落统计','自配API允许到传输层(模拟)','无作者许可时本地失败诊断/密钥脱敏','原Word导出/正文读回','自带OpenXmlHelper HTML含表格导出/读回','SQLite目录保存回读'],realHttp:0};
+      fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(report,null,2));
+      console.log(JSON.stringify(report));finished=true;win.close();console.log('RUNTIME_CLOSE_REQUESTED');
+    }catch(error){console.error(error);app.exit(1);}
+  });
+});
+app.on('will-quit',()=>console.log('RUNTIME_WILL_QUIT',finished));
+require(path.join(root,'electron/engispace-entry.cjs'));

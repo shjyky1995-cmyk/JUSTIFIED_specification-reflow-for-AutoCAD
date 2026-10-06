@@ -17,7 +17,7 @@ app.on('browser-window-created',(_event,win)=>{
     try{
       await pause(250)
       const js=s=>win.webContents.executeJavaScript(s)
-      await js(`[...document.querySelectorAll('.entry-card')].find(b=>b.textContent.includes('勘察设计投标')).click()`);await pause(150)
+      await js(`(document.querySelector('[data-open-legacy-bid]')||[...document.querySelectorAll('.entry-card')].find(b=>b.textContent.includes('勘察设计投标'))).click()`);await pause(150)
       await js(`document.querySelector('.bid-type-card').click()`);await pause(200)
       assert.equal(app.getPath('userData'),process.env.DSS_USER_DATA_ROOT)
       assert.ok(app.getPath('temp').startsWith(output))

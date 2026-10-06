@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('workbench', {
+  openBidFramework: () => ipcRenderer.invoke('bid-framework-open'),
   chooseSave: name => ipcRenderer.invoke('choose-save', name),
   work: request => ipcRenderer.invoke('work', request),
   openDocx: path => ipcRenderer.invoke('open-docx', path),
