@@ -18,6 +18,7 @@ declare global {
           configure(model: string, key: string, remove?: boolean): Promise<import('./features/bidding/ai-model').AiSettings>
           prepare(selection: import('./features/bidding/ai-model').AiSelection): Promise<import('./features/bidding/ai-model').AiPrepared>
           start(token: string, consent: boolean): Promise<import('./features/bidding/ai-model').AiJob>
+          discard(token: string): Promise<void>
           list(id: string): Promise<import('./features/bidding/ai-model').AiJob[]>
           cancel(id: string, jobId: string): Promise<void>
           apply(id: string, jobId: string, indices: number[]): Promise<import('./features/bidding/model').BidProject>

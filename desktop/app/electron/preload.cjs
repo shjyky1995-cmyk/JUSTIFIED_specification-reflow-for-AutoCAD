@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('workbench', {
       configure: (model, key, remove) => ipcRenderer.invoke('bid-ai-configure', model, key, remove),
       prepare: selection => ipcRenderer.invoke('bid-ai-prepare', selection),
       start: (token, consent) => ipcRenderer.invoke('bid-ai-start', token, consent),
+      discard: token => ipcRenderer.invoke('bid-ai-discard', token),
       list: id => ipcRenderer.invoke('bid-ai-list', id),
       cancel: (id, jobId) => ipcRenderer.invoke('bid-ai-cancel', id, jobId),
       apply: (id, jobId, indices) => ipcRenderer.invoke('bid-ai-apply', id, jobId, indices),

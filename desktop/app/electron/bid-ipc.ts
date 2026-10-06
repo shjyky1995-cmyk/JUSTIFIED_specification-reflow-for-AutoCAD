@@ -13,6 +13,7 @@ export function registerBidIpc(root: string, runWorker: (request: { operation: s
   ipcMain.handle('bid-ai-configure', (_event, model: string, key: string, remove: boolean) => ai.configure(model,key,remove))
   ipcMain.handle('bid-ai-prepare', (_event, selection) => ai.prepare(selection))
   ipcMain.handle('bid-ai-start', (_event, token: string, consent: boolean) => ai.start(token,consent))
+  ipcMain.handle('bid-ai-discard', (_event, token: string) => ai.discard(token))
   ipcMain.handle('bid-ai-list', (_event, bidId: string) => ai.list(bidId))
   ipcMain.handle('bid-ai-cancel', (_event, bidId: string, id: string) => ai.cancel(bidId,id))
   ipcMain.handle('bid-ai-apply', (_event, bidId: string, id: string, indices: number[]) => ai.apply(bidId,id,indices))

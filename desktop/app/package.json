@@ -1,6 +1,6 @@
 {
   "name": "dss-desktop-workbench",
-  "version": "0.3.0-bid-preview.3",
+  "version": "0.3.0-bid-preview.4",
   "private": true,
   "type": "module",
   "main": "dist-electron/electron/main.js",
@@ -20,6 +20,7 @@
     "check:candidate": "node ../../scripts/check-desktop-candidate.mjs",
     "test:bidding": "node ../../scripts/test-bidding.mjs",
     "test:bid-assistance": "node ../../scripts/test-bid-assistance.mjs",
+    "test:bid-review": "node ../../scripts/test-bid-candidate-review.mjs",
     "test:bid-pdf": "node ../../scripts/test-bid-pdf.mjs"
   },
   "dependencies": {

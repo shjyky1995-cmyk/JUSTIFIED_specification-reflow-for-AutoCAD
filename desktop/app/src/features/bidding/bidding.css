@@ -185,3 +185,5 @@
 }
 
 .bid-candidates h2,.bid-ai-panel h2{margin:0;font-size:16px}.bid-candidates{margin-top:18px;padding:16px}.bid-candidate{display:flex;align-items:flex-start;gap:10px;border-top:1px solid var(--ui-line);padding:14px 0;font-size:12px;line-height:1.8}.bid-candidate>input{margin-top:5px;flex-shrink:0;accent-color:var(--ui-accent)}.bid-candidate>span{min-width:0;flex:1}.bid-candidate strong,.bid-candidate small{display:block}.bid-candidate small{color:var(--ui-muted)}.bid-candidate-text{display:block;white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;margin-top:8px}.bid-ai-panel{background:#fafafb}.bid-ai-panel details{margin:16px 0}.bid-ai-job{padding:14px;background:white;border:1px solid var(--ui-line);border-radius:var(--ui-control-radius)}.bid-ai-consent{width:min(760px,90vw);max-height:90vh;overflow:auto}.bid-ai-consent textarea{width:100%;height:30vh;resize:vertical;font-size:12px;line-height:1.7;border:1px solid var(--ui-line);border-radius:var(--ui-control-radius);padding:12px}.bid-ai-panel .bid-fieldset{margin-top:18px}
+
+.bid-ai-reference{margin-top:10px;padding-top:8px;border-top:1px solid var(--ui-line)}

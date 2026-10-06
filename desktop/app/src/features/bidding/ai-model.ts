@@ -5,10 +5,29 @@ export type AiSelection = { bidId: string; kind: AiKind; sourceIds: string[]; se
 export function pdfPhysicalPage(location: string): number | null { const match = /^PDF物理页 (\d+) \/ 文字块 \d+$/.exec(location); return match ? Number(match[1]) : null }
 export type AiInput = { type: string; project: Record<string,string>; section: { id: string; title: string; body: string } | null; sources: { id: string; name: string; hash: string; blocks: { index: number; location: string; text: string }[] }[] }
 export type AiReference = { sourceId: string; index: number; quote: string }
+export type AiSourceStamp = { id: string; name: string; hash: string; kind: string; version: string; supersedes: string }
 export type AiResult = { requirements: { title: string; kind: RequirementKind; reference: AiReference }[]; outline: { title: string; reference: AiReference }[]; chapter: { body: string; references: AiReference[] } | null }
-export type AiJob = { id: string; bidId: string; kind: AiKind; model: string; state: 'running'|'succeeded'|'failed'|'canceled'|'interrupted'; createdAt: string; finishedAt: string; error: string; sourceIds: string[]; sectionId: string; pageRanges?: Record<string, PdfPageRange>; inputHash: string; sourceHashes: Record<string,string>; contextHash: string; result: AiResult | null; usage: { input: number; output: number; total: number } | null; applied: number[] }
+export type AiJob = { id: string; bidId: string; kind: AiKind; model: string; state: 'running'|'succeeded'|'failed'|'canceled'|'interrupted'; createdAt: string; finishedAt: string; error: string; sourceIds: string[]; sectionId: string; pageRanges?: Record<string, PdfPageRange>; inputHash: string; sourceHashes: Record<string,string>; contextHash: string; sourceContext?: AiSourceStamp[]; reviewIssue?: string; result: AiResult | null; usage: { input: number; output: number; total: number } | null; applied: number[] }
 export type AiSettings = { model: string; hasKey: boolean; encryptionAvailable: boolean }
 export type AiPrepared = { token: string; provider: string; model: string; preview: string; characters: number; expiresAt: string }
+// 核对状态不参与快照；所选资料、关联原版/补遗及未限定影响范围的补遗参与。
+export function aiSourceContext(bid: BidProject, sourceIds: string[]): AiSourceStamp[] {
+  const related = new Set(sourceIds)
+  let count: number
+  do {
+    count = related.size
+    for (const source of bid.sources) {
+      if (related.has(source.id) && source.supersedes) related.add(source.supersedes)
+      if (source.kind === '补遗答疑' && (!source.supersedes || related.has(source.supersedes))) related.add(source.id)
+    }
+  } while (count !== related.size)
+  return bid.sources.filter(s => related.has(s.id)).map(({id,name,hash,kind,version,supersedes}) => ({id,name,hash,kind,version,supersedes})).sort((a,b) => a.id.localeCompare(b.id))
+}
+export function aiSourceIssue(bid: BidProject, job: AiJob): string {
+  if (!job.sourceContext) return '旧任务未记录资料版本，请重新生成候选；原结果仍保留供查看。'
+  if (JSON.stringify(aiSourceContext(bid,job.sourceIds)) !== JSON.stringify(job.sourceContext)) return '资料版本、类型或相关补遗已变化，请重新生成候选；原正文保留。'
+  return ''
+}
 export function buildAiInput(bid: BidProject, selection: AiSelection): AiInput {
   if (selection.bidId !== bid.id || !['requirements','outline','chapter'].includes(selection.kind)) throw new Error('AI任务与当前标段不一致。')
   if (!Array.isArray(selection.sourceIds) || !selection.sourceIds.length || selection.sourceIds.length>10 || new Set(selection.sourceIds).size!==selection.sourceIds.length) throw new Error('请选择1至10份有正文的资料。')
@@ -58,6 +77,8 @@ export function validateAiResult(value: unknown, kind: AiKind, input: AiInput): 
 }
 export function applyAiResult(bid: BidProject, job: AiJob, indices: number[]): BidProject {
   if(job.bidId!==bid.id||job.state!=='succeeded'||!job.result)throw new Error('AI任务不能应用到此投标。')
+  const sourceIssue=aiSourceIssue(bid,job)
+  if(sourceIssue)throw new Error(sourceIssue)
   const selection={bidId:bid.id,kind:job.kind,sectionId:job.sectionId,sourceIds:job.sourceIds,pageRanges:job.pageRanges}
   const input=buildAiInput(bid,selection),result=validateAiResult(job.result,job.kind,input)
   const count=job.kind==='requirements'?result.requirements.length:job.kind==='outline'?result.outline.length:1

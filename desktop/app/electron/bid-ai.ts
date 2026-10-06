@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rename
 import { join } from 'node:path'
 import { randomUUID, createHash } from 'node:crypto'
 import { createBidStore } from '../src/features/bidding/store.ts'
-import { buildAiInput, validateAiResult, applyAiResult, type AiSelection, type AiInput, type AiJob, type AiSettings, type AiPrepared } from '../src/features/bidding/ai-model.ts'
+import { buildAiInput, validateAiResult, applyAiResult, aiSourceContext, aiSourceIssue, type AiSelection, type AiInput, type AiJob, type AiSettings, type AiPrepared } from '../src/features/bidding/ai-model.ts'
 type Vault={available:()=>boolean;encrypt:(text:string)=>Buffer;decrypt:(bytes:Buffer)=>string}
 const digest=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex')
 const atomic=(path:string,value:unknown)=>{const temp=path+'.'+randomUUID()+'.tmp';writeFileSync(temp,JSON.stringify(value),{flag:'wx'});renameSync(temp,path)}
@@ -35,8 +35,24 @@ export function createBidAiService(dataRoot:string,vault:Vault,fetcher:typeof fe
     return j
   }
   function list(bidId:string){
-    store.load(bidId)
-    return readdirSync(jobsRoot).filter(n=>n.endsWith('.json')).map(n=>load(n.slice(0,-5))).filter(j=>j.bidId===bidId).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))
+    const {bid}=store.load(bidId)
+    const checkedAssets=new Map<string,boolean>()
+    return readdirSync(jobsRoot).filter(n=>n.endsWith('.json')).map(n=>load(n.slice(0,-5))).filter(j=>j.bidId===bidId).map(job=>({...job,reviewIssue:job.state==='succeeded'?reviewIssue(bid,job,checkedAssets):''})).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))
+  }
+  function reviewIssue(bid:ReturnType<typeof store.load>['bid'],job:AiJob,checkedAssets=new Map<string,boolean>()):string {
+    const issue=aiSourceIssue(bid,job)
+    if(issue)return issue
+    try{
+      const input=buildAiInput(bid,{bidId:bid.id,kind:job.kind,sourceIds:job.sourceIds,sectionId:job.sectionId,pageRanges:job.pageRanges})
+      if(digest(input)!==job.inputHash)return '资料正文或本次发送的项目信息已变化，请重新生成候选。'
+      for(const id of job.sourceIds){
+        const source=bid.sources.find(s=>s.id===id)!,key=source.asset+':'+source.bytes
+        if(!checkedAssets.has(key)){try{store.assetBytes(source);checkedAssets.set(key,true)}catch{checkedAssets.set(key,false)}}
+        if(!checkedAssets.get(key))return '候选原件缺失或校验不一致，请检查资料后重新生成。'
+      }
+      validateAiResult(job.result,job.kind,input)
+      return ''
+    }catch{return '候选来源、原件或参考章节无法核对，请检查资料后重新生成。'}
   }
   // 退出或掉电不自动重发收费请求；保留已完成结果，旧运行记录改为可重试状态。
   for(const file of readdirSync(jobsRoot).filter(n=>n.endsWith('.json'))){
@@ -65,7 +81,7 @@ export function createBidAiService(dataRoot:string,vault:Vault,fetcher:typeof fe
     if(!c.key||!vault.available())throw new Error('密钥不可用，请重新设置。')
     let key:string
     try{key=vault.decrypt(Buffer.from(c.key,'base64'))}catch{throw new Error('此密钥无法在当前Windows账户解密，请重新填写。')}
-    const job:AiJob={id:randomUUID(),bidId:bid.id,kind:p.selection.kind,model:p.model,state:'running',createdAt:new Date().toISOString(),finishedAt:'',error:'',sourceIds:p.selection.sourceIds,sectionId:p.selection.sectionId,inputHash:digest(p.input),sourceHashes:Object.fromEntries(p.input.sources.map(s=>[s.id,s.hash])),contextHash:digest({type:p.input.type,project:p.input.project,section:p.input.section}),result:null,usage:null,applied:[]}
+    const job:AiJob={id:randomUUID(),bidId:bid.id,kind:p.selection.kind,model:p.model,state:'running',createdAt:new Date().toISOString(),finishedAt:'',error:'',sourceIds:p.selection.sourceIds,sectionId:p.selection.sectionId,inputHash:digest(p.input),sourceHashes:Object.fromEntries(p.input.sources.map(s=>[s.id,s.hash])),contextHash:digest({type:p.input.type,project:p.input.project,section:p.input.section}),sourceContext:aiSourceContext(bid,p.selection.sourceIds),result:null,usage:null,applied:[]}
     if (p.selection.pageRanges) job.pageRanges=structuredClone(p.selection.pageRanges)
     atomic(pathFor(job.id),job);prepared.delete(token)
     const controller=new AbortController();controllers.set(job.id,controller)
@@ -80,7 +96,12 @@ export function createBidAiService(dataRoot:string,vault:Vault,fetcher:typeof fe
       if(!response.ok)throw new Error(response.status===401?'密钥无效或无访问权限。':response.status===402?'DeepSeek余额不足。':response.status===429?'服务限流，请稍后手动重试。':`DeepSeek请求失败（HTTP ${response.status}）；请核对模型名称或稍后重试。`)
       if(!response.body)throw new Error('AI服务返回空响应。')
       const reader=response.body.getReader();let bytes=0;const parts:Uint8Array[]=[]
-      while(true){const {value,done}=await reader.read();if(done)break;bytes+=value.length;if(bytes>500_000){await reader.cancel();throw new Error('AI回复超过限额，未写入正文。')}parts.push(value)}
+      const stopReading=()=>{void reader.cancel().catch(()=>{})}
+      controller.signal.addEventListener('abort',stopReading,{once:true})
+      try{
+        if(controller.signal.aborted)throw new Error('请求已停止。')
+        while(true){const {value,done}=await reader.read();if(controller.signal.aborted)throw new Error('请求已停止。');if(done)break;bytes+=value.length;if(bytes>500_000){void reader.cancel().catch(()=>{});throw new Error('AI回复超过限额，未写入正文。')}parts.push(value)}
+      }finally{controller.signal.removeEventListener('abort',stopReading);reader.releaseLock()}
       const responseJson=JSON.parse(Buffer.concat(parts).toString('utf8'))
       const usage=responseJson.usage
       if(usage&&[usage.prompt_tokens,usage.completion_tokens,usage.total_tokens].every(n=>Number.isSafeInteger(n)&&n>=0))job.usage={input:usage.prompt_tokens,output:usage.completion_tokens,total:usage.total_tokens}
@@ -105,14 +126,14 @@ export function createBidAiService(dataRoot:string,vault:Vault,fetcher:typeof fe
   function apply(bidId:string,id:string,indices:number[]){
     const job=load(id),bid=store.load(bidId).bid
     if(job.bidId!==bidId)throw new Error('标段不一致。')
-    const input=buildAiInput(bid,{bidId,kind:job.kind,sourceIds:job.sourceIds,sectionId:job.sectionId,pageRanges:job.pageRanges})
-    if(digest(input)!==job.inputHash)throw new Error('资料或本次发送的项目信息已变化，请重新生成候选。')
-    for(const sid of job.sourceIds)store.assetBytes(bid.sources.find(s=>s.id===sid)!)
+    const issue=reviewIssue(bid,job)
+    if(issue)throw new Error(issue)
     const next=applyAiResult(bid,job,indices),saved=store.save(next)
     if(!saved.ok)throw new Error(saved.error)
     job.applied=[...new Set([...job.applied,...indices])];atomic(pathFor(job.id),job)
     return store.load(bidId).bid
   }
   function remove(bidId:string,id:string){const j=load(id);if(j.bidId!==bidId||controllers.has(id))throw new Error('运行中的任务或其他标段任务不能移除。');unlinkSync(pathFor(id))}
-  return {settings,configure,prepare,start,list,cancel,apply,remove}
+  function discard(token:string){prepared.delete(token)}
+  return {settings,configure,prepare,start,list,cancel,apply,remove,discard}
 }
