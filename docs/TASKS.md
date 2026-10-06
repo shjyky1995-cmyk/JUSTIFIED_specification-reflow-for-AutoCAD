@@ -1,3 +1,5 @@
+2026-10-06 T40：投标原框架已接入平台同一主窗口，Electron44页面＋原Electron41后台；新版0.4.0-bid-preview.3待验收，源码5da55ab、成品检查a997405。源码/成品/全新解压13项、直接EXE5项、六专业回归/旧关窗通过，632文件/659ZIP项校验通过；旧程序/资料原位保留。入口、用户试用、未完成项及唯一下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)，技术见[ADR-019](adr/ADR-019-bidding-embedded-engine.md)。未合main/推远端；另一Agent设计说明/CAD原待验收状态不改。
+
 2026-10-06 T38：易标原框架直接移植与EngiSpace UI适配、独立Electron41入口和自动上传本地化已按用户确认完成。最终候选0.4.0-bid-preview.1，源码d458cfa、检查接续29702e6，631文件/658项ZIP及全新解压后运行检查通过，状态待验收；入口/未验项/唯一下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。设计说明由另一Agent独立维护，CAD/设计说明原待验收状态不改。
 
 2026-10-06：投标T37候选来源核对版preview.4已交付，待验收；实现/包bc6228a，分支task/T37-bid-candidate-review。用户安排本聊天负责投标，另一个Agent独立推进设计说明；投标入口/证据/下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)，设计说明和CAD历史状态不由本轮改写。

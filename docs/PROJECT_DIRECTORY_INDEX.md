@@ -1,6 +1,6 @@
 # 项目目录使用索引
 
-根目录为 G:\JUSTIFIED_specification reflow for AutoCAD；以下路径相对根目录。2026-10-06 T38框架移植候选交付后更新。
+根目录为 G:\JUSTIFIED_specification reflow for AutoCAD；以下路径相对根目录。2026-10-06 T40平台内嵌候选交付后更新。
 
 | 用途 | 位置 | 使用规则 |
 | --- | --- | --- |
@@ -9,9 +9,9 @@
 | 投标活动开发 | artifacts/worktrees/t34-bid-workbench | 当前T38 / task/T38-bid-framework-import，独立Electron41/SQLite模块 |
 | 投标批准计划 | artifacts/t33-bid-plan-worktree | 只保留规划历史，不作为新开发基线 |
 | 当前设计说明试用 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.2-内容核对版/client/EngiSpace.exe | 当前入口保留 |
-| 投标便携试用 | 测试文件/勘察设计投标试用/EngiSpace-0.4.0-bid-preview.1/client/EngiSpace.exe | T38原框架移植；数据在同包portable-data；基准d458cfa |
-| 投标回退 | 测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.4（另保留preview.3/preview.2/preview.1） | 保留旧程序与原投标数据 |
-| 投标检查证据 | artifacts/runs/t34、artifacts/runs/t35、artifacts/runs/t36、artifacts/runs/t37、artifacts/runs/t38 | 模型/UI/关窗/包完整性报告；不入公开库 |
+| 投标便携试用 | 测试文件/勘察设计投标试用/EngiSpace-0.4.0-bid-preview.3/client/EngiSpace.exe | T40同主窗口；数据在同包portable-data；基准5da55ab |
+| 投标回退 | 测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.4（另保留preview.3/preview.2/preview.1） | 另保留0.4.0-bid-preview.1/preview.2及原SQLite数据 |
+| 投标检查证据 | artifacts/runs/t34、artifacts/runs/t35、artifacts/runs/t36、artifacts/runs/t37、artifacts/runs/t38、artifacts/runs/t39、artifacts/runs/t40 | 模型/UI/关窗/包完整性报告；不入公开库 |
 | 设计说明回退 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.1-最终试用 | 保留可运行副本 |
 | CAD表格候选/样本 | 测试文件/CAD表格试用 | 保留原入口和验收证据 |
 | 早期桌面解压副本 | local/archive/desktop-extracted-T34 | 已校验归档，不是当前试用入口；ZIP在原试用目录 |
