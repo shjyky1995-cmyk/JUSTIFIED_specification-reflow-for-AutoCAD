@@ -15,7 +15,8 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
 let ownApiAttempts=0,finished=false;
 global.fetch=async()=>{ownApiAttempts++;throw Error('TEST_NO_NETWORK');};
 require(path.join(root,'node_modules/undici')).fetch=global.fetch;
-dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});
+let selectedFiles=[];
+dialog.showOpenDialog=async()=>({canceled:!selectedFiles.length,filePaths:selectedFiles});
 dialog.showSaveDialog=async()=>({canceled:false,filePath:path.join(output,'框架导出.docx')});
 app.on('browser-window-created',(_event,win)=>{
   win.show=()=>{};
@@ -28,6 +29,15 @@ app.on('browser-window-created',(_event,win)=>{
       assert.ok(await js(`document.body.textContent.includes('EngiSpace')`));
       assert.equal(process.versions.modules,'145');
       console.log('RUNTIME_UI_READY');
+      const select=()=>js(`(()=>{const b=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()==='选择招标文件');if(!b||b.disabled)throw Error('文件选择入口不可用');b.click()})()`);
+      await select();await pause(150);
+      assert.equal((await js(`window.yibiao.technicalPlan.loadState()`)).tenderFiles.length,0);
+      const file=path.join(output,'脱敏招标.txt');fs.writeFileSync(file,'项目负责人须提供注册证书。\n不接受过期证明。','utf8');selectedFiles=[file];
+      await select();
+      for(let i=0;i<100;i++){if(await js(`document.body.textContent.includes('不接受过期证明')`))break;await pause(100)}
+      assert.ok(await js(`document.body.textContent.includes('不接受过期证明')`));
+      assert.equal((await js(`window.yibiao.technicalPlan.loadState()`)).tenderFiles.length,1);
+      console.log('RUNTIME_FILE_SELECT_OK');
       const metrics={event:'test-local-statistics',properties:{count:2}};
       await assert.rejects(global.fetch('https://analytics.agnet.top/track',{method:'POST',body:JSON.stringify(metrics)}),/自动联网已关闭/);
       await assert.rejects(global.fetch('https://yibiao.pro/device-license',{body:'private-credential-for-test'}),/自动联网已关闭/);
@@ -72,7 +82,7 @@ app.on('browser-window-created',(_event,win)=>{
       assert.deepEqual(rendererErrors,[],'渲染层不应有错误');
       win.webContents.invalidate();await pause(350);
       fs.writeFileSync(path.join(output,'framework.png'),(await win.webContents.capturePage()).toPNG());
-      const report={status:'FRAMEWORK_RUNTIME_OK',output,electron:process.versions.electron,checks:['主入口加载','统计留本机/凭据不落统计','自配API允许到传输层(模拟)','无作者许可时本地失败诊断/密钥脱敏','原Word导出/正文读回','自带OpenXmlHelper HTML含表格导出/读回','SQLite目录保存回读','实际技术方案导出','渲染层无错误'],realHttp:0};
+      const report={status:'FRAMEWORK_RUNTIME_OK',output,electron:process.versions.electron,checks:['主入口加载','直接文件选择/取消/真实TXT导入回读','统计留本机/凭据不落统计','自配API允许到传输层(模拟)','无作者许可时本地失败诊断/密钥脱敏','原Word导出/正文读回','自带OpenXmlHelper HTML含表格导出/读回','SQLite目录保存回读','实际技术方案导出','渲染层无错误'],realHttp:0};
       fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(report,null,2));
       console.log(JSON.stringify(report));finished=true;win.close();console.log('RUNTIME_CLOSE_REQUESTED');
     }catch(error){console.error(error);app.exit(1);}

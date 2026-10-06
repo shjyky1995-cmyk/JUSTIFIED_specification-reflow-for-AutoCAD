@@ -42,6 +42,7 @@ app.on('browser-window-created',(_event,win)=>{
       for(let i=0;i<200&&!hides;i++)await pause(100);
       assert.ok(hides>0,'首页应在子模块加载后隐藏：'+await js(`document.querySelector('.app-error')?.textContent||document.body.textContent.slice(0,150)`));assert.ok(child);
       const cdp=await connect();
+      for(let i=0;i<100;i++){if(await cdp.eval(`document.body.textContent.includes('选择招标文件')`))break;await pause(100)}
       assert.ok(await cdp.eval(`document.body.textContent.includes('EngiSpace')&&document.body.textContent.includes('选择招标文件')`));
       assert.ok(await cdp.eval(`typeof window.yibiao.technicalPlan.loadState==='function'`));
       assert.ok(fs.existsSync(path.join(output,'user/data/bidding-framework/workspace/yibiao.sqlite'))||fs.existsSync(path.join(output,'user/bidding-framework/workspace/yibiao.sqlite')));
