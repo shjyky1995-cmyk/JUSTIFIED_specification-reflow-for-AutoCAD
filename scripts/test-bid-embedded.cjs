@@ -5,6 +5,18 @@ const {pathToFileURL}=require('node:url');
 const root=path.resolve(__dirname,'..'),base=process.env.DSS_TEST_ROOT;
 assert.ok(base&&!/^c:/i.test(base));
 const output=fs.mkdtempSync(path.join(base,'embedded-'));
+// GUI进程可能比终端活得久；日志先落盘，终端关闭不应变成测试程序崩溃。
+for(const stream of [process.stdout,process.stderr])stream.on('error',error=>{
+  if(error.code==='EPIPE')return;
+  fs.appendFileSync(path.join(output,'test-console.log'),String(error)+'\n');app.exit(1);
+});
+for(const level of ['log','error']){
+  const write=console[level].bind(console);
+  console[level]=(...values)=>{
+    fs.appendFileSync(path.join(output,'test-console.log'),values.map(value=>value instanceof Error?value.stack:String(value)).join(' ')+'\n');
+    try{write(...values)}catch(error){if(error.code!=='EPIPE')throw error}
+  };
+}
 const bundle=process.env.DSS_BID_BUNDLE;
 const framework=bundle?path.join(bundle,'client/resources/bidding-framework/resources/app.asar'):path.join(root,'desktop/bidding-framework/client');
 const wire=require(path.join(framework,'electron/services/engispaceWire.cjs'));
