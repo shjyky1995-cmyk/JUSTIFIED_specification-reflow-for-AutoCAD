@@ -1,3 +1,15 @@
+## 2026-10-07 T41 GitHub单位电脑测试交接
+
+用户授权当前项目推送GitHub；明确说明正文、模板与后续补充属于项目内容，可以公开。规则已更新，共享正文在content-library/shared、源DOCX在sources；旧private目录/实际工程草稿/测试结果/密钥不整体上传。
+
+当前根分支task/T41-office-handoff（基于T28），设计说明task/T32-content-review含T33反馈修正与公开目录，投标task/T40-bid-in-platform。三个候选独立备份，不合main，不改变专业核定/CAD宿主待验收状态。单位电脑入口与步骤见[OFFICE_TEST_GUIDE](OFFICE_TEST_GUIDE.md)，使用prerelease office-test-2026-10-07下载成品，避免从main取得旧desktop代码。
+
+已检查：公开目录自动发现、前端/主进程编译、七模板装配/内容核对、六专业flow；全新解压303设计说明/632投标/30CAD文件哈希与ZIP CRC通过；包内运行环境生成13DOCX，六专业纯文字读回、七模板生成器OpenXML检查通过；安装载荷验证通过；投标成品同窗口13项含Word导出/SQLite/返回重入/退出通过。详见T41日志，证据只在本机artifacts/runs/t41。
+
+用户待办：2026-10-08下载成品，解压到G:\ES或D:\ES短目录，集中测试界面/Word和CAD，反馈具体步骤/报错。单位电脑真实权限/字体/分页尚未验证。唯一下一步：先修集中试用反馈，按原专业线继续推进；不重复关机。
+
+---
+
 2026-10-06 T40：投标原框架已接入平台同一主窗口，Electron44页面＋原Electron41后台；新版0.4.0-bid-preview.3待验收，源码5da55ab、成品检查a997405。源码/成品/全新解压13项、直接EXE5项、六专业回归/旧关窗通过，632文件/659ZIP项校验通过；旧程序/资料原位保留。入口、用户试用、未完成项及唯一下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)，技术见[ADR-019](adr/ADR-019-bidding-embedded-engine.md)。未合main/推远端；另一Agent设计说明/CAD原待验收状态不改。
 
 2026-10-06 T38：易标原框架直接移植与EngiSpace UI适配、独立Electron41入口和自动上传本地化已按用户确认完成。最终候选0.4.0-bid-preview.1，源码d458cfa、检查接续29702e6，631文件/658项ZIP及全新解压后运行检查通过，状态待验收；入口/未验项/唯一下一步见[BIDDING_WORKSPACE](BIDDING_WORKSPACE.md)。设计说明由另一Agent独立维护，CAD/设计说明原待验收状态不改。
