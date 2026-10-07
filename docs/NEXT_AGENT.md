@@ -1,3 +1,5 @@
+2026-10-07 T41：用户授权项目正文/模板公开；共享库 content-library/shared、原稿 sources 已入版本控制。GitHub候选备份与单位电脑测试按根目录 docs/OFFICE_TEST_GUIDE.md；原专业核定/用户验收状态保留。
+
 # 当前接续状态（所有 Agent 共用）
 
 ## 2026-10-06 当前桌面：T33 集中试用反馈已修正，待下一轮试用

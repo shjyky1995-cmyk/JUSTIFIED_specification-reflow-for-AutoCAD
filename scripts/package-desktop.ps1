@@ -53,8 +53,8 @@ $runtimeDependency = $assets.project.frameworks.'net10.0'.downloadDependencies |
 $runtimeVersion = $runtimeDependency.version.Trim('[', ']').Split(',')[0].Trim()
 $nugetRoot = $assets.packageFolders.psobject.Properties.Name | Select-Object -First 1
 Copy-Item -LiteralPath (Join-Path $nugetRoot "microsoft.netcore.app.runtime.win-x64/$runtimeVersion/LICENSE.TXT") -Destination (Join-Path $noticeDirectory 'dotnet-runtime-LICENSE.txt')
-$privateContent = [bool]$ContentLibraryDirectory
-if ($privateContent) {
+$bundledContent = [bool]$ContentLibraryDirectory
+if ($bundledContent) {
     $libraryRoot = [IO.Path]::GetFullPath($ContentLibraryDirectory)
     foreach ($required in @('catalog.json', 'source-layouts.json')) {
         if (!(Test-Path -LiteralPath (Join-Path $libraryRoot $required))) { throw "资料库缺少 $required" }
@@ -62,7 +62,7 @@ if ($privateContent) {
     $libraryTarget = Join-Path $clientRoot 'resources/content-library'
     New-Item -ItemType Directory -Path $libraryTarget | Out-Null
     foreach ($file in @('catalog.json', 'source-layouts.json')) { Copy-Item -LiteralPath (Join-Path $libraryRoot $file) -Destination $libraryTarget }
-    '本包含本机旧工程候选资料，仅供本机试用，不上传公开仓库或公开发行。' | Set-Content -LiteralPath (Join-Path $outputRoot '本机资料版-请勿公开.txt') -Encoding utf8
+    '设计说明正文与模板为用户授权公开的项目内容；专业适用性与规范有效性仍待核定。' | Set-Content -LiteralPath (Join-Path $outputRoot '项目正文-待核定.txt') -Encoding utf8
 }
 'engispace-design-note-client-v1' | Set-Content -LiteralPath (Join-Path $clientRoot '.engispace-client') -Encoding ascii
 $version | Set-Content -LiteralPath (Join-Path $clientRoot 'VERSION.txt') -Encoding ascii
@@ -74,12 +74,12 @@ $manifest = Get-ChildItem -LiteralPath $clientRoot -Recurse -File | Sort-Object 
 }
 $manifest | Set-Content -LiteralPath (Join-Path $outputRoot 'manifest.sha256') -Encoding ascii
 $dirty = [bool](& git -C $projectRoot status --porcelain --untracked-files=no)
-@{ version = $version; revision = $revision; candidate = $true; productionReady = $false; builtFromDirtyTree = $dirty; privateContent = $privateContent; builtAt = (Get-Date).ToString('o'); files = $manifest.Count } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outputRoot 'BUILD.json') -Encoding utf8
+@{ version = $version; revision = $revision; candidate = $true; productionReady = $false; builtFromDirtyTree = $dirty; privateContent = $false; bundledContent = $bundledContent; contentPublicationAuthorized = '2026-10-07'; builtAt = (Get-Date).ToString('o'); files = $manifest.Count } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outputRoot 'BUILD.json') -Encoding utf8
 $verification = Start-Process -FilePath (Join-Path $outputRoot 'DesktopSetup.exe') -ArgumentList '--verify-payload' -WindowStyle Hidden -Wait -PassThru
 if ($verification.ExitCode -ne 0) { throw '安装包完整性检查失败。' }
 $zipPath = $outputRoot + '.zip'
 Compress-Archive -LiteralPath (Get-ChildItem -LiteralPath $outputRoot | Select-Object -ExpandProperty FullName) -DestinationPath $zipPath -CompressionLevel Optimal
-Write-Output "DESKTOP_PACKAGE_OK files=$($manifest.Count) privateContent=$privateContent"
+Write-Output "DESKTOP_PACKAGE_OK files=$($manifest.Count) bundledContent=$bundledContent"
 Write-Output "安装入口：$(Join-Path $outputRoot 'DesktopSetup.exe')"
 Write-Output "免安装入口：$(Join-Path $clientRoot 'EngiSpace.exe')"
 Write-Output "ZIP：$zipPath"

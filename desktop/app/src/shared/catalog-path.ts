@@ -5,8 +5,10 @@ export function findProjectCatalogPath(startDirectory: string, configured?: stri
   if (configured) return resolve(configured)
   let directory = resolve(startDirectory)
   while (true) {
-    const candidate = join(directory, 'content-library', 'private', 'catalog.json')
-    if (existsSync(candidate)) return candidate
+    for (const folder of ['shared', 'private']) {
+      const candidate = join(directory, 'content-library', folder, 'catalog.json')
+      if (existsSync(candidate)) return candidate
+    }
     const parent = dirname(directory)
     if (parent === directory) return ''
     directory = parent
