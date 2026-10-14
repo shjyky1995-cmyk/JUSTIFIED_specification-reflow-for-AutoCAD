@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$OutputPath = 'artifacts/ui-preview/note-picker.png',
     [Alias('Scale')][ValidateRange(1.0, 2.0)][float]$PreviewScale = 1.0,

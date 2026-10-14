@@ -31,7 +31,7 @@ function Invoke-Build([string]$Directory, [string]$Command, [string[]]$Arguments
 }
 Invoke-Build $appDirectory 'npm.cmd' @('run', 'build')
 $workerOutput = Join-Path $projectRoot 'artifacts/desktop-worker-release'
-Invoke-Build $workerDirectory $Dotnet10 @('publish', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=false', '-o', $workerOutput)
+Invoke-Build $workerDirectory $Dotnet10 @('publish', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=false', '-p:NuGetLockFilePath=obj/packages.publish.lock.json', '-o', $workerOutput)
 if (!$Portable) { Invoke-Build $projectRoot 'dotnet' @('build', 'desktop/setup/DesktopSetup.csproj', '-c', 'Release') }
 $electronDirectory = Join-Path $appDirectory 'node_modules/electron/dist'
 if (!(Test-Path -LiteralPath (Join-Path $electronDirectory 'electron.exe'))) { throw '缺少 Electron 运行时，请先 npm ci。' }

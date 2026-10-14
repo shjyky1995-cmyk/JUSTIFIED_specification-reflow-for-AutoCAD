@@ -4,7 +4,7 @@ param(
     [string]$AutoCadDir,
     [ValidateSet('Debug','Release')][string]$Configuration = 'Release',
     [switch]$UpdateLocks,
-    [string]$CandidateReason
+    [string]$CandidateReason = '统一开发候选；新增 CAD 表格及集成窗口宿主验收未完成'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest

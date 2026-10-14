@@ -124,6 +124,11 @@ public class FoundationTests
         foreach (var file in new[] { "AGENTS.md", "README.md" })
         foreach (System.Text.RegularExpressions.Match link in System.Text.RegularExpressions.Regex.Matches(
             File.ReadAllText(Path.Combine(root, file)), @"\]\(([^)]+)\)"))
-            Assert.That(File.Exists(Path.Combine(root, link.Groups[1].Value)), Is.True, link.Value);
+        {
+            var target = link.Groups[1].Value;
+            if (Uri.TryCreate(target, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) continue;
+            Assert.That(File.Exists(Path.Combine(root, target)), Is.True, link.Value);
+        }
     }
 }
