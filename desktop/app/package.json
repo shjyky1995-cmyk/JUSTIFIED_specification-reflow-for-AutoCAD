@@ -1,6 +1,6 @@
 {
   "name": "dss-desktop-workbench",
-  "version": "0.1.0",
+  "version": "0.4.0-bid-preview.3",
   "private": true,
   "type": "module",
   "main": "dist-electron/electron/main.js",
@@ -9,7 +9,19 @@
     "start": "electron .",
     "preview": "vite --host 127.0.0.1",
     "test:worker": "node ../../scripts/test-desktop-worker.mjs",
-    "test:flow": "node ../../scripts/test-desktop-flow.mjs"
+    "test:flow": "node ../../scripts/test-desktop-flow.mjs",
+    "test:content": "node ../../scripts/test-content-library.mjs",
+    "test:auto": "node ../../scripts/test-auto-assembly.mjs",
+    "test:source": "node ../../scripts/test-source-fidelity.mjs",
+    "test:pool": "node ../../scripts/test-pool-reference.mjs",
+    "test:parameters": "node ../../scripts/test-desktop-parameters.mjs",
+    "test:scroll": "node ../../scripts/run-desktop-scroll.mjs",
+    "test:corrosion": "node ../../scripts/test-corrosion-source.mjs",
+    "check:candidate": "node ../../scripts/check-desktop-candidate.mjs",
+    "test:bidding": "node ../../scripts/test-bidding.mjs",
+    "test:bid-assistance": "node ../../scripts/test-bid-assistance.mjs",
+    "test:bid-review": "node ../../scripts/test-bid-candidate-review.mjs",
+    "test:bid-pdf": "node ../../scripts/test-bid-pdf.mjs"
   },
   "dependencies": {
     "lucide-react": "1.48.0",

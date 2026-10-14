@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Justified.SpecificationReflow.AutoCAD.DocxAdapter/Justified.SpecificationReflow.AutoCAD.DocxAdapter.csproj" />
     <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="PdfPig" />
     <PackageReference Include="System.IO.Packaging" VersionOverride="10.0.12" />
   </ItemGroup>
 </Project>

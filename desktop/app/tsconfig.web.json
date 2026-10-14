@@ -7,9 +7,10 @@
     "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/shared/store.ts", "src/shared/dotnet.ts"]
+  "exclude": ["src/shared/store.ts", "src/shared/dotnet.ts", "src/shared/catalog-path.ts", "src/features/bidding/store.ts"]
 }

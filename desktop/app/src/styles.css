@@ -6,9 +6,21 @@
   font-display: swap;
 }
 :root {
+  /* 设计说明与投标模块共用的视觉基础。 */
+  --ui-canvas: #f9f9fb;
+  --ui-surface: #fff;
+  --ui-ink: #1a1a1a;
+  --ui-muted: #71717a;
+  --ui-subtle: #a1a1aa;
+  --ui-line: #ececef;
+  --ui-control-line: #e5e5e9;
+  --ui-accent: #3b82f6;
+  --ui-accent-soft: #eff6ff;
+  --ui-control-radius: 9px;
+  --ui-card-radius: 16px;
   font-family: Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif;
-  color: #1a1a1a;
-  background: #f9f9fb;
+  color: var(--ui-ink);
+  background: var(--ui-canvas);
   font-synthesis: none;
 }
 * {
@@ -66,7 +78,7 @@ textarea:focus-visible {
   gap: 12px;
   border: 0;
   background: none;
-  color: #1a1a1a;
+  color: var(--ui-ink);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -81,7 +93,7 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 20px;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 .global-avatar {
@@ -119,10 +131,10 @@ textarea:focus-visible {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #71717a;
+  color: var(--ui-muted);
 }
 .home-link:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .workflow-title {
   font-size: 16px;
@@ -148,7 +160,7 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 .step-nav button.active {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .step-number {
   font-size: 11px;
@@ -159,7 +171,7 @@ textarea:focus-visible {
   font-family: monospace;
 }
 .active .step-number {
-  background: #1a1a1a;
+  background: var(--ui-ink);
   color: #fff;
 }
 .step-divider {
@@ -195,7 +207,7 @@ textarea:focus-visible {
   background: #fff;
   box-shadow: 0 1px 3px #00000005;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .home-search::placeholder {
   color: #aaaab0;
@@ -246,8 +258,8 @@ textarea:focus-visible {
   border-color: #e9edf6;
 }
 .entry-card.active .entry-icon {
-  color: #3b82f6;
-  background: #eff6ff;
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
 }
 .entry-card:hover {
   border-color: #dedee3;
@@ -277,7 +289,7 @@ textarea:focus-visible {
 }
 .entry-card small {
   font-size: 13px;
-  color: #71717a;
+  color: var(--ui-muted);
   line-height: 1.5;
   margin-top: 6px;
 }
@@ -297,7 +309,7 @@ textarea:focus-visible {
   padding: 0 4px;
 }
 .home-panel h2 {
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -381,7 +393,7 @@ textarea:focus-visible {
   color: #8c8c94;
 }
 .icon-button:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .empty-hint {
   font-size: 13px;
@@ -412,7 +424,7 @@ textarea:focus-visible {
 .page-heading p {
   font-size: 13px;
   line-height: 1.6;
-  color: #71717a;
+  color: var(--ui-muted);
   margin: 0;
 }
 .eyebrow,
@@ -477,7 +489,7 @@ textarea:focus-visible {
   background: #fff;
   border: 1px solid #e5e5e9;
   border-radius: 9px;
-  color: #1a1a1a;
+  color: var(--ui-ink);
   font-size: 13px;
   outline: 0;
   box-shadow: 0 1px 2px #00000004;
@@ -508,7 +520,7 @@ textarea:focus-visible {
 }
 .field input[readonly] {
   background: #f7f7f8;
-  color: #71717a;
+  color: var(--ui-muted);
 }
 .discipline-grid {
   display: flex;
@@ -526,7 +538,7 @@ textarea:focus-visible {
   background: transparent;
   padding: 7px 15px;
   border-radius: 7px;
-  color: #71717a;
+  color: var(--ui-muted);
 }
 .discipline-card strong {
   font-size: 13px;
@@ -534,12 +546,12 @@ textarea:focus-visible {
 }
 .discipline-card.active {
   background: #fff;
-  border-color: #ececef;
+  border-color: var(--ui-line);
   box-shadow: 0 1px 3px #0000000a;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .discipline-card:hover:not(.active) {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .structural-panel .panel-head {
   border-bottom: 1px solid #ececef;
@@ -548,7 +560,7 @@ textarea:focus-visible {
 }
 .group-label {
   font-size: 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   letter-spacing: 0.02em;
   margin: 0 0 16px;
 }
@@ -578,7 +590,7 @@ textarea:focus-visible {
 .corrosion-option.active {
   border-color: #9dc2fa;
   background: #f8fbff;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .radio-dot {
   width: 14px;
@@ -621,7 +633,7 @@ textarea:focus-visible {
 }
 .primary-button {
   border: 1px solid #1a1a1a;
-  background: #1a1a1a;
+  background: var(--ui-ink);
   color: #fff;
   box-shadow: 0 2px 8px #00000014;
 }
@@ -649,7 +661,7 @@ textarea:focus-visible {
   border: 0;
   background: none;
   padding: 3px 0;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 .back-link {
@@ -658,7 +670,7 @@ textarea:focus-visible {
 }
 .text-link:hover,
 .back-link:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .status,
 .form-hint {
@@ -712,7 +724,7 @@ textarea:focus-visible {
 .template-card small {
   font-size: 13px;
   line-height: 1.5;
-  color: #71717a;
+  color: var(--ui-muted);
   margin-top: 7px;
 }
 .editor-workspace {
@@ -838,7 +850,7 @@ textarea:focus-visible {
   color: #8c8c94;
 }
 .section-tools button:hover {
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .section-tools button:disabled {
   opacity: 0.3;
@@ -969,7 +981,7 @@ textarea:focus-visible {
 }
 .paper-meta {
   font-size: 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   margin: 4px 0;
 }
 .paper-heading {
@@ -1111,17 +1123,17 @@ textarea:focus-visible {
   background: none;
   border-radius: 7px;
   padding: 7px 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 .modal-tabs button.active {
   background: #f0f0f2;
-  color: #1a1a1a;
+  color: var(--ui-ink);
 }
 .modal-close {
   border: 0;
   background: none;
-  color: #71717a;
+  color: var(--ui-muted);
   font-size: 20px;
 }
 .library-list {
@@ -1297,7 +1309,7 @@ textarea:focus-visible {
 }
 .issue-disclosure summary {
   font-size: 12px;
-  color: #71717a;
+  color: var(--ui-muted);
   cursor: pointer;
   list-style: none;
 }
@@ -1330,3 +1342,79 @@ textarea:focus-visible {
 .preview-side .primary-button {
   min-height: 34px;
 }
+.content-import { padding: 12px 18px; border-bottom: 1px solid #e5e7eb; }
+.content-import p { margin: 0 0 10px; color: #626b7a; font-size: 13px; }
+.content-import .error-text { color: #b42318; margin-top: 8px; }
+.content-modules { padding: 0 2px 16px; }
+.content-guidance { color: #6b7280; font-size: 12px; line-height: 1.6; margin: 8px 0 14px; }
+.content-module { border: 1px solid #d9e2f1; background: #f8fbff; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+.content-module-head { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #667085; }
+.content-module-head strong { color: #1d4ed8; }
+.content-module-head button { margin-left: auto; }
+.content-module p { line-height: 1.65; margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.content-module small { display: block; color: #667085; line-height: 1.5; overflow-wrap: anywhere; margin-bottom: 8px; }
+.content-confirm { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #344054; }
+.content-edit { margin: 8px 0; border-top: 1px solid #e3e9f3; padding-top: 8px; }
+.content-edit summary { cursor: pointer; color: #1d4ed8; font-size: 12px; }
+.content-edit textarea { width: 100%; min-height: 96px; margin: 8px 0; padding: 8px; box-sizing: border-box; resize: vertical; }
+.content-confirm input { flex: none; }
+.content-field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin: 14px 0; }
+.layout-table-wrap { overflow-x: auto; margin: 12px 0 18px; }
+.layout-table { border-collapse: collapse; width: 100%; min-width: 540px; font-size: 13px; }
+.layout-table td { border: 1px solid #b9c5d5; padding: 6px 8px; vertical-align: top; }
+.layout-table input { width: 100%; min-width: 76px; border: 0; background: transparent; font: inherit; color: inherit; }
+.layout-table-wrap small { display: block; margin-top: 5px; color: #69788a; }
+.content-candidates-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 14px; }
+.content-candidates-head input { max-width: 250px; min-width: 120px; }
+.content-candidates { max-height: 330px; overflow: auto; margin: 10px 0; border: 1px solid #e5e7eb; border-radius: 8px; }
+.content-candidate { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 11px; border-bottom: 1px solid #edf0f4; }
+.content-candidate:last-child { border-bottom: 0; }
+.content-candidate div { min-width: 0; }
+.content-candidate strong { margin-right: 9px; color: #1d4ed8; }
+.content-candidate span, .content-candidate small { color: #667085; font-size: 12px; }
+.content-candidate p { margin: 6px 0; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.content-candidate .content-note { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+.content-candidate button { flex: none; }
+
+/* 原稿表格按列宽比例排版，长说明在单元格内换行。 */
+.layout-table { table-layout: fixed; }
+.layout-table td { overflow-wrap: anywhere; white-space: pre-wrap; }
+.layout-table details { white-space: normal; margin-top: 6px; font-size: 12px; }
+
+/* 长章节使用独立滚动区，工具栏及目录不随正文滑走。 */
+.editor-body { min-height: 0; overflow: hidden; }
+.editor-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.editor-scroll .content-modules { padding: 0 32px 16px; }
+.editor-scroll .section-editor { display: block; min-height: 180px; resize: vertical; flex: none; }
+.editor-utility { flex-shrink: 0; }
+.editor-head { flex-shrink: 0; }
+.corrosion-design { border: 1px solid #d9e2f1; border-radius: 8px; padding: 14px; margin: 14px 0; }
+.corrosion-design > p { font-size: 13px; line-height: 1.7; }
+.corrosion-design .content-confirm { align-items: flex-start; line-height: 1.7; }
+.project-parameter-panel .panel-head p { font-size: 12px; color: #667085; }
+@media (max-height: 760px) { .editor-shell { min-height: 420px; height: calc(100dvh - 170px); } }
+.settings-modal { width: min(650px, 94vw); max-height: 88vh; overflow: auto; }
+.settings-body { padding: 20px 24px; line-height: 1.7; color: #475467; }
+.settings-body h3 { margin: 22px 0 8px; font-size: 15px; color: #182230; }
+.settings-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.settings-body .local-path { display: block; overflow-wrap: anywhere; margin-top: 10px; color: #667085; }
+.settings-message { padding: 12px; background: #f2f4f7; border-radius: 8px; overflow-wrap: anywhere; }
+.app-error { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 90; background: #fff1f0; border: 1px solid #fda29b; padding: 12px 18px; border-radius: 10px; max-width: 90vw; }
+.app-error button { margin-left: 16px; }
+.preview-side .wide + .wide { margin-top: 10px; }
+button:focus-visible, summary:focus-visible { outline: 2px solid #3687ef; outline-offset: 3px; }
+button:disabled { cursor: not-allowed; }
+.chapter-title-input { width: 100%; min-width: 260px; max-width: 640px; padding: 4px 0; border: 0; border-bottom: 1px solid transparent; background: transparent; color: #182230; font: inherit; font-size: 19px; font-weight: 600; }
+.chapter-title-input:focus { border-bottom-color: #3687ef; outline: none; }
+.review-highlight { outline: 3px solid #3687ef !important; outline-offset: 3px; }
+.review-queue-row { padding-bottom: 10px; border-bottom: 1px solid #e4e7ec; }
+.review-queue-row p { margin: 4px 0; }
+.review-queue-row details { margin-top: 4px; font-size: 12px; }
+.review-queue-row ul { padding-left: 15px; }
+.issue-list { max-height: 42vh; overflow-y: auto; padding-right: 8px; }
+.source-review-modal { width: min(820px, 94vw); max-height: 88vh; overflow: auto; }
+.source-entry { margin: 10px 0; border: 1px solid #e4e7ec; border-radius: 8px; padding: 12px; overflow-wrap: anywhere; }
+.source-entry summary { cursor: pointer; font-weight: 600; color: #344054; }
+.reference-occurrence { padding: 10px 0; border-bottom: 1px solid #edf0f4; }
+.reference-occurrence:last-child { border-bottom: 0; }
+.reference-occurrence small { display: block; margin-top: 4px; color: #667085; }

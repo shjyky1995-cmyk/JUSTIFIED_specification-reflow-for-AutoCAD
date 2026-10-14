@@ -112,26 +112,26 @@ try {
     if (discipline.code === 'structural') {
       const missing = structuredClone(note)
       missing.structural.siteCategory = ''
-      const blocked = await call(toExportRequest(missing, join(directory, '缺参数.docx')))
-      assert.equal(blocked.success, false, '缺少结构参数必须阻断')
-      assert.match(blocked.message, /场地类别/)
+      const draft = await call(toExportRequest(missing, join(directory, '缺参数.docx')))
+      assert.equal(draft.success, true, '缺少结构参数仍可导出草稿')
+      assert.throws(() => toExportRequest(missing, 'strict.docx', 'reviewed'), /场地类别/)
       const noIntensity = structuredClone(note)
       noIntensity.structural.seismicIntensity = '待核定'
-      const intensityBlocked = await call(toExportRequest(noIntensity, join(directory, '缺烈度.docx')))
-      assert.equal(intensityBlocked.success, false, '未选择抗震设防烈度必须阻断')
-      assert.match(intensityBlocked.message, /手工选择抗震设防烈度/)
+      const intensityDraft = await call(toExportRequest(noIntensity, join(directory, '缺烈度.docx')))
+      assert.equal(intensityDraft.success, true, '未选择抗震设防烈度仍可导出草稿')
+      assert.throws(() => toExportRequest(noIntensity, 'strict.docx', 'reviewed'), /抗震设防烈度/)
     }
   }
 
   const emptyNote = makeNote('architecture', 99)
   emptyNote.sections = emptyNote.sections.map(section => ({ ...section, body: '   ' }))
-  const empty = await call(toExportRequest(emptyNote, join(directory, '空白.docx')))
-  assert.equal(empty.success, false, 'empty sections must be rejected')
+  assert.throws(() => toExportRequest(emptyNote, join(directory, '空白.docx')), /至少填写/)
 
   const noTitle = makeNote('electrical', 98)
   noTitle.title = '  '
   const noTitleResult = await call(toExportRequest(noTitle, join(directory, '无标题.docx')))
-  assert.equal(noTitleResult.success, false, 'missing title must be rejected')
+  assert.equal(noTitleResult.success, true, '草稿空标题使用专业默认标题')
+  assert.throws(() => toExportRequest(noTitle, 'strict.docx', 'reviewed'), /说明标题/)
 
   console.log(`DESKTOP_WORKER_OK disciplines=${generated} generated=${generated} inspected=${inspected} overwriteBlocked=${generated} structuralBlocked=1 intensityBlocked=1 emptyBlocked=1 titleBlocked=1`)
 } finally {
