@@ -2,7 +2,7 @@
 
 ## 统一开发主线
 
-用户要求推进合main并减少分支，明确批准“自动检查通过的最新候选统一进入main，人工验收保留待验收”。规则见 ADR-020。当前三线整合任务为 T42，整合源：原main 058ab3e、投标c4d21f0、最新设计说明2dcbbb1、CAD/跨电脑交付2d75fb5；合并和远端最终SHA见devlog/T42最后记录。
+用户要求推进合main并减少分支，明确批准“自动检查通过的最新候选统一进入main，人工验收保留待验收”。规则见 ADR-020。T42工程整合已完成，main efbf1f8已推送核对，40旧任务分支已清理；本收尾文档更新也随main备份。整合源：原main 058ab3e、投标c4d21f0、最新设计说明2dcbbb1、CAD/跨电脑交付2d75fb5；合并和远端最终SHA见devlog/T42最后记录。
 
 以后从项目根 `G:\JUSTIFIED_specification reflow for AutoCAD` 的 main 接续，任务开 `task/<编号>-<简称>` 并串行推进；完成自动检查后合main，正式标签仍需人工签收。旧八个工作树及T42整合工作树保留原位作历史/测试环境，不从其旧NEXT_AGENT继续开发。旧40任务分支与旧main恢复点见 BRANCH_ARCHIVE_20261014.json；归档标签已推远端并逐个核对SHA。本机还有artifacts/runs/t42/branches-before-cleanup.bundle。
 
