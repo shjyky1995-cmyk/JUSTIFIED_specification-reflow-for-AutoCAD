@@ -1,4 +1,6 @@
-# 单位电脑测试（2026-10-08）
+# 单位电脑测试（2026-10-08历史快照）
+
+2026-10-14更新：源码现统一于main，当前本机整合候选见 [统一客户端指南](UNIFIED_CLIENT_GUIDE.md)。以下10月7日发布附件为历史快照，未自动升级；旧分支恢复点见 [归档清单](BRANCH_ARCHIVE_20261014.json)。
 
 下载入口：[GitHub 单位电脑测试包](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/releases/tag/office-test-2026-10-07)。展开 Assets，下载需要的 ZIP；不要把页面的 Source code ZIP 当作可运行程序。
 
@@ -15,7 +17,7 @@
 
 下载后右键 ZIP → 属性，如果有「解除锁定」先勾选，再完整解压到可写的本地短目录。建议分别指定 G:\ES\Note、G:\ES\Bid、G:\ES\CAD、G:\ES\Content；若单位没有 G 盘，换成 D 盘也可。投标包必须用短目录，不要层层套入下载文件名目录，Windows 默认路径长度限制会导致解压失败。至少预留 5 GB 空间。不要在 ZIP 内直接双击 EXE，也不要只复制 EXE。单位管理策略若阻止 EXE 或安装，请联系单位管理员，不自行关闭防护。先用免安装入口测试桌面程序。
 
-这些是待验收候选包，尚未合并到 main，不改变 v0.1.0 正式版。正文与模板已由用户授权公开，但规范有效性及工程适用性仍需核定。投标包中设计说明代码是该工作线基线；测试最新设计说明请使用单独的 DesignNote 包。
+这些是10月7日待验收候选快照，不改变 v0.1.0 正式版。10月14日统一源码合入main不表示它们通过人工验收。正文与模板已由用户授权公开，但规范有效性及工程适用性仍需核定。投标包中设计说明代码是该工作线基线；测试最新设计说明请使用单独的 DesignNote 包。
 
 ## 一次集中测试
 
@@ -30,11 +32,4 @@
 
 ## 完整源码下载
 
-要继续开发才需要 Git，纯测试优先下载上面的成品。当前三个工作线的源码分别位于：
-
-- CAD：[task/T28-cad-tables](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/tree/task/T28-cad-tables)。
-- 最新设计说明：[task/T32-content-review](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/tree/task/T32-content-review)，包括后续 T33 反馈修正与公开共享资料。
-- 投标：[task/T40-bid-in-platform](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/tree/task/T40-bid-in-platform)。
-- 本次跨电脑交接：[task/T41-office-handoff](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/tree/task/T41-office-handoff)。
-
-`git clone` 会取得分支历史，但只检出一个分支；从根目录打开旧 desktop 代码不会自动包含其他工作线。切换到对应分支再按其开发指南构建。SDK、node_modules、运行数据、密钥和机器专用缓存需另配，不随源码提交；单位电脑运行成品不需要这些开发依赖。
+当前开发统一使用 [main](https://github.com/shjyky1995-cmyk/JUSTIFIED_specification-reflow-for-AutoCAD/tree/main)，不再切换三个工作线。旧分支历史已保留为 archive/2026-10-14/* 标签，详见归档清单。SDK、node_modules、运行数据、密钥与机器缓存仍需单独配置；纯测试无需开发依赖。

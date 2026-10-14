@@ -1,0 +1,252 @@
+{
+  "date": "2026-10-14",
+  "purpose": "旧开发分支恢复点；归档标签不表示验收或正式发布",
+  "branches": [
+    {
+      "branch": "main",
+      "commit": "058ab3eb938d0f9ec3df8170af65dc739389d5ea",
+      "archiveTag": "archive/2026-10-14/main-before-t42",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T01-governance",
+      "commit": "f3d3f64d375ebe4a23b09d4d9bf50dfdd64a4df4",
+      "archiveTag": "archive/2026-10-14/T01-governance",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T02-foundation",
+      "commit": "bf9ad78789c5856977a1569afb08765c02816c8e",
+      "archiveTag": "archive/2026-10-14/T02-foundation",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T03-contracts",
+      "commit": "d073798281ef75d64b6339e89faeb06df48bec13",
+      "archiveTag": "archive/2026-10-14/T03-contracts",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T04-docx-parse",
+      "commit": "6d3b77e21b98e49a17563ff9b0b51b10bc953556",
+      "archiveTag": "archive/2026-10-14/T04-docx-parse",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T05-numbering-audit",
+      "commit": "c8e75fdd65f7198ab87be13c95ac7ebf28e16680",
+      "archiveTag": "archive/2026-10-14/T05-numbering-audit",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T06-standards-measure",
+      "commit": "20e8802e6334bbc1fbef255682cf44cacf5294aa",
+      "archiveTag": "archive/2026-10-14/T06-standards-measure",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T07-line-break",
+      "commit": "29b9e3902741217b5160f653755cd3b1d32052b9",
+      "archiveTag": "archive/2026-10-14/T07-line-break",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T08-column-flow",
+      "commit": "7160285b832de542a9ce73100f457a443f69c696",
+      "archiveTag": "archive/2026-10-14/T08-column-flow",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T09-dbtext",
+      "commit": "cc219b753e5ada950af2acc46879cb610605473a",
+      "archiveTag": "archive/2026-10-14/T09-dbtext",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T11-offline-delivery",
+      "commit": "6d7de68b35f3d0b4deb6749a8caa13157c4e14bb",
+      "archiveTag": "archive/2026-10-14/T11-offline-delivery",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T12-acceptance",
+      "commit": "7a0190e4ca1028c7ecee119821b53bca6a44a36b",
+      "archiveTag": "archive/2026-10-14/T12-acceptance",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T13-installer",
+      "commit": "467999a7c83739c7beee06e540bd6ff094af503c",
+      "archiveTag": "archive/2026-10-14/T13-installer",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T14-note-picker",
+      "commit": "08ac8a10cb3dfcd9e3140cd29285b61f48060724",
+      "archiveTag": "archive/2026-10-14/T14-note-picker",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T15-desktop-prototype",
+      "commit": "acb6a67501f252bb37bcb36d85c6d8f10ede2ade",
+      "archiveTag": "archive/2026-10-14/T15-desktop-prototype",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T16-desktop-authoring",
+      "commit": "433ec3af8a77f97ae01b168a7d2c05d0dcfe3f8f",
+      "archiveTag": "archive/2026-10-14/T16-desktop-authoring",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T17-design-spec-plan",
+      "commit": "dea84f21cbc65838b29d1902590424fbda5a2530",
+      "archiveTag": "archive/2026-10-14/T17-design-spec-plan",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T18-desktop-framework",
+      "commit": "bae8d00aa20e8eb89b7121d3f398e94423e280fe",
+      "archiveTag": "archive/2026-10-14/T18-desktop-framework",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T19-agent-guidance",
+      "commit": "8f2563e5f4a861c1955df7f1fd555e944b48137f",
+      "archiveTag": "archive/2026-10-14/T19-agent-guidance",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T20-cad-figma-ui",
+      "commit": "ca537fbe6798d185db25a83d72f00d8146753737",
+      "archiveTag": "archive/2026-10-14/T20-cad-figma-ui",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T21-figma-make-read",
+      "commit": "2891afd99da902fc9fbd96526781d510e8995d88",
+      "archiveTag": "archive/2026-10-14/T21-figma-make-read",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T22-content-inventory",
+      "commit": "ce54104378b53d4a91b54b4ff8d906eec5bd487d",
+      "archiveTag": "archive/2026-10-14/T22-content-inventory",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T23-storage-layout",
+      "commit": "6475573d27fe7af92c03be60723b7e43e1915f13",
+      "archiveTag": "archive/2026-10-14/T23-storage-layout",
+      "includedInIntegration": false
+    },
+    {
+      "branch": "task/T24-source-handoff",
+      "commit": "d91d94f7c8ec50233962f34e51e615f7e40f7d99",
+      "archiveTag": "archive/2026-10-14/T24-source-handoff",
+      "includedInIntegration": false
+    },
+    {
+      "branch": "task/T25-content-library",
+      "commit": "1f3c1e8ee209018b837fefb8f13999055264670a",
+      "archiveTag": "archive/2026-10-14/T25-content-library",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T26-auto-content",
+      "commit": "61aad030843a195ec3928f872306b3f15268b9c4",
+      "archiveTag": "archive/2026-10-14/T26-auto-content",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T27-reference-note",
+      "commit": "6ca2781fa0b67d736b290ff1940525f5c1629db6",
+      "archiveTag": "archive/2026-10-14/T27-reference-note",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T28-cad-tables",
+      "commit": "992df655e22d67bbf4c59688cce7009de36e4dd5",
+      "archiveTag": "archive/2026-10-14/T28-cad-tables",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T29-desktop-source-fidelity",
+      "commit": "da9261146876cf6890d075649d03712e546be9b1",
+      "archiveTag": "archive/2026-10-14/T29-desktop-source-fidelity",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T30-project-parameters",
+      "commit": "825029506788fb1c0a0ea59c1e3a339e74a55f4e",
+      "archiveTag": "archive/2026-10-14/T30-project-parameters",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T31-desktop-client",
+      "commit": "9e22a83bacb464b4790afd5e461d4fc7fb71a9b7",
+      "archiveTag": "archive/2026-10-14/T31-desktop-client",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T32-content-review",
+      "commit": "2dcbbb13b50dc8359988fe2349d9113e85901e26",
+      "archiveTag": "archive/2026-10-14/T32-content-review",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T33-survey-design-bid-plan",
+      "commit": "f99f54cc9b966c381461365db2c2429f0a7b9c80",
+      "archiveTag": "archive/2026-10-14/T33-survey-design-bid-plan",
+      "includedInIntegration": false
+    },
+    {
+      "branch": "task/T34-bid-workbench",
+      "commit": "a4e3205ba49f48add6f38ce83f502af2cf9b6ef5",
+      "archiveTag": "archive/2026-10-14/T34-bid-workbench",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T35-bid-assistance",
+      "commit": "0823891d34348a3261cd679f3333844f3736554a",
+      "archiveTag": "archive/2026-10-14/T35-bid-assistance",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T36-bid-pdf",
+      "commit": "edaea06dbc3780ae1b5864ced903918eab8f3000",
+      "archiveTag": "archive/2026-10-14/T36-bid-pdf",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T37-bid-candidate-review",
+      "commit": "2ef94fd56210d25d7ddf958594717e886fbc08f9",
+      "archiveTag": "archive/2026-10-14/T37-bid-candidate-review",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T38-bid-framework-import",
+      "commit": "29702e6095041ae4938546339428f59a59662255",
+      "archiveTag": "archive/2026-10-14/T38-bid-framework-import",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T39-bid-module-entry",
+      "commit": "547bc62f8ffdd434a87ae982ba8c2ce6f128cc84",
+      "archiveTag": "archive/2026-10-14/T39-bid-module-entry",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T40-bid-in-platform",
+      "commit": "c4d21f0fe70d406bff41006d62bf091f4caf69fa",
+      "archiveTag": "archive/2026-10-14/T40-bid-in-platform",
+      "includedInIntegration": true
+    },
+    {
+      "branch": "task/T41-office-handoff",
+      "commit": "2d75fb5850df208766bb34a1050cbbf7b049e926",
+      "archiveTag": "archive/2026-10-14/T41-office-handoff",
+      "includedInIntegration": true
+    }
+  ]
+}

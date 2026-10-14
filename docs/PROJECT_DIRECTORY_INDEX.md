@@ -1,25 +1,22 @@
-# 项目目录使用索引
+# 项目目录使用索引（2026-10-14）
 
-根目录为 G:\JUSTIFIED_specification reflow for AutoCAD；以下路径相对根目录。2026-10-06 T40平台内嵌候选交付后更新。
+所有项目源码、参考、缓存和产物均位于 `G:\JUSTIFIED_specification reflow for AutoCAD`。根main为统一开发入口；旧工作树保留原提交及未提交夹具，不再作为新任务基线。
 
 | 用途 | 位置 | 使用规则 |
 | --- | --- | --- |
-| CAD 活动开发 | 根目录，task/T28-cad-tables | 保留原修改，独立验收 |
-| 设计说明活动开发 | artifacts/t26-auto-content-worktree | T32候选，保持原流程 |
-| 投标活动开发 | artifacts/worktrees/t34-bid-workbench | 当前T38 / task/T38-bid-framework-import，独立Electron41/SQLite模块 |
-| 投标批准计划 | artifacts/t33-bid-plan-worktree | 只保留规划历史，不作为新开发基线 |
-| 当前设计说明试用 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.2-内容核对版/client/EngiSpace.exe | 当前入口保留 |
-| 投标便携试用 | 测试文件/勘察设计投标试用/EngiSpace-0.4.0-bid-preview.3/client/EngiSpace.exe | T40同主窗口；数据在同包portable-data；基准5da55ab |
-| 投标回退 | 测试文件/勘察设计投标试用/EngiSpace-0.3.0-bid-preview.4（另保留preview.3/preview.2/preview.1） | 另保留0.4.0-bid-preview.1/preview.2及原SQLite数据 |
-| 投标检查证据 | artifacts/runs/t34、artifacts/runs/t35、artifacts/runs/t36、artifacts/runs/t37、artifacts/runs/t38、artifacts/runs/t39、artifacts/runs/t40 | 模型/UI/关窗/包完整性报告；不入公开库 |
-| 设计说明回退 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.1-最终试用 | 保留可运行副本 |
-| CAD表格候选/样本 | 测试文件/CAD表格试用 | 保留原入口和验收证据 |
-| 早期桌面解压副本 | local/archive/desktop-extracted-T34 | 已校验归档，不是当前试用入口；ZIP在原试用目录 |
-| 外部易标源码 | local/references/OpenBidKit_Yibiao | 只读来源f185a25；移植副本在投标worktree的desktop/bidding-framework，随候选打包 |
-| 业务原稿与私有内容 | 说明文件、content-library/private、测试文件内业务原稿 | 原位保护，不公开提交 |
-| 历史验收证据 | 测试结果、artifacts各任务检查目录 | 原位登记，不能当普通缓存删 |
-| PDF依赖缓存 | artifacts/nuget-packages | T36新包均存G盘；不是业务原件 |
-| 构建环境 | artifacts/dotnet10、既有worktree依赖 | 保留，按锁定版本使用 |
-| 整理清单 | local/organization | 本机哈希与动作报告，不入库 |
+| 统一开发 | 项目根main；src、desktop、content-library/shared | 新任务从main开task分支，串行开发；人工状态独立 |
+| 当前统一试用 | 测试文件/统一客户端试用/EngiSpace-0.5.0-preview.1 | client/EngiSpace.exe，设计说明＋同窗口投标；DesktopSetup.exe安装；candidate |
+| 整合/检查环境 | artifacts/worktrees/t42-main-consolidation | 保留源码和构建环境用于证据复现，不接续旧NEXT_AGENT |
+| 本轮证据 | artifacts/runs/t42 | 包核验、全新解压、DOCX、内嵌报告、Git bundle；不公开提交 |
+| 旧设计说明/投标工作树 | artifacts/t26-auto-content-worktree；artifacts/worktrees/t34-bid-workbench | 原位历史/依赖回退，不删除数据 |
+| 其他旧工作树 | artifacts/desktop-worktree、release-worktree、t18-worktree、t20-worktree、t23-worktree、t33-bid-plan-worktree | 原位历史；标签恢复旧任务 |
+| 旧设计说明/投标包 | 测试文件/设计说明客户端试用；测试文件/勘察设计投标试用 | 保留原包、草稿/SQLite和回退用途；不自动迁移 |
+| CAD表格候选 | 测试文件/CAD表格试用 | 原preview.2供宿主试用；集成窗口宿主仍待验收 |
+| 业务原稿/旧私有内容 | 说明文件、content-library/private、测试文件内业务资料 | 原位保护，不公开提交 |
+| 历史验收证据 | 测试结果、artifacts既有任务目录 | 不能当普通缓存批量删除 |
+| 外部源码/资料 | local/references/OpenBidKit_Yibiao；local/research | 外部参考原位保留，非主线代码 |
+| 缓存/构建环境 | artifacts/nuget-packages；artifacts/dotnet10；既有工作树node_modules/vendor | 复用G盘资源，不在C盘建项目副本 |
+| 旧归档/整理清单 | local/archive；local/organization | 保留既有哈希和动作报告，未执行本轮容量清理 |
+| 分支恢复清单 | docs/BRANCH_ARCHIVE_20261014.json | archive/2026-10-14/*远端标签；归档不是发行 |
 
-恢复早期程序：从归档目录移回原同名目录，或解压保留的同名 ZIP。未释放磁盘空间：系统拒绝删除，归档只改善分类，不声称已清理容量。后续新增资料、工作树和产物遵守 AGENTS 与目录方案。
+本轮只收束Git分支引用；不删除任何工作树、包、业务资料或验收证据，不宣称释放磁盘空间。业务数据迁移必须退出程序并完整备份，见UNIFIED_CLIENT_GUIDE与BIDDING_CLIENT_GUIDE。

@@ -23,14 +23,14 @@ const wire=require(path.join(framework,'electron/services/engispaceWire.cjs'));
 if(bundle){Object.defineProperty(app,'isPackaged',{value:true});Object.defineProperty(process,'resourcesPath',{value:path.join(bundle,'client/resources')});}
 process.env.DSS_USER_DATA_ROOT=path.join(output,'user');
 process.env.YIBIAO_OPENXML_HELPER_DIR=bundle?path.join(bundle,'client/resources/bidding-framework/resources/openxml-tools/win32-x64'):path.join(framework,'vendor/openxml-tools/win32-x64');
-let selection=[],savePath=path.join(output,'嵌入导出.docx'),dialogOwner;
-dialog.showOpenDialog=async(owner,_options)=>{dialogOwner=owner;return {canceled:!selection.length,filePaths:selection}};
+let selection=[],savePath=path.join(output,'嵌入导出.docx'),dialogOwner,openDialogCalls=0;
+dialog.showOpenDialog=async(owner,_options)=>{dialogOwner=owner;openDialogCalls++;fs.appendFileSync(path.join(output,'native-dialog.log'),JSON.stringify({selectionCount:selection.length})+'\n');return {canceled:!selection.length,filePaths:selection}};
 dialog.showSaveDialog=async(owner,_options)=>{dialogOwner=owner;return {canceled:false,filePath:savePath}};
 const cp=require('node:child_process'),nativeSpawn=cp.spawn;
 let engine,engineReady,engineExit;
 cp.spawn=(command,args,options)=>{
   const child=nativeSpawn(command,args,options);
-  if(args.includes('--engispace-backend')){engine=child;engineExit=new Promise(r=>child.once('exit',r));child.on('message',raw=>{const m=wire.decode(raw);if(m.kind==='ready')engineReady=m});child.stderr.on('data',b=>fs.appendFileSync(path.join(output,'engine-stderr.log'),b));child.stdout.on('data',b=>fs.appendFileSync(path.join(output,'engine-stdout.log'),b));}
+  if(args.includes('--engispace-backend')){engine=child;engineExit=new Promise(r=>child.once('exit',r));child.on('message',raw=>{const m=wire.decode(raw);if(m.kind==='ready')engineReady=m;if(m.kind==='result'&&m.error)fs.appendFileSync(path.join(output,'engine-errors.log'),JSON.stringify(m.error)+'\n')});child.stderr.on('data',b=>fs.appendFileSync(path.join(output,'engine-stderr.log'),b));child.stdout.on('data',b=>fs.appendFileSync(path.join(output,'engine-stdout.log'),b));}
   return child;
 };
 require('node:module').syncBuiltinESMExports();
@@ -59,7 +59,7 @@ app.on('browser-window-created',(_event,win)=>{
       assert.ok(!fs.readFileSync(path.join(statistics,'blocked-services.ndjson'),'utf8').includes('dummy-do-not-log-key'));
       const original=panel.getBounds();win.setSize(1100,780);await pause(150);assert.notDeepEqual(panel.getBounds(),original);
       const click=()=>js(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='选择招标文件');if(!b)throw Error('没有选择文件按钮');b.click()})()`);
-      await click();await pause(200);assert.equal((await js(`window.yibiao.technicalPlan.loadState()`)).tenderFiles.length,0);assert.equal(dialogOwner,win);
+      await click();await wait(()=>openDialogCalls===1,'取消选择对话框未返回');await wait(()=>js(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='选择招标文件');return b&&!b.disabled})()`),'取消选择后仍在解析');assert.equal((await js(`window.yibiao.technicalPlan.loadState()`)).tenderFiles.length,0);assert.equal(dialogOwner,win);
       const file=path.join(output,'脱敏招标.txt');fs.writeFileSync(file,'项目负责人须提供注册证书。\n不接受过期证明。');selection=[file];await click();
       await wait(()=>js(`document.body.textContent.includes('不接受过期证明')`),'真实本机文件导入失败');
       console.log('EMBEDDED_IMPORT_OK');
