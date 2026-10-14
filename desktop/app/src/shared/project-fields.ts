@@ -12,7 +12,7 @@ export const PROJECT_FIELDS: ProjectField[] = [
     ['structural_calculation_software', '结构计算软件及版本', ''], ['pool_structure_calculation_software', '池体结构计算软件及版本', ''],
     ['structure_importance_coef', '结构重要性系数', ''], ['seismic_group', '设计地震分组', ''],
     ['characteristic_period', '场地设计特征周期', 's'], ['seismic_grade_frame', '框架抗震等级', ''],
-    ['concrete_environment_class', '混凝土结构环境类别', ''], ['frost_depth', '标准冻深', 'm'],
+    ['frost_depth', '标准冻深', 'm'],
   ].map(([id, label, unit]) => ({ id, label, unit, group: '结构与抗震', disciplines: structural })),
   ...[
     ['geotechnical_survey_institute', '岩土工程勘察单位', ''], ['geotechnical_survey_no', '勘察报告工程编号', ''],

@@ -31,16 +31,27 @@ for (const layout of catalog.layouts) {
   note.assemblyReviewConfirmed = true
   assert.deepEqual(findIssues(note).filter(issue => issue.level === 'error'), [])
   const blocks = buildDocument(note).blocks
-  assert.ok(!blocks.some(block => block.kind === 'meta'))
-  assert.deepEqual(blocks.filter(b => b.kind !== 'title').map(b => b.kind), layout.sections.flatMap(section => ['heading', ...section.blocks.map(b => b.kind)]))
+  assert.deepEqual(blocks.filter(block => block.kind === 'meta').map(block => block.text), ['资料状态：旧工程候选初稿，规范版本与适用性待核定'])
+  assert.deepEqual(blocks.filter(b => b.kind !== 'title' && b.kind !== 'meta').map(b => b.kind), layout.sections.flatMap(section => ['heading', ...section.blocks.map(b => b.kind)]))
   assert.ok(!JSON.stringify(blocks).includes('待填写'))
   const table = note.sections.flatMap(s => s.layoutBlocks ?? []).find(b => b.kind === 'table' && /\{/.test(b.rows.flat().join('')))
   if (table) {
     const id = table.rows.flat().join('').match(/\{([a-z][a-z0-9_]*)\}/)[1]
-    const old = note.fieldValues[id]; delete note.fieldValues[id]
-    assert.ok(findIssues(note).some(issue => issue.field === id))
-    assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
-    note.fieldValues[id] = old
+    if (table.liveLoad) {
+      const row = (note.liveLoads ?? []).find(item => item.fieldId === id)
+      if (row) {
+        const old = row.value
+        row.value = ''
+        assert.ok(findIssues(note).some(issue => issue.field === id))
+        assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
+        row.value = old
+      }
+    } else {
+      const old = note.fieldValues[id]; delete note.fieldValues[id]
+      assert.ok(findIssues(note).some(issue => issue.field === id))
+      assert.throws(() => toExportRequest(note, 'test.docx', 'reviewed'))
+      note.fieldValues[id] = old
+    }
   }
   const output = join(dir, `${layout.templateId}-${process.pid}.docx`)
   const request = toExportRequest(note, output)

@@ -1,6 +1,6 @@
 // 将本机候选资料按模板装配成可编辑初稿。来源关系和排除规则集中在此，避免界面逐条选取。
 import { selectedModule, type ContentCatalog, type ContentClause } from './content.ts'
-import { rebuildSections, type Note, type NoteSection } from './model.ts'
+import { rebuildSections, type LiveLoadRow, type Note, type NoteSection } from './model.ts'
 import { isProjectField } from './project-fields.ts'
 import { applyCorrosionScheme, isCorrosionField } from './corrosion.ts'
 
@@ -87,7 +87,26 @@ export function assembleNote(note: Note, templateId: string, catalog: ContentCat
     for (const section of sections) for (const block of section.layoutBlocks ?? []) if (block.kind === 'table') for (const cell of block.rows.flat()) for (const match of cell.matchAll(/\{([a-z][a-z0-9_]*)\}/g)) usedFields.add(match[1])
     const definitions: Note['fieldDefinitions'] = {}
     for (const field of [...catalog.fields, ...(layout.fields ?? [])]) if (usedFields.has(field.id)) definitions[field.id] = { label: field.label, unit: field.unit }
-    const populated: Note = { ...empty, title: layout.sourceTitle || source.file.replace(/\.docx$/i, ''), sections, fieldDefinitions: definitions, sourceReferenceValues: layout.referenceValues, assemblyPackageId: catalog.packageId }
+    // 活荷载参数表：原稿表格中带“活荷载”表头的取值行改为 01 项目参数表管理，默认值取原稿登记值。
+    const liveLoads: LiveLoadRow[] = []
+    for (const section of sections) for (const block of section.layoutBlocks ?? []) {
+      if (block.kind !== 'table' || !block.rows[0]?.some(cell => cell.includes('活荷载'))) continue
+      block.liveLoad = true
+      for (const row of block.rows.slice(1)) {
+        const fieldId = row.find(cell => /\{[a-z][a-z0-9_]*\}/.test(cell))?.match(/\{([a-z][a-z0-9_]*)\}/)?.[1]
+        if (!fieldId) continue
+        liveLoads.push({ item: row[0]?.trim() ?? '', value: layout.referenceValues?.[fieldId]?.trim() ?? '', fieldId })
+      }
+    }
+    const liveLoadFieldIds = new Set(liveLoads.map(row => row.fieldId))
+    // 材料、环境、防水等稳定参数按原稿登记值作默认值，不再逐项填写；01 项目参数与腐蚀方案字段保持原流程。
+    const defaults: Record<string, string> = {}
+    for (const id of usedFields) {
+      if (liveLoadFieldIds.has(id) || isProjectField(id, catalog.fields.find(field => field.id === id)?.label ?? '') || isCorrosionField(id) || id === 'external_anticorrosion_coating') continue
+      const value = layout.referenceValues?.[id]?.trim()
+      if (value) { defaults[id] = value; definitions[id] = { ...definitions[id], defaultValue: value } }
+    }
+    const populated: Note = { ...empty, title: layout.sourceTitle || source.file.replace(/\.docx$/i, ''), sections, fieldDefinitions: definitions, fieldValues: { ...empty.fieldValues, ...defaults }, sourceReferenceValues: layout.referenceValues, liveLoads, assemblyPackageId: catalog.packageId }
     const result = note.structural?.protectionScheme ? applyCorrosionScheme(populated, note.structural?.protectionScheme ?? '') : populated
     return { note: result, selectedClauses: sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0), excludedClauses: Math.max(0, related.length - sections.reduce((count, section) => count + (section.modules?.length ?? 0), 0)), sourceFile: source.file }
   }

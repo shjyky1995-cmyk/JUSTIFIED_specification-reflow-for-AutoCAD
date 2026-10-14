@@ -5,6 +5,7 @@ import { resolve, join } from 'node:path'
 import { createNote, findIssues, setModuleTemplate, toExportRequest } from '../desktop/app/src/shared/model.ts'
 import { reviewQueue, reviewTarget, referenceIndex, sourceIndex, extractReferences } from '../desktop/app/src/shared/review.ts'
 import { assembleNote, templateReadiness } from '../desktop/app/src/shared/assembly.ts'
+import { standardsLibrary, addStandardToNote } from '../desktop/app/src/shared/standards.ts'
 import { createStore } from '../desktop/app/src/shared/store.ts'
 
 const note = createNote('structural', 'tpl-struct-pool', { name: '', number: '', owner: '', location: '' })
@@ -57,6 +58,26 @@ if (process.env.DSS_CONTENT_LIBRARY_PATH) {
   assert.equal(templates.length, 7)
   assert.equal(templateReadiness('tpl-struct-steel', local).available, false)
   assert.equal(templateReadiness('tpl-other-standard', local).available, false)
+  const pool = assembleNote(createNote('structural', 'tpl-struct-pool', { name: '', number: '', owner: '', location: '' }), 'tpl-struct-pool', local).note
+  // 材料/环境/防水等稳定参数按原稿登记值作默认值，不再逐项待填写。
+  assert.equal(pool.fieldDefinitions.cement_type?.defaultValue, '普通硅酸盐水泥')
+  assert.equal(pool.fieldValues.cement_type, '普通硅酸盐水泥')
+  assert.ok(!findIssues(pool).some(issue => issue.message.includes('水泥品种')))
+  // 活荷载改由 01 参数表管理：默认值来自原稿登记值，清空后再报缺项。
+  const stairs = (pool.liveLoads ?? []).find(row => row.item === '楼梯')
+  assert.equal(stairs?.value, '3.5')
+  const loadBlock = pool.sections.flatMap(section => section.layoutBlocks ?? []).find(block => block.kind === 'table' && block.liveLoad)
+  assert.ok(loadBlock)
+  stairs.value = ''
+  assert.ok(findIssues(pool).some(issue => issue.field === stairs.fieldId))
+  stairs.value = '3.5'
+  // 规范库与设计依据清单：可汇总、可加入、加入后可导出引用。
+  const library = standardsLibrary(local)
+  assert.ok(library.length > 10)
+  const basis = pool.sections.find(section => section.title.includes('设计依据'))
+  assert.ok(basis)
+  const withStandard = addStandardToNote(pool, basis.id, 'GB 50010-2010', '混凝土结构设计规范')
+  assert.ok(withStandard.sections.find(section => section.id === basis.id).modules.some(module => module.template.includes('GB 50010-2010')))
 }
 writeFileSync(join(output, 'report.json'), JSON.stringify({ status: 'DESKTOP_REVIEW_OK', templates, output }, null, 2))
 console.log(JSON.stringify({ status: 'DESKTOP_REVIEW_OK', templates, output }))
