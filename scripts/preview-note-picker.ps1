@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$OutputPath = 'artifacts/ui-preview/note-picker.png',
-    [ValidateRange(1.0, 2.0)][float]$PreviewScale = 1.0
+    [Alias('Scale')][ValidateRange(1.0, 2.0)][float]$PreviewScale = 1.0,
+    [string]$StandardsPath = 'standards/published'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -21,7 +22,7 @@ $resolver = [ResolveEventHandler] {
 try {
     $assembly = [Reflection.Assembly]::LoadFrom($pluginPath)
     $type = $assembly.GetType('Justified.SpecificationReflow.AutoCAD.PluginHost.NotePickerForm', $true)
-    $root = Join-Path $projectRoot 'standards/published'
+    $root = Join-Path $projectRoot $StandardsPath
     $flags = [Reflection.BindingFlags]::Instance -bor [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic
     $constructor = $type.GetConstructors($flags) | Where-Object { $_.GetParameters().Count -eq 2 } | Select-Object -First 1
     if ($null -eq $constructor) { throw 'NotePickerForm constructor not found.' }
@@ -30,11 +31,26 @@ try {
     $arguments[1] = $null
     $form = $constructor.Invoke($arguments)
     try {
+        # 独立离屏控件检查，不启动或操作用户的 CAD。
+        $form.Opacity = 0
         $form.Show()
         if ($PreviewScale -ne 1.0) {
             $form.Scale((New-Object Drawing.SizeF($PreviewScale, $PreviewScale)))
         }
         [Windows.Forms.Application]::DoEvents()
+        $type.GetMethod('SelectPaper', $flags).Invoke($form, @('A3')) | Out-Null
+        if ($form.SelectedTemplate.PaperCode -ne 'A3') { throw 'Paper selection did not update the actual template.' }
+        $type.GetField('_selectedScale', $flags).SetValue($form, $null)
+        $type.GetMethod('Confirm', $flags).Invoke($form, @()) | Out-Null
+        if ($form.DialogResult -eq [Windows.Forms.DialogResult]::OK) { throw 'Unknown unit scale was accepted.' }
+        $type.GetMethod('SelectScale', $flags).Invoke($form, @([double]100)) | Out-Null
+        $type.GetField('_documentPath', $flags).SetValue($form, 'Z:\missing-test-note.docx')
+        $type.GetMethod('Confirm', $flags).Invoke($form, @()) | Out-Null
+        if ($form.DialogResult -eq [Windows.Forms.DialogResult]::OK) { throw 'Missing DOCX was accepted.' }
+        $type.GetField('_documentPath', $flags).SetValue($form, 'G:\试用\复杂表格.docx')
+        $type.GetMethod('UpdateDocxDisplay', $flags).Invoke($form, @()) | Out-Null
+        $type.GetMethod('SelectPaper', $flags).Invoke($form, @('A1')) | Out-Null
+        $form.PerformLayout()
         $image = New-Object Drawing.Bitmap($form.Width, $form.Height)
         try {
             $form.DrawToBitmap($image, (New-Object Drawing.Rectangle(0, 0, $form.Width, $form.Height)))

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -24,6 +25,8 @@ public sealed class NoteGenerationResult
     public Document? Document { get; set; }
 
     public LayoutResult? Layout { get; set; }
+
+    public List<PlacedLine> Lines { get; set; } = new List<PlacedLine>();
 
     public List<PlacedText> Texts { get; set; } = new List<PlacedText>();
 
@@ -94,6 +97,7 @@ public sealed class NoteGenerationService
         }
 
         result.Texts = placed.Texts;
+        result.Lines = placed.Lines;
         result.Success = true;
         return result;
     }
@@ -102,16 +106,16 @@ public sealed class NoteGenerationService
     {
         message = string.Empty;
         if (limits == null) return false;
-        if (document.Blocks != null && document.Blocks.Count > limits.MaxBlocks)
+        if (document.Blocks != null && DocumentBlocks.All(document.Blocks).Count() > limits.MaxBlocks)
         {
-            message = "段落块数 " + document.Blocks.Count + " 超过单次上限 " + limits.MaxBlocks + "。请拆小说明或提高限额。";
+            message = "段落块数 " + DocumentBlocks.All(document.Blocks).Count() + " 超过单次上限 " + limits.MaxBlocks + "。请拆小说明或提高限额。";
             return true;
         }
 
-        var characters = 0;
+        long characters = 0;
         if (document.Blocks != null)
         {
-            foreach (var block in document.Blocks)
+            foreach (var block in DocumentBlocks.All(document.Blocks))
             {
                 if (block?.Runs == null) continue;
                 foreach (var run in block.Runs)
@@ -141,9 +145,9 @@ public sealed class NoteGenerationService
             return true;
         }
 
-        if (placed.Texts.Count > limits.MaxTexts)
+        if (placed.Texts.Count + placed.Lines.Count > limits.MaxTexts)
         {
-            message = "单行文字数 " + placed.Texts.Count + " 超过单次上限 " + limits.MaxTexts + "。请拆小说明或提高限额。";
+            message = "文字与线条对象数 " + (placed.Texts.Count + placed.Lines.Count) + " 超过单次上限 " + limits.MaxTexts + "。请拆小说明或提高限额。";
             return true;
         }
 

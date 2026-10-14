@@ -4,6 +4,7 @@ namespace Justified.SpecificationReflow.AutoCAD.Contracts.Documents;
 
 public sealed class Block
 {
+    public TableData? Table { get; set; }
     public string Id { get; set; } = string.Empty;
 
     public BlockType Type { get; set; }
@@ -22,5 +23,6 @@ public enum BlockType
     Heading1,
     Heading2,
     Paragraph,
-    Spacer
+    Spacer,
+    Table
 }

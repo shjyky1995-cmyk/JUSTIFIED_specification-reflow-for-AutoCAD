@@ -29,3 +29,11 @@
 ## T18 视觉复核（2026-09-27）
 
 用户指出早期桌面实现与 Figma Make 初稿不符。T18 按 ZIP 的 `src/App.tsx` 重核：统一浅灰顶栏与三段式图形标识、首页搜索和 3+2 入口、两列无重卡片列表、01 紧凑专业分段控件与分组参数、02A 五张模板卡片、02B 单个白色分栏编辑容器、03 居中白色连续文档面。设计稿的临时图标已替换为 CAD 产品图标，唯一原稿路径为 `branding/product-icon.png`。业务字段、保存/导出错误和缺项检查保留为真实产品功能，不能照搬静态样例文字或失效按钮。
+
+## Make 读取故障与可用路径（2026-09-27 复测）
+
+- 原链接是 `figma.com/make/...` 的 **Figma Make** 文件，不是 `figma.com/design/...` 的设计节点文件。Figma 连接的 `whoami` 已确认连到用户账号；`get_design_context` 对此 Make 文件和 `0:1` 成功返回 `src/App.tsx`、`src/index.css` 等 8 个源码资源链接，因此文件标识与连接权限不是这次的阻塞点。
+- 阻塞发生在下一跳：本环境读取 `file://figma/make/source/.../src/App.tsx` 返回 `Unknown resource`。`get_metadata` 和 `get_screenshot` 的接口说明也明确不支持 Make。不能因为拿到了资源链接，就声称已读到云端源码正文；也不要把 `0:1` 套用于 Design 文件。
+- 浏览器已打开该 Make 文件的 **Version 7** 预览，并看到了首页及项目列表；浏览器会话提示登录，不能据此读取云端代码编辑器。现有用户提供的 `工程设计应用首页UI设计.zip` 经完整性检查有 24 个文件，`src/App.tsx` 可正常读取；本地 ZIP 是当前可复现的源码读取入口，截图与浏览器预览用于视觉核对。用户资料不入公开仓库。
+- 需要检查云端后续改动时，先看 Make 版本号；如果高于本次 Version 7，请用户从 Make 代码编辑器重新下载 ZIP 再核对。[Figma 官方说明](https://help.figma.com/hc/en-us/articles/35710574222487-Beyond-the-basics-Using-Figma-Make)也将下载源码 ZIP 作为 Make 代码外用的正式路径；另可由用户决定是否持续推送到自己的 GitHub 仓库。不能用旧 ZIP 推断新版本已同步。
+- 首页“当前项目”里的 `PRJ-2401` 等记录是 `App.tsx` 中的静态数组；当前原型没有这些项目的真实数据源或持久保存。读取到卡片文字只证明示例界面可见，不代表读到了用户实际工程项目。

@@ -164,7 +164,7 @@ public class DevNoteCommands
 
             var step = session.Template.PageStep ?? new Point2();
             editor.WriteMessage("\nDN_NOTE_DEV_SUMMARY pages=" + (generated.Layout == null ? 0 : generated.Layout.Pages.Count)
-                + " objects=" + generated.Texts.Count
+                + " objects=" + (generated.Texts.Count + generated.Lines.Count)
                 + " warnings=" + generated.Diagnostics.Count(item => item.Severity == Severity.Warning));
             editor.WriteMessage("\nDN_NOTE_DEV_PAGE_STEP x=" + Format(step.X) + " y=" + Format(step.Y) + " scale=" + Format(scale.Value));
             if (generated.Texts.Count > 0)
@@ -177,7 +177,7 @@ public class DevNoteCommands
 
             RenderReport report;
             using (document.LockDocument())
-                report = new DbTextWriter().Write(document.Database, generated.Texts, wcs.Z, System.Threading.CancellationToken.None);
+                report = new DbTextWriter().Write(document.Database, generated.Texts, generated.Lines, wcs.Z, System.Threading.CancellationToken.None);
             var after = NoteCommands.Count(document.Database);
             if (!report.Success)
             {

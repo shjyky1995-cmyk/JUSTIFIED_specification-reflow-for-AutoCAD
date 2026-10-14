@@ -23,9 +23,8 @@ internal sealed class NotePickerForm : Form
     private static readonly Color Line = Color.FromArgb(225, 229, 235);
     private static readonly Color Footer = Color.FromArgb(249, 250, 251);
     private static readonly Color Bad = Color.FromArgb(190, 48, 43);
-    private static readonly PrivateFontCollection BundledFonts = LoadBundledFonts();
-    private static readonly FontFamily UiFontFamily = BundledFonts.Families.First(family =>
-        string.Equals(family.Name, "Noto Sans SC", StringComparison.Ordinal));
+    // TextRenderer 使用 GDI；系统字体避免私有字体回退造成中文字形不一致。
+    private static readonly FontFamily UiFontFamily = new FontFamily("Microsoft YaHei UI");
 
     private readonly string _root;
     private readonly NoteSettings? _previous;
@@ -402,19 +401,6 @@ internal sealed class NotePickerForm : Form
         if (stream == null) return null;
         using var original = Image.FromStream(stream);
         return new Bitmap(original);
-    }
-
-    private static PrivateFontCollection LoadBundledFonts()
-    {
-        var directory = Path.GetDirectoryName(typeof(NotePickerForm).Assembly.Location)
-            ?? AppDomain.CurrentDomain.BaseDirectory;
-        var path = Path.Combine(directory, "fonts", "NotoSansSC-VF.ttf");
-        if (!File.Exists(path)) throw new FileNotFoundException("缺少程序界面字体 Noto Sans SC。", path);
-        var fonts = new PrivateFontCollection();
-        fonts.AddFontFile(path);
-        if (!fonts.Families.Any(family => string.Equals(family.Name, "Noto Sans SC", StringComparison.Ordinal)))
-            throw new InvalidDataException("程序界面字体文件不是预期的 Noto Sans SC。");
-        return fonts;
     }
 
     private void EnableDragging(Control target)

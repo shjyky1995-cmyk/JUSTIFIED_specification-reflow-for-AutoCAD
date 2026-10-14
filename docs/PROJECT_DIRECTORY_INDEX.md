@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | CAD 活动开发 | 根目录，task/T28-cad-tables | 保留原修改，独立验收 |
 | 设计说明活动开发 | artifacts/t26-auto-content-worktree | T32候选，保持原流程 |
-| 投标活动开发 | artifacts/worktrees/t34-bid-workbench | 当前T40 / task/T40-bid-in-platform，44平台页面＋41后台原引擎 |
+| 投标活动开发 | artifacts/worktrees/t34-bid-workbench | 当前T38 / task/T38-bid-framework-import，独立Electron41/SQLite模块 |
 | 投标批准计划 | artifacts/t33-bid-plan-worktree | 只保留规划历史，不作为新开发基线 |
 | 当前设计说明试用 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.2-内容核对版/client/EngiSpace.exe | 当前入口保留 |
 | 投标便携试用 | 测试文件/勘察设计投标试用/EngiSpace-0.4.0-bid-preview.3/client/EngiSpace.exe | T40同主窗口；数据在同包portable-data；基准5da55ab |
@@ -15,7 +15,7 @@
 | 设计说明回退 | 测试文件/设计说明客户端试用/EngiSpace-0.2.0-preview.1-最终试用 | 保留可运行副本 |
 | CAD表格候选/样本 | 测试文件/CAD表格试用 | 保留原入口和验收证据 |
 | 早期桌面解压副本 | local/archive/desktop-extracted-T34 | 已校验归档，不是当前试用入口；ZIP在原试用目录 |
-| 外部易标源码 | local/references/OpenBidKit_Yibiao | 只读来源f185a25；移植副本desktop/bidding-framework随候选打包 |
+| 外部易标源码 | local/references/OpenBidKit_Yibiao | 只读来源f185a25；移植副本在投标worktree的desktop/bidding-framework，随候选打包 |
 | 业务原稿与私有内容 | 说明文件、content-library/private、测试文件内业务原稿 | 原位保护，不公开提交 |
 | 历史验收证据 | 测试结果、artifacts各任务检查目录 | 原位登记，不能当普通缓存删 |
 | PDF依赖缓存 | artifacts/nuget-packages | T36新包均存G盘；不是业务原件 |
